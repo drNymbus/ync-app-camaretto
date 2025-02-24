@@ -1,0 +1,93 @@
+package view
+
+import (
+	"log"
+
+	"os"
+	"io"
+	"bytes"
+	"image"
+
+	"golang.org/x/text/language"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+)
+
+var (
+	Sheet *ebiten.Image
+	TileWidth int = 64//32
+	TileHeight int = 64//32
+
+	CardImage [13]*ebiten.Image
+	JokerImage *ebiten.Image
+	EmptyCardImage *ebiten.Image
+	HiddenCardImage *ebiten.Image
+
+	FaceSource *text.GoTextFaceSource
+	TextFace *text.GoTextFace
+	FontSize float64 = 24
+)
+
+// @desc: Given a file path returns the content of the file as a byte slice
+func getFileByte(filename string) []byte {
+	var err error
+
+	// Opens the file
+	var file *os.File
+	file, err = os.Open(filename)
+	if err != nil { log.Fatal("[parameters.getFileByte] Open file:", err) }
+
+	// Get file size, to make sure we read it correctly/entirely
+	var stat os.FileInfo
+	stat, err = file.Stat()
+	if err != nil { log.Fatal("[parameters.getFileByte] Get file info:", err) }
+
+	// Turn the file into a byte slice
+	var n int
+	var fileByte []byte = make([]byte, stat.Size())
+	n, err = file.Read(fileByte)
+	if err != nil && err != io.EOF { log.Fatal("[parameters.getFileByte] Read file:", err) }
+	if n != int(stat.Size()) { log.Println("Warning | [parameters.getFile] File read partially:", err) }
+
+	return fileByte
+}
+
+// @desc: Sets the global variables of the view package (a.k.a all images used throughout the game)
+func InitAssets() {
+	var err error
+	var ogSheet *ebiten.Image
+	// ogSheet, _, err = ebitenutil.NewImageFromFile("assets/cardsMedium_tilemap_packed.png")
+	ogSheet, _, err = ebitenutil.NewImageFromFile("assets/cardsLarge_tilemap_packed.png")
+	if err != nil { log.Fatal("[parameters.InitAssets] Load tilemap:", err) }
+
+	// Scale down the original sheet
+	var xScale, yScale float64 = 1/1, 1/1
+	TileWidth, TileHeight = int(float64(TileWidth) * xScale), int(float64(TileHeight) * yScale)
+	Sheet = ebiten.NewImage(ogSheet.Size())
+	op := &ebiten.DrawImageOptions{}; op.GeoM.Scale(xScale, yScale)
+	Sheet.DrawImage(ogSheet, op)
+
+	for i := 0; i < 13; i++ { // Init all cards image from Ace to King
+		var sx int = i * TileWidth
+		var img *ebiten.Image = Sheet.SubImage(image.Rect(sx, 0, sx+TileWidth, TileHeight)).(*ebiten.Image)
+		CardImage[i] = img
+	}
+
+	// All other cards are not logically placed in the tilemap sheet
+	JokerImage = Sheet.SubImage(image.Rect((13*TileWidth), (2*TileHeight), (13*TileWidth) + TileWidth, (2*TileHeight) + TileHeight)).(*ebiten.Image)
+	EmptyCardImage = Sheet.SubImage(image.Rect((13*TileWidth), 0, (13*TileWidth) + TileWidth, TileHeight)).(*ebiten.Image)
+	HiddenCardImage = Sheet.SubImage(image.Rect((13*TileWidth), TileHeight, (13*TileWidth) + TileWidth, TileHeight + TileHeight)).(*ebiten.Image)
+
+	// Load font file
+	var fontByte []byte = getFileByte("assets/NaturalMono_Regular.ttf")
+	FaceSource, err = text.NewGoTextFaceSource(bytes.NewReader(fontByte))
+	if err != nil { log.Fatal("[parametersInitAssets] Set FaceSource:", err) }
+
+	TextFace = &text.GoTextFace{
+		Source: FaceSource,
+		Direction: text.DirectionLeftToRight,
+		Size: 24, Language: language.English,
+	}
+}
