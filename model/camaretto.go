@@ -153,6 +153,7 @@ func (c *Camaretto) IsGameOver() bool {
 // @desc: Player at index src attacks the player at index dst
 func (c *Camaretto) Attack(src int, dst int, at int) (int, string) {
 	var atkCard *Card = c.DeckPile.DrawCard()
+	atkCard.Reveal()
 
 	var atkValue int
 	var charge *Card

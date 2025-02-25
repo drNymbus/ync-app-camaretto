@@ -62,6 +62,17 @@ func (g *Game) Init(nbPlayers int) {
 
 func (g *Game) Update() error {
 	g.mouse.Update()
+	g.bAttack.Hover(g.mouse.X, g.mouse.Y)
+	g.bShield.Hover(g.mouse.X, g.mouse.Y)
+	g.bCharge.Hover(g.mouse.X, g.mouse.Y)
+	g.bHeal.Hover(g.mouse.X, g.mouse.Y)
+
+	for _, player := range g.camaretto.Players {
+		player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y)
+		player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y)
+		player.ShieldCard.Hover(g.mouse.X, g.mouse.Y)
+		if player.ChargeCard != nil { player.ChargeCard.Hover(g.mouse.X, g.mouse.Y) }
+	}
 
 	var state model.GameState = g.camaretto.GetState()
 	var playerTurn int = g.camaretto.GetPlayerTurn()
@@ -118,10 +129,15 @@ func (g *Game) Update() error {
 					if i != -1 {
 						cardFocus = i
 						focus = model.COMPLETE
-						g.bInfo.SetMessage("PLAYER" + strconv.Itoa(playerTurn) + ": Let's play ! Draw a card !")
+						if state == model.HEAL {
+							g.bInfo.SetMessage("PLAYER" + strconv.Itoa(playerTurn) + ": So ? What was in your charge ?")
+						} else {
+							g.bInfo.SetMessage("PLAYER" + strconv.Itoa(playerTurn) + ": Let's play ! Draw a card !")
+						}
 					}
 
 				} else if focus == model.COMPLETE {
+
 					if state == model.HEAL {
 						if g.camaretto.Players[playerTurn].ChargeCard.SSprite.In(e.X, e.Y) {
 							g.camaretto.Heal(playerTurn, cardFocus)
@@ -167,33 +183,35 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
-	// Draw players
-	var nbPlayers int = len(g.camaretto.Players)
-	var angleStep float64 = 2*math.Pi / float64(nbPlayers)
-	var radius float64 = 200
+	// // Draw players
+	view.DrawPlayers(screen, g.camaretto.Players)
+	// var nbPlayers int = len(g.camaretto.Players)
+	// var angleStep float64 = 2*math.Pi / float64(nbPlayers)
+	// var radius float64 = 200
 
-	var centerX float64 = float64(WinWidth)/2
-	var centerY float64 = (float64(WinHeight) * 6/8)/2
+	// var centerX float64 = float64(WinWidth)/2
+	// var centerY float64 = (float64(WinHeight) * 6/8)/2
 
-	for i, player := range g.camaretto.Players {
-		var theta float64 = angleStep * float64(i)
-		var x float64 = centerX + (radius * math.Cos(theta + math.Pi/2))
-		var y float64 = centerY + (radius * math.Sin(theta + math.Pi/2))
-		player.Render(screen, x, y, theta)
-	}
+	// for i, player := range g.camaretto.Players {
+	// 	var theta float64 = angleStep * float64(i)
+	// 	var x float64 = centerX + (radius * math.Cos(theta + math.Pi/2))
+	// 	var y float64 = centerY + (radius * math.Sin(theta + math.Pi/2))
+	// 	player.Render(screen, x, y, theta)
+	// }
 
 	// Draw deck pile
-	var deck *model.Deck = g.camaretto.DeckPile
-	for i, card := range deck.DrawPile[:deck.LenDrawPile] {
-		card.SSprite.ResetGeoM()
-		card.SSprite.MoveImg(centerX - card.SSprite.Width, centerY - float64(i)*0.2)
-		card.SSprite.Display(screen)
-	}
-	for i, card := range deck.DiscardPile[:deck.LenDiscardPile] {
-		card.SSprite.ResetGeoM()
-		card.SSprite.MoveImg(centerX, centerY - float64(i)*0.2)
-		card.SSprite.Display(screen)
-	}
+	view.DrawDeck(screen, g.camaretto.DeckPile)
+	// var deck *model.Deck = g.camaretto.DeckPile
+	// for i, card := range deck.DrawPile[:deck.LenDrawPile] {
+	// 	card.SSprite.ResetGeoM()
+	// 	card.SSprite.MoveImg(centerX - card.SSprite.Width, centerY - float64(i)*0.2)
+	// 	card.SSprite.Display(screen)
+	// }
+	// for i, card := range deck.DiscardPile[:deck.LenDiscardPile] {
+	// 	card.SSprite.ResetGeoM()
+	// 	card.SSprite.MoveImg(centerX, centerY - float64(i)*0.2)
+	// 	card.SSprite.Display(screen)
+	// }
 
 	// Draw buttons
 	var buttonYPos float64 = float64(WinHeight)*7/8

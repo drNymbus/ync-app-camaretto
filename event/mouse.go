@@ -18,42 +18,39 @@ type MouseEvent struct {
 }
 
 type Mouse struct {
+	X, Y float64
 	events []*MouseEvent
 	capacity int
 }
 
 func NewMouse(capacity int) *Mouse {
-	return &Mouse{[]*MouseEvent{}, capacity}
+	return &Mouse{0, 0, []*MouseEvent{}, capacity}
 }
 
 func (m *Mouse) Update() {
+	var x, y int = ebiten.CursorPosition()
+	m.X, m.Y = float64(x), float64(y)
 	if len(m.events) >= m.capacity { return }
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		var x, y int = ebiten.CursorPosition()
-		m.events = append(m.events, &MouseEvent{float64(x), float64(y), ebiten.MouseButtonLeft, PRESSED})
+		m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonLeft, PRESSED})
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		var x, y int = ebiten.CursorPosition()
-		m.events = append(m.events, &MouseEvent{float64(x), float64(y), ebiten.MouseButtonRight, PRESSED})
-	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonMiddle) {
-		var x, y int = ebiten.CursorPosition()
-		m.events = append(m.events, &MouseEvent{float64(x), float64(y), ebiten.MouseButtonMiddle, PRESSED})
-	}
+	// if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonRight, PRESSED})
+	// }
+	// if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonMiddle) {
+	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonMiddle, PRESSED})
+	// }
 
 	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		var x, y int = ebiten.CursorPosition()
-		m.events = append(m.events, &MouseEvent{float64(x), float64(y), ebiten.MouseButtonLeft, RELEASED})
+		m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonLeft, RELEASED})
 	}
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonRight) {
-		var x, y int = ebiten.CursorPosition()
-		m.events = append(m.events, &MouseEvent{float64(x), float64(y), ebiten.MouseButtonRight, RELEASED})
-	}
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonMiddle) {
-		var x, y int = ebiten.CursorPosition()
-		m.events = append(m.events, &MouseEvent{float64(x), float64(y), ebiten.MouseButtonMiddle, RELEASED})
-	}
+	// if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonRight) {
+	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonRight, RELEASED})
+	// }
+	// if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonMiddle) {
+	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonMiddle, RELEASED})
+	// }
 }
 
 func (m *Mouse) ReadEvent() *MouseEvent {

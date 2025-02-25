@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"camaretto/view"
+	// "camaretto/event"
 )
 
 type Button struct {
@@ -45,4 +46,15 @@ func (b *Button) SetTextColor(c color.RGBA) {
 func (b *Button) SetBackgroundColor(c color.RGBA) {
 	b.backgroundColor = c
 	b.Render()
+}
+
+func (b *Button) Hover(x, y float64) {
+	var color color.RGBA = b.backgroundColor
+	if b.SSprite.In(x, y) {
+		color.A = 255
+		b.SetBackgroundColor(color)
+	} else {
+		color.A = 127
+		b.SetBackgroundColor(color)
+	}
 }
