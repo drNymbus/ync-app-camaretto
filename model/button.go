@@ -7,7 +7,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"camaretto/view"
-	// "camaretto/event"
 )
 
 type Button struct {
@@ -30,7 +29,7 @@ func (b *Button) Render() {
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(b.textColor)
 	text.Draw(img, b.message, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 
-	b.SSprite = view.NewSprite(img, true, b.backgroundColor)
+	b.SSprite = view.NewSprite(img, true, b.backgroundColor, nil)
 }
 
 func (b *Button) SetMessage(msg string) {
@@ -43,18 +42,18 @@ func (b *Button) SetTextColor(c color.RGBA) {
 	b.Render()
 }
 
-func (b *Button) SetBackgroundColor(c color.RGBA) {
-	b.backgroundColor = c
-	b.Render()
-}
+// func (b *Button) SetBackgroundColor(c color.RGBA) {
+// 	b.backgroundColor = c
+// 	b.Render()
+// }
 
 func (b *Button) Hover(x, y float64) {
 	var color color.RGBA = b.backgroundColor
 	if b.SSprite.In(x, y) {
 		color.A = 255
-		b.SetBackgroundColor(color)
+		b.SSprite.SetBackgroundColor(color)
 	} else {
 		color.A = 127
-		b.SetBackgroundColor(color)
+		b.SSprite.SetBackgroundColor(color)
 	}
 }

@@ -63,16 +63,16 @@ func (g *Game) Init(nbPlayers int) {
 func (g *Game) Update() error {
 	g.mouse.Update()
 	g.bAttack.Hover(g.mouse.X, g.mouse.Y)
-	g.bShield.Hover(g.mouse.X, g.mouse.Y)
-	g.bCharge.Hover(g.mouse.X, g.mouse.Y)
-	g.bHeal.Hover(g.mouse.X, g.mouse.Y)
+	// g.bShield.Hover(g.mouse.X, g.mouse.Y)
+	// g.bCharge.Hover(g.mouse.X, g.mouse.Y)
+	// g.bHeal.Hover(g.mouse.X, g.mouse.Y)
 
-	for _, player := range g.camaretto.Players {
-		if player.HealthCard[0] != nil { player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y) }
-		if player.HealthCard[1] != nil { player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y) }
-		if player.ShieldCard != nil { player.ShieldCard.Hover(g.mouse.X, g.mouse.Y) }
-		if player.ChargeCard != nil { player.ChargeCard.Hover(g.mouse.X, g.mouse.Y) }
-	}
+	// for _, player := range g.camaretto.Players {
+	// 	if player.HealthCard[0] != nil { player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y) }
+	// 	if player.HealthCard[1] != nil { player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y) }
+	// 	if player.ShieldCard != nil { player.ShieldCard.Hover(g.mouse.X, g.mouse.Y) }
+	// 	if player.ChargeCard != nil { player.ChargeCard.Hover(g.mouse.X, g.mouse.Y) }
+	// }
 
 	var state model.GameState = g.camaretto.GetState()
 	var playerTurn int = g.camaretto.GetPlayerTurn()

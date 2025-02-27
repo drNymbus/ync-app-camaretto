@@ -25,7 +25,7 @@ type Card struct {
 
 // @desc: Init a new Card struct then returns it
 func NewCard(name string, value int, img *ebiten.Image) *Card {
-	return &Card{name, value, false, img, view.NewSprite(img, false, color.RGBA{127, 0, 100, 127})}
+	return &Card{name, value, false, img, view.NewSprite(img, false, color.RGBA{127, 0, 100, 127}, nil)}
 }
 
 // @desc: Replace original sprite image to the back of a card
