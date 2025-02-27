@@ -72,7 +72,7 @@ func (s *Sprite) ResetGeoM() {
 func (s *Sprite) In(x, y float64) bool {
 	var inv ebiten.GeoM = s.options.GeoM
 	inv.Invert()
-	x, y = inv.Apply(float64(x), float64(y))
+	x, y = inv.Apply(x, y)
 
 	if x < 0 || x > s.Width { return false }
 	if y < 0 || y > s.Height { return false }

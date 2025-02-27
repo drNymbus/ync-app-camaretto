@@ -68,9 +68,9 @@ func (g *Game) Update() error {
 	g.bHeal.Hover(g.mouse.X, g.mouse.Y)
 
 	for _, player := range g.camaretto.Players {
-		player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y)
-		player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y)
-		player.ShieldCard.Hover(g.mouse.X, g.mouse.Y)
+		if player.HealthCard[0] != nil { player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y) }
+		if player.HealthCard[1] != nil { player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y) }
+		if player.ShieldCard != nil { player.ShieldCard.Hover(g.mouse.X, g.mouse.Y) }
 		if player.ChargeCard != nil { player.ChargeCard.Hover(g.mouse.X, g.mouse.Y) }
 	}
 
@@ -85,22 +85,27 @@ func (g *Game) Update() error {
 	for ;!g.mouse.EmptyEventQueue(); {
 		e = g.mouse.ReadEvent()
 		if e.MET == event.RELEASED && e.Click == ebiten.MouseButtonLeft {
+			log.Println("UPDATE", e.X, e.Y)
 
 			if state == model.SET {
 
 				if g.bAttack.SSprite.In(e.X, e.Y) {
+					log.Println("ATTACK")
 					state = model.ATTACK
 					focus = model.PLAYER
 					g.bInfo.SetMessage("PLAYER" + strconv.Itoa(playerTurn) + ": Choose a player to attack.")
 				} else if g.bShield.SSprite.In(e.X, e.Y) {
+					log.Println("SHIELD")
 					state = model.SHIELD
 					focus = model.PLAYER
 					g.bInfo.SetMessage("PLAYER" + strconv.Itoa(playerTurn) + ": Choose the shield to be switched.")
 				} else if g.bCharge.SSprite.In(e.X, e.Y) {
+					log.Println("CHARGE")
 					state = model.CHARGE
 					focus = model.COMPLETE
 					g.bInfo.SetMessage("PLAYER" + strconv.Itoa(playerTurn) + ": Let's play ! Draw a card !")
 				} else if g.bHeal.SSprite.In(e.X, e.Y) {
+					log.Println("HEAL")
 					state = model.HEAL
 					playerFocus = playerTurn
 					focus = model.CARD
@@ -184,34 +189,34 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
 	// // Draw players
-	view.DrawPlayers(screen, g.camaretto.Players)
-	// var nbPlayers int = len(g.camaretto.Players)
-	// var angleStep float64 = 2*math.Pi / float64(nbPlayers)
-	// var radius float64 = 200
+	// view.DrawPlayers(screen, g.camaretto.Players)
+	var nbPlayers int = len(g.camaretto.Players)
+	var angleStep float64 = 2*math.Pi / float64(nbPlayers)
+	var radius float64 = 200
 
-	// var centerX float64 = float64(WinWidth)/2
-	// var centerY float64 = (float64(WinHeight) * 6/8)/2
+	var centerX float64 = float64(WinWidth)/2
+	var centerY float64 = (float64(WinHeight) * 6/8)/2
 
-	// for i, player := range g.camaretto.Players {
-	// 	var theta float64 = angleStep * float64(i)
-	// 	var x float64 = centerX + (radius * math.Cos(theta + math.Pi/2))
-	// 	var y float64 = centerY + (radius * math.Sin(theta + math.Pi/2))
-	// 	player.Render(screen, x, y, theta)
-	// }
+	for i, player := range g.camaretto.Players {
+		var theta float64 = angleStep * float64(i)
+		var x float64 = centerX + (radius * math.Cos(theta + math.Pi/2))
+		var y float64 = centerY + (radius * math.Sin(theta + math.Pi/2))
+		player.Render(screen, x, y, theta)
+	}
 
 	// Draw deck pile
-	view.DrawDeck(screen, g.camaretto.DeckPile)
-	// var deck *model.Deck = g.camaretto.DeckPile
-	// for i, card := range deck.DrawPile[:deck.LenDrawPile] {
-	// 	card.SSprite.ResetGeoM()
-	// 	card.SSprite.MoveImg(centerX - card.SSprite.Width, centerY - float64(i)*0.2)
-	// 	card.SSprite.Display(screen)
-	// }
-	// for i, card := range deck.DiscardPile[:deck.LenDiscardPile] {
-	// 	card.SSprite.ResetGeoM()
-	// 	card.SSprite.MoveImg(centerX, centerY - float64(i)*0.2)
-	// 	card.SSprite.Display(screen)
-	// }
+	// view.DrawDeck(screen, g.camaretto.DeckPile)
+	var deck *model.Deck = g.camaretto.DeckPile
+	for i, card := range deck.DrawPile[:deck.LenDrawPile] {
+		card.SSprite.ResetGeoM()
+		card.SSprite.MoveImg(centerX - card.SSprite.Width, centerY - float64(i)*0.2)
+		card.SSprite.Display(screen)
+	}
+	for i, card := range deck.DiscardPile[:deck.LenDiscardPile] {
+		card.SSprite.ResetGeoM()
+		card.SSprite.MoveImg(centerX, centerY - float64(i)*0.2)
+		card.SSprite.Display(screen)
+	}
 
 	// Draw buttons
 	var buttonYPos float64 = float64(WinHeight)*7/8
@@ -252,7 +257,7 @@ func main() {
 
 	// Init Game
 	var g *Game = &Game{}
-	g.Init(2)
+	g.Init(6)
 
 	// Init Window
 	ebiten.SetWindowSize(WinWidth, WinHeight)
