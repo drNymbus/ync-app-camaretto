@@ -5,7 +5,7 @@ import (
 
 	"math"
 
-	// "image/color"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -70,14 +70,14 @@ func (p *Player) LoseHealth(attack int, at int) (int, *Card, *Card, *Card) {
 		}
 
 		// Wow that's a really big hit
-		if attack > 0 {
+		if attack > 0 && p.HealthCard[1-at] != nil {
 			attack = attack - p.HealthCard[1-at].Value
-			health1 = p.HealthCard[1-at]
+			health2 = p.HealthCard[1-at]
 			p.HealthCard[1-at] = nil
 		}
 
 		// R.I.P in Peperonni
-		if attack > 0 { p.Dead = true }
+		if attack >= 0 { p.Dead = true }
 	}
 
 	return -1*attack, joker, health1, health2
@@ -115,60 +115,68 @@ func (p *Player) Uncharge() *Card {
 func (p *Player) Render(dst *ebiten.Image, x float64, y float64, r float64) {
 	var s *view.Sprite = nil
 
-	if p.ShieldCard != nil {
-		s = p.ShieldCard.SSprite
-		s.ResetGeoM()
+	if p.Dead {
+		s = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
 		s.CenterImg()
-		s.RotateImg(math.Pi/2)
-		s.MoveImg(0, 0 - s.Width/2)
 		s.RotateImg(r)
 		s.MoveImg(x, y)
 		s.Display(dst)
-	}
-
-	if p.JokerShield != nil {
-		s.ResetGeoM()
-		s.CenterImg()
-		s.RotateImg(math.Pi/2)
-		s.MoveImg(0, 0 - s.Width/2 - 5)
-		s.RotateImg(r)
-		s.MoveImg(x, y)
-		s.Display(dst)
-	}
-
-	if p.JokerHealth != nil {
-		s = p.JokerHealth.SSprite
-		s.ResetGeoM()
-		s.MoveImg(-s.Width*2, 0)
-		s.RotateImg(r)
-		s.MoveImg(x, y)
-		s.Display(dst)
-	}
-
-	if p.HealthCard[0] != nil {
-		s = p.HealthCard[0].SSprite
-		s.ResetGeoM()
-		s.MoveImg(-s.Width, 0)
-		s.RotateImg(r)
-		s.MoveImg(x, y)
-		s.Display(dst)
-	}
-
-	if p.HealthCard[1] != nil {
-		s = p.HealthCard[1].SSprite
-		s.ResetGeoM()
-		s.MoveImg(0, 0)
-		s.RotateImg(r)
-		s.MoveImg(x, y)
-		s.Display(dst)
-	}
-
-	if p.ChargeCard != nil {
-		s = p.ChargeCard.SSprite
-		s.ResetGeoM()
-		s.MoveImg(-s.Width/2, s.Height)
-		s.RotateImg(r)
-		s.MoveImg(x, y)
-		s.Display(dst)
+	} else {
+		if p.ShieldCard != nil {
+			s = p.ShieldCard.SSprite
+			s.ResetGeoM()
+			s.CenterImg()
+			s.RotateImg(math.Pi/2)
+			s.MoveImg(0, 0 - s.Width/2)
+			s.RotateImg(r)
+			s.MoveImg(x, y)
+			s.Display(dst)
+		}
+	
+		if p.JokerShield != nil {
+			s.ResetGeoM()
+			s.CenterImg()
+			s.RotateImg(math.Pi/2)
+			s.MoveImg(0, 0 - s.Width/2 - 15)
+			s.RotateImg(r)
+			s.MoveImg(x, y)
+			s.Display(dst)
+		}
+	
+		if p.JokerHealth != nil {
+			s = p.JokerHealth.SSprite
+			s.ResetGeoM()
+			s.MoveImg(-s.Width*2, 0)
+			s.RotateImg(r)
+			s.MoveImg(x, y)
+			s.Display(dst)
+		}
+	
+		if p.HealthCard[0] != nil {
+			s = p.HealthCard[0].SSprite
+			s.ResetGeoM()
+			s.MoveImg(-s.Width, 0)
+			s.RotateImg(r)
+			s.MoveImg(x, y)
+			s.Display(dst)
+		}
+	
+		if p.HealthCard[1] != nil {
+			s = p.HealthCard[1].SSprite
+			s.ResetGeoM()
+			s.MoveImg(0, 0)
+			s.RotateImg(r)
+			s.MoveImg(x, y)
+			s.Display(dst)
+		}
+	
+		if p.ChargeCard != nil {
+			s = p.ChargeCard.SSprite
+			s.ResetGeoM()
+			s.MoveImg(-s.Width/2, s.Height)
+			s.RotateImg(r)
+			s.MoveImg(x, y)
+			s.Display(dst)
+		}
 	}
 }

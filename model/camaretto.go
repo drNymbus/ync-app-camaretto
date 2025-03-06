@@ -27,7 +27,6 @@ const (
 /************ **************** CAMARETTO **************** ************/
 /************ ******************************************* ************/
 
-
 type Camaretto struct {
 	state GameState
 	focus FocusState
@@ -146,7 +145,7 @@ func (c *Camaretto) IsGameOver() bool {
 		if p.Dead { count++ }
 	}
 
-	if count >= c.nbPlayers - 1 { return true }
+	if count > 1 { return true }
 	return false
 }
 
@@ -158,8 +157,6 @@ func (c *Camaretto) Attack(src int, dst int, at int) (int, string) {
 	var atkValue int
 	var charge *Card
 	atkValue, charge = c.Players[src].Attack(atkCard)
-
-	log.Println("\t", atkValue)
 
 	c.DeckPile.DiscardCard(atkCard)
 	if charge != nil { c.DeckPile.DiscardCard(charge) }
@@ -205,6 +202,13 @@ func (c *Camaretto) Attack(src int, dst int, at int) (int, string) {
 		} else if health2Slot {
 			c.Players[dst].HealthCard[0] = newHealthCard
 		}
+	} else { // Every card the player had in hand are put back in the DiscardPile
+		var p *Player = c.Players[dst]
+		if p.HealthCard[0] != nil { c.DeckPile.DiscardCard(p.HealthCard[0]); p.HealthCard[0] = nil }
+		if p.HealthCard[1] != nil { c.DeckPile.DiscardCard(p.HealthCard[1]); p.HealthCard[1] = nil }
+		if p.JokerHealth != nil { c.DeckPile.DiscardCard(p.JokerHealth); p.JokerHealth = nil }
+		if p.ShieldCard != nil { c.DeckPile.DiscardCard(p.ShieldCard); p.ShieldCard = nil }
+		if p.JokerShield != nil { c.DeckPile.DiscardCard(p.JokerShield); p.JokerShield = nil }
 	}
 
 	return 0, "Attack was great, might do it again ! 5/5"

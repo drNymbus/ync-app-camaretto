@@ -19,13 +19,16 @@ var (
 	// WinHeight int = 480
 	WinWidth int = 1200
 	WinHeight int = 900
+	ButtonWidth int = WinWidth / 5
+	ButtonHeight int = WinHeight / 6
 )
 
 type AppState int
 const (
 	MENU AppState = 0
-	GAME AppState = 1
-	END AppState = 2
+	SET AppState = 1
+	GAME AppState = 2
+	END AppState = 3
 )
 
 type Game struct{
@@ -47,32 +50,29 @@ func (g *Game) Init(nbPlayers int) {
 	g.mouse = event.NewMouse(10)
 
 	g.camaretto = model.NewCamaretto(nbPlayers)
-	for i, player := range g.camaretto.Players {
-		log.Println(strconv.Itoa(i), player.HealthCard[0], player.HealthCard[1], player.JokerHealth, player.ShieldCard)
-	}
 
-	g.bAttack = model.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, color.RGBA{163, 3, 9, 127})
-	g.bShield = model.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, color.RGBA{2, 42, 201, 127})
-	g.bCharge = model.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, color.RGBA{224, 144, 4, 127})
-	g.bHeal = model.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, color.RGBA{3, 173, 18, 127})
+	g.bAttack = model.NewButton(ButtonWidth, ButtonHeight, "ATTACK", color.RGBA{0, 0, 0, 255}, color.RGBA{163, 3, 9, 127})
+	g.bShield = model.NewButton(ButtonWidth, ButtonHeight, "SHIELD", color.RGBA{0, 0, 0, 255}, color.RGBA{2, 42, 201, 127})
+	g.bCharge = model.NewButton(ButtonWidth, ButtonHeight, "CHARGE", color.RGBA{0, 0, 0, 255}, color.RGBA{224, 144, 4, 127})
+	g.bHeal = model.NewButton(ButtonWidth, ButtonHeight, "HEAL", color.RGBA{0, 0, 0, 255}, color.RGBA{3, 173, 18, 127})
 
-	g.bInfo = model.NewButton("This contains information.", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 0, 0, 0})
+	g.bInfo = model.NewButton(WinWidth, WinHeight/16, "This contains information.", color.RGBA{0, 0, 0, 255}, color.RGBA{127, 127, 127, 255})
 	g.bInfo.SetMessage("PLAYER" + strconv.Itoa(g.camaretto.GetPlayerTurn()) + ": Choose an action.")
 }
 
 func (g *Game) Update() error {
 	g.mouse.Update()
 	g.bAttack.Hover(g.mouse.X, g.mouse.Y)
-	// g.bShield.Hover(g.mouse.X, g.mouse.Y)
-	// g.bCharge.Hover(g.mouse.X, g.mouse.Y)
-	// g.bHeal.Hover(g.mouse.X, g.mouse.Y)
+	g.bShield.Hover(g.mouse.X, g.mouse.Y)
+	g.bCharge.Hover(g.mouse.X, g.mouse.Y)
+	g.bHeal.Hover(g.mouse.X, g.mouse.Y)
 
-	// for _, player := range g.camaretto.Players {
-	// 	if player.HealthCard[0] != nil { player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y) }
-	// 	if player.HealthCard[1] != nil { player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y) }
-	// 	if player.ShieldCard != nil { player.ShieldCard.Hover(g.mouse.X, g.mouse.Y) }
-	// 	if player.ChargeCard != nil { player.ChargeCard.Hover(g.mouse.X, g.mouse.Y) }
-	// }
+	for _, player := range g.camaretto.Players {
+		if player.HealthCard[0] != nil { player.HealthCard[0].Hover(g.mouse.X, g.mouse.Y) }
+		if player.HealthCard[1] != nil { player.HealthCard[1].Hover(g.mouse.X, g.mouse.Y) }
+		if player.ShieldCard != nil { player.ShieldCard.Hover(g.mouse.X, g.mouse.Y) }
+		if player.ChargeCard != nil { player.ChargeCard.Hover(g.mouse.X, g.mouse.Y) }
+	}
 
 	var state model.GameState = g.camaretto.GetState()
 	var playerTurn int = g.camaretto.GetPlayerTurn()
@@ -85,7 +85,7 @@ func (g *Game) Update() error {
 	for ;!g.mouse.EmptyEventQueue(); {
 		e = g.mouse.ReadEvent()
 		if e.MET == event.RELEASED && e.Click == ebiten.MouseButtonLeft {
-			log.Println("UPDATE", e.X, e.Y)
+			// log.Println("UPDATE", e.X, e.Y)
 
 			if state == model.SET {
 
@@ -154,10 +154,6 @@ func (g *Game) Update() error {
 						if event.HandleFocusComplete(g.camaretto.DeckPile, e) {
 							if state == model.ATTACK {
 								g.camaretto.Attack(playerTurn, playerFocus, cardFocus)
-							
-								for i, player := range g.camaretto.Players {
-									log.Println(strconv.Itoa(i), player.HealthCard[0], player.HealthCard[1], player.JokerHealth, player.ShieldCard)
-								}
 							} else if state == model.SHIELD {
 								g.camaretto.Shield(playerFocus)
 							} else if state == model.CHARGE {
@@ -219,32 +215,46 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw buttons
-	var buttonYPos float64 = float64(WinHeight)*7/8
+	var buttonXPos float64 = 0
+	var buttonYPos float64 = float64(WinHeight)*9/10
 
-	g.bAttack.SSprite.ResetGeoM()
-	g.bAttack.SSprite.CenterImg()
-	g.bAttack.SSprite.MoveImg(float64(WinWidth)*1/5, buttonYPos)
-	g.bAttack.SSprite.Display(screen)
-
-	g.bShield.SSprite.ResetGeoM()
-	g.bShield.SSprite.CenterImg()
-	g.bShield.SSprite.MoveImg(float64(WinWidth)*2/5, buttonYPos)
-	g.bShield.SSprite.Display(screen)
-
-	g.bCharge.SSprite.ResetGeoM()
-	g.bCharge.SSprite.CenterImg()
-	g.bCharge.SSprite.MoveImg(float64(WinWidth)*3/5, buttonYPos)
-	g.bCharge.SSprite.Display(screen)
-
-	g.bHeal.SSprite.ResetGeoM()
-	g.bHeal.SSprite.CenterImg()
-	g.bHeal.SSprite.MoveImg(float64(WinWidth)*4/5, buttonYPos)
-	g.bHeal.SSprite.Display(screen)
-
+	buttonXPos = float64(WinWidth)/2
 	g.bInfo.SSprite.ResetGeoM()
 	g.bInfo.SSprite.CenterImg()
-	g.bInfo.SSprite.MoveImg(float64(WinWidth)/2, buttonYPos - 50)
+	g.bInfo.SSprite.MoveImg(buttonXPos, buttonYPos - g.bInfo.SSprite.Height*2)
 	g.bInfo.SSprite.Display(screen)
+
+	buttonXPos = (float64(WinWidth) * 1/4) + (float64(ButtonWidth)/2)
+	g.bAttack.SSprite.ResetGeoM()
+	g.bAttack.SSprite.CenterImg()
+	g.bAttack.SSprite.MoveImg(buttonXPos, buttonYPos)
+	g.bAttack.SSprite.Display(screen)
+
+	buttonXPos = (float64(WinWidth) * 2/4) + (float64(ButtonWidth)/2)
+	g.bShield.SSprite.ResetGeoM()
+	g.bShield.SSprite.CenterImg()
+	g.bShield.SSprite.MoveImg(buttonXPos, buttonYPos)
+	g.bShield.SSprite.Display(screen)
+
+	buttonXPos = (float64(WinWidth) * 3/4) + (float64(ButtonWidth)/2)
+
+	var playerTurn int = g.camaretto.GetPlayerTurn()
+	var p *model.Player = g.camaretto.Players[playerTurn]
+	if p.ChargeCard == nil {
+		g.bHeal.SSprite.ResetGeoM()
+
+		g.bCharge.SSprite.ResetGeoM()
+		g.bCharge.SSprite.CenterImg()
+		g.bCharge.SSprite.MoveImg(buttonXPos, buttonYPos)
+		g.bCharge.SSprite.Display(screen)
+	} else {
+		g.bCharge.SSprite.ResetGeoM()
+
+		g.bHeal.SSprite.ResetGeoM()
+		g.bHeal.SSprite.CenterImg()
+		g.bHeal.SSprite.MoveImg(buttonXPos, buttonYPos)
+		g.bHeal.SSprite.Display(screen)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -257,7 +267,7 @@ func main() {
 
 	// Init Game
 	var g *Game = &Game{}
-	g.Init(6)
+	g.Init(3)
 
 	// Init Window
 	ebiten.SetWindowSize(WinWidth, WinHeight)
