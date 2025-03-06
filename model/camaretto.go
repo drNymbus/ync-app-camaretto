@@ -23,9 +23,9 @@ const (
 	COMPLETE FocusState = 3
 )
 
-/************ ******************************************* ************/
-/************ **************** CAMARETTO **************** ************/
-/************ ******************************************* ************/
+/************ *************************************************************************** ************/
+/************ ******************************** CAMARETTO ******************************** ************/
+/************ *************************************************************************** ************/
 
 type Camaretto struct {
 	state GameState
@@ -99,9 +99,9 @@ func (c *Camaretto) Init(n int) {
 	}
 }
 
-/************ ******************************************* ************/
-/************ ***************** GET/SET ***************** ************/
-/************ ******************************************* ************/
+/************ ***************************************************************************** ************/
+/************ ********************************** GET/SET ********************************** ************/
+/************ ***************************************************************************** ************/
 
 func (c *Camaretto) SetState(s GameState) (int, string) {
 	if s == CHARGE && c.Players[c.playerTurn].ChargeCard != nil {
@@ -129,14 +129,18 @@ func (c *Camaretto) SetCardFocus(i int)  {
 func (c *Camaretto) GetCardFocus() int { return c.cardFocus }
 
 func (c *Camaretto) EndTurn() {
+	c.state = SET
+	c.playerFocus = -1
+	c.cardFocus = -1
+
 	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
 	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
 }
 func (c *Camaretto) GetPlayerTurn() int { return c.playerTurn }
 
-/************ ******************************************* ************/
-/************ ***************** ACTIONS ***************** ************/
-/************ ******************************************* ************/
+/************ ***************************************************************************** ************/
+/************ ********************************** ACTIONS ********************************** ************/
+/************ ***************************************************************************** ************/
 
 // @desc: Returns true if one player is left, false otherwise
 func (c *Camaretto) IsGameOver() bool {
@@ -150,7 +154,11 @@ func (c *Camaretto) IsGameOver() bool {
 }
 
 // @desc: Player at index src attacks the player at index dst
-func (c *Camaretto) Attack(src int, dst int, at int) (int, string) {
+func (c *Camaretto) Attack() (int, string) {
+	var src int = c.playerTurn
+	var dst int = c.playerFocus
+	var at int = c.cardFocus
+
 	var atkCard *Card = c.DeckPile.DrawCard()
 	atkCard.Reveal()
 
@@ -215,29 +223,29 @@ func (c *Camaretto) Attack(src int, dst int, at int) (int, string) {
 }
 
 // @desc: Player at index player gets assigned a new shield
-func (c *Camaretto) Shield(player int) (int, string) {
-	var oldCard *Card = c.Players[player].ShieldCard
+func (c *Camaretto) Shield() (int, string) {
+	var oldCard *Card = c.Players[c.playerTurn].ShieldCard
 	var newCard *Card = c.DeckPile.DrawCard()
 	newCard.Reveal()
-	c.Players[player].ShieldCard = newCard
+	c.Players[c.playerTurn].ShieldCard = newCard
 	c.DeckPile.DiscardCard(oldCard)
 
 	return 0, "It's like getting under a blanket on a rainy day !"
 }
 
 // @desc: Player at index player puts the next card into his charge slot
-func (c *Camaretto) Charge(player int) (int, string) {
-	if c.Players[player].ChargeCard == nil {
+func (c *Camaretto) Charge() (int, string) {
+	if c.Players[c.playerTurn].ChargeCard == nil {
 		var card *Card = c.DeckPile.DrawCard()
-		c.Players[player].Charge(card)
+		c.Players[c.playerTurn].Charge(card)
 	}
 
 	return 0, "Loading up !"
 }
 
 // @desc: Player at index player heals himself
-func (c *Camaretto) Heal(player int, at int) (int, string) {
-	var oldCard *Card = c.Players[player].Heal(at)
+func (c *Camaretto) Heal() (int, string) {
+	var oldCard *Card = c.Players[c.playerTurn].Heal(c.cardFocus)
 	c.DeckPile.DiscardCard(oldCard)
 
 	return 0, "I feel a lil' bit tired, anyone has a vitamin ?"
