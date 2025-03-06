@@ -66,8 +66,9 @@ func (c *Camaretto) Init(n int) {
 	c.DeckPile.Init()
 	c.DeckPile.ShuffleDrawPile()
 
+	var names []string = []string{"Alfred", "Robin", "Parker", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
-		c.Players[i] = NewPlayer()
+		c.Players[i] = NewPlayer(names[i%len(names)])
 	}
 
 	for i, _ := range make([]int, n*2) { // Init Health

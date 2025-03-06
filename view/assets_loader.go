@@ -91,7 +91,7 @@ func InitAssets() {
 	if err != nil { log.Fatal("[parameters.InitAssets] Load jesus:", err) }
 
 	width, height = tmp.Size()
-	xScale, yScale = 0.2, 0.2
+	xScale, yScale = 0.1, 0.1
 	width, height = int(float64(width) * xScale), int(float64(height) * yScale)
 	GraveImage = ebiten.NewImage(width, height)
 	op.GeoM.Reset(); op.GeoM.Scale(xScale, yScale)

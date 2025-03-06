@@ -61,7 +61,30 @@ func (app *Application) GetState() AppState { return app.state }
 /************ ********************************* UPDATE ********************************** ************/
 /************ *************************************************************************** ************/
 
-func (app *Application) Update() {}
+func (app *Application) Update() {
+	var player *Player = app.Camaretto.Players[app.Camaretto.GetPlayerTurn()]
+	var playerName string = player.Name
+
+	var msgInfo string = ""
+	if app.state == GAME {
+		var state GameState = app.Camaretto.GetState()
+		if state == SET {
+			msgInfo = playerName + " needs to choose an action"
+		} else {
+			var focus FocusState = app.Camaretto.GetFocus()
+			if focus == PLAYER {
+				msgInfo = playerName + " needs to select a player"
+			} else if focus == CARD {
+				player = app.Camaretto.Players[app.Camaretto.GetPlayerFocus()]
+				playerName = player.Name
+				msgInfo = playerName + " needs to select a health card"
+			} else if focus == COMPLETE {
+				msgInfo = playerName + " draw a card"
+			}
+		}
+		app.Info.SetMessage(msgInfo)
+	}
+}
 
 /************ *************************************************************************** ************/
 /************ *********************************** DRAW ********************************** ************/

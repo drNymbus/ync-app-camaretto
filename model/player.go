@@ -8,11 +8,15 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"camaretto/view"
 )
 
 type Player struct {
+	Name string
+	NameSprite *view.Sprite
+
 	Dead bool
 	HealthCard [2]*Card
 	JokerHealth *Card
@@ -21,8 +25,15 @@ type Player struct {
 	ChargeCard *Card
 }
 
-func NewPlayer() *Player {
-	return &Player{false, [2]*Card{nil, nil}, nil, nil, nil, nil}
+func NewPlayer(name string) *Player {
+	var tWidth, tHeight float64 = text.Measure(name, view.TextFace, 0.0)
+	var img *ebiten.Image = ebiten.NewImage(int(tWidth), int(tHeight))
+
+	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
+	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
+	var s *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
+
+	return &Player{name, s, false, [2]*Card{nil, nil}, nil, nil, nil, nil}
 }
 
 // @desc: Player attacks an enemy with a given card and the one in charge, the total attack value and the charge card are returned
@@ -179,4 +190,12 @@ func (p *Player) Render(dst *ebiten.Image, x float64, y float64, r float64) {
 			s.Display(dst)
 		}
 	}
+
+	s = p.NameSprite
+	s.ResetGeoM()
+	s.CenterImg()
+	s.MoveImg(0, float64(view.TileHeight) * 8/5)
+	s.RotateImg(r)
+	s.MoveImg(x, y)
+	s.Display(dst)
 }
