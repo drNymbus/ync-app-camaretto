@@ -3,6 +3,8 @@ package event
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+
+	"camaretto/model"
 )
 
 type MouseEventType int
@@ -36,22 +38,10 @@ func (m *Mouse) Update() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		m.events = append(m.events, &MouseEvent{x, y, ebiten.MouseButtonLeft, PRESSED})
 	}
-	// if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonRight, PRESSED})
-	// }
-	// if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonMiddle) {
-	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonMiddle, PRESSED})
-	// }
 
 	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		m.events = append(m.events, &MouseEvent{x, y, ebiten.MouseButtonLeft, RELEASED})
 	}
-	// if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonRight) {
-	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonRight, RELEASED})
-	// }
-	// if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonMiddle) {
-	// 	m.events = append(m.events, &MouseEvent{m.X, m.Y, ebiten.MouseButtonMiddle, RELEASED})
-	// }
 }
 
 func (m *Mouse) ReadEvent() *MouseEvent {
@@ -61,6 +51,43 @@ func (m *Mouse) ReadEvent() *MouseEvent {
 	return me
 }
 
-func (m *Mouse) EmptyEventQueue() bool {
+func (m *Mouse) IsEmpty() bool {
 	return len(m.events) == 0
+}
+
+// @desc: Detect if click is on a player's card, then return the index of the player
+func mouseOnPlayer(players []*model.Player, x float64, y float64) int {
+	for i, player := range players {
+		if !player.Dead {
+			var onPlayer bool = false
+			if player.HealthCard[0] != nil { onPlayer = onPlayer || player.HealthCard[0].SSprite.In(x, y) }
+			if player.HealthCard[1] != nil { onPlayer = onPlayer || player.HealthCard[1].SSprite.In(x, y) }
+			if player.JokerHealth != nil { onPlayer = onPlayer || player.JokerHealth.SSprite.In(x, y) }
+			if player.ShieldCard != nil { onPlayer = onPlayer || player.ShieldCard.SSprite.In(x, y) }
+			if player.ChargeCard != nil { onPlayer = onPlayer || player.ChargeCard.SSprite.In(x, y) }
+	
+			if onPlayer { return i }
+		}
+	}
+
+	return -1
+}
+
+// @desc: Detect if player's health card have been clicked, then return the index of the card
+func mouseOnHealthCard(p *model.Player, x float64, y float64) int {
+	if p.HealthCard[0] != nil && p.HealthCard[0].SSprite.In(x, y) {
+		return 0
+	} else if p.HealthCard[1] != nil && p.HealthCard[1].SSprite.In(x, y) {
+		return 1
+	}
+
+	return -1
+}
+
+// @desc: Detect if the click is on the draw pile of the deck
+func mouseOnDeck(d *model.Deck, x float64, y float64) bool {
+	for i := 0; i < d.LenDrawPile; i++ {
+		if d.DrawPile[i].SSprite.In(x, y) { return true }
+	}
+	return false
 }

@@ -7,6 +7,8 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"camaretto/view"
 )
 
 const (
@@ -70,6 +72,8 @@ func (app *Application) Update() {
 		var state GameState = app.Camaretto.GetState()
 		if state == SET {
 			msgInfo = playerName + " needs to choose an action"
+		} else if state == END {
+			msgInfo = playerName + " end turn"
 		} else {
 			var focus FocusState = app.Camaretto.GetFocus()
 			if focus == PLAYER {
@@ -113,14 +117,36 @@ func (app *Application) DrawDeck(dst *ebiten.Image) {
 	var deck *Deck = app.Camaretto.DeckPile
 	for i, card := range deck.DrawPile[:deck.LenDrawPile] {
 		card.SSprite.ResetGeoM()
-		card.SSprite.MoveImg(centerX - card.SSprite.Width, centerY - float64(i)*0.2)
+		card.SSprite.CenterImg()
+		card.SSprite.MoveImg(centerX - card.SSprite.Width/2, centerY - float64(i)*0.2)
 		card.SSprite.Display(dst)
 	}
 	for i, card := range deck.DiscardPile[:deck.LenDiscardPile] {
 		card.SSprite.ResetGeoM()
-		card.SSprite.MoveImg(centerX, centerY - float64(i)*0.2)
+		card.SSprite.CenterImg()
+		card.SSprite.MoveImg(centerX + card.SSprite.Width/2, centerY - float64(i)*0.2)
 		card.SSprite.Display(dst)
 	}
+}
+
+func (app *Application) DrawCenterCards(dst *ebiten.Image) {
+	var centerX float64 = float64(WinWidth)/2
+	var centerY float64 = (float64(WinHeight) * 6/8)/2
+
+	for i, card := range app.Camaretto.CenterCard {
+		if card.SSprite.State == view.INIT {
+			card.SSprite.AnimateMove(centerX - card.SSprite.Width/2, centerY, centerX, centerY - 32 - float64(i)*10, 0.05)
+		} else if card.SSprite.State == view.WHILE {
+			card.SSprite.ResetGeoM()
+			card.SSprite.CenterImg()
+			card.SSprite.ComputeAnimation()
+		}
+		card.SSprite.Display(dst)
+	}
+}
+
+func (app *Application) DrawCardMovements(dst *ebiten.Image) {
+	
 }
 
 func (app *Application) DrawButtons(dst *ebiten.Image) {

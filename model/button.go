@@ -13,7 +13,7 @@ type Button struct {
 	width, height int
 	message string
 	textColor color.RGBA
-	backgroundColor color.RGBA
+	BackgroundColor color.RGBA
 	SSprite *view.Sprite
 }
 
@@ -31,7 +31,7 @@ func (b *Button) Render() {
 	op.GeoM.Translate(float64(b.width)/2 - (tWidth/2), float64(b.height)/2 - (tHeight/2))
 	text.Draw(img, b.message, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 
-	b.SSprite = view.NewSprite(img, true, b.backgroundColor, nil)
+	b.SSprite = view.NewSprite(img, true, b.BackgroundColor, nil)
 }
 
 func (b *Button) SetMessage(msg string) {
@@ -42,20 +42,4 @@ func (b *Button) SetMessage(msg string) {
 func (b *Button) SetTextColor(c color.RGBA) {
 	b.textColor = c
 	b.Render()
-}
-
-// func (b *Button) SetBackgroundColor(c color.RGBA) {
-// 	b.backgroundColor = c
-// 	b.Render()
-// }
-
-func (b *Button) Hover(x, y float64) {
-	var color color.RGBA = b.backgroundColor
-	if b.SSprite.In(x, y) {
-		color.A = 255
-		b.SSprite.SetBackgroundColor(color)
-	} else {
-		color.A = 127
-		b.SSprite.SetBackgroundColor(color)
-	}
 }

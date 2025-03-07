@@ -2,8 +2,7 @@ package main
 
 import (
 	"log"
-	// "math"
-	// "strconv"
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -39,7 +38,7 @@ func (g *Game) Update() error {
 	event.HandleGameHover(g.application, g.mouse.X, g.mouse.Y)
 
 	var e *event.MouseEvent = nil
-	for ;!g.mouse.EmptyEventQueue(); {
+	for ;!g.mouse.IsEmpty(); {
 		e = g.mouse.ReadEvent()
 
 		if e.MET == event.RELEASED && e.Click == ebiten.MouseButtonLeft {
@@ -47,7 +46,6 @@ func (g *Game) Update() error {
 		} else if e.MET == event.PRESSED && e.Click == ebiten.MouseButtonLeft {
 			event.HandleCamarettoMousePress(g.application, float64(e.X), float64(e.Y))
 		}
-
 	}
 
 	g.application.Update()
@@ -59,7 +57,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
 	g.application.DrawPlayers(screen)
+
 	g.application.DrawDeck(screen)
+	g.application.DrawCenterCards(screen)
+
 	g.application.DrawButtons(screen)
 }
 
@@ -77,6 +78,13 @@ func main() {
 	// Init Window
 	ebiten.SetWindowSize(model.WinWidth, model.WinHeight)
 	ebiten.SetWindowTitle("Camaretto")
+
+	var icon image.Image
+	icon, err = view.InitIcon("assets/amaretto_trans.png")
+	if err != nil {
+		log.Fatal("[MAIN] InitIcon failed", err)
+	}
+	ebiten.SetWindowIcon([]image.Image{icon})
 
 	// Game Loop
 	if err = ebiten.RunGame(g); err != nil {

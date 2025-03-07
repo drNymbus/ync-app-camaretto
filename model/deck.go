@@ -25,7 +25,9 @@ type Card struct {
 
 // @desc: Init a new Card struct then returns it
 func NewCard(name string, value int, img *ebiten.Image) *Card {
-	return &Card{name, value, false, img, view.NewSprite(img, false, color.RGBA{127, 0, 100, 100}, nil)}
+	var s *view.Sprite = view.NewSprite(img, false, color.RGBA{127, 0, 100, 100}, nil)
+	// var a *view.Animation = view.NewAnimation(s)
+	return &Card{name, value, false, img, s}
 }
 
 // @desc: Replace original sprite image to the back of a card
@@ -38,14 +40,6 @@ func (c *Card) Hide() {
 func (c *Card) Reveal() {
 	c.Hidden = true
 	c.SSprite.Img = c.img
-}
-
-func (c *Card) Hover(x, y float64) {
-	if c.SSprite.In(x, y) {
-		c.SSprite.EnableBackground()
-	} else {
-		c.SSprite.DisableBackground()
-	}
 }
 
 type Deck struct {

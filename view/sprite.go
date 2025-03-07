@@ -1,12 +1,29 @@
 package view
 
 import (
+	"log"
+	"math"
+
 	"image/color"
+
 	"github.com/hajimehoshi/ebiten/v2"
+)
+
+type AnimationState int
+const (
+	INIT AnimationState = 0
+	WHILE AnimationState = 1
+	DONE AnimationState = 2
 )
 
 type Sprite struct {
 	Width, Height float64
+	scaleX, scaleY float64
+
+	State AnimationState
+	x, y float64
+	targetX, targetY float64
+	speed float64
 
 	backgroundEnabled bool
 	backgroundColor color.RGBA
@@ -21,7 +38,7 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 	var w, h int = img.Size()
 	if op == nil { op = &ebiten.DrawImageOptions{} }
 
-	var s *Sprite = &Sprite{float64(w), float64(h), bgEnabled, c, op, nil, img}
+	var s *Sprite = &Sprite{float64(w), float64(h), 1, 1, INIT, 0, 0, 0, 0, 0, bgEnabled, c, op, nil, img}
 	if bgEnabled { s.RenderBackground() }
 	return s
 }
@@ -62,9 +79,52 @@ func (s *Sprite) RotateImg(r float64) {
 	s.Options.GeoM.Rotate(r)
 }
 
+// @desc: Scales the image by x and y
+func (s *Sprite) Scale(x, y float64) {
+	var w, h int = s.Img.Size()
+	s.Width = float64(w) * x
+	s.Height = float64(h) * y
+
+	s.scaleX = x
+	s.scaleY = y
+
+	s.Options.GeoM.Scale(x, y)
+}
+
 // @desc: Resets all modifications (translations & rotations) applied to the sprite's image
 func (s *Sprite) ResetGeoM() {
 	s.Options.GeoM.Reset()
+	s.Scale(s.scaleX, s.scaleY)
+}
+
+func (s *Sprite) GetPosition() (float64, float64) { return s.x, s.y }
+func (s *Sprite) GetTarget() (float64, float64) { return s.targetX, s.targetY }
+
+func (s *Sprite) AnimateMove(sx, sy, ex, ey, sp float64) {
+	s.x, s.y = sx, sy
+	s.targetX, s.targetY = ex, ey
+	s.speed = sp
+	s.State = WHILE
+}
+
+func (s *Sprite) ComputeAnimation() {
+	var vx, vy float64 = (s.targetX - s.x) * s.speed, (s.targetY - s.y) * s.speed
+	log.Println(s.x, s.y, vx, vy, s.targetX, s.targetY)
+	// If movement passes by the target we snap into the target
+	if math.Abs(s.targetX - s.x) < math.Abs(vx) {
+		s.x = s.targetX
+	} else {
+		s.x = s.x + vx
+	}
+
+	if math.Abs(s.targetY - s.y) < math.Abs(vy) {
+		s.y = s.targetY
+	} else {
+		s.y = s.y + vy
+	}
+
+	if s.x == s.targetX && s.y == s.targetY { s.State = DONE }
+	s.MoveImg(s.x, s.y)
 }
 
 // @desc: Returns true if the coordinates (x,y) are within the sprite, false otherwise

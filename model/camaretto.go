@@ -38,6 +38,7 @@ type Camaretto struct {
 	nbPlayers int
 	Players []*Player
 	DeckPile *Deck
+	CenterCard []*Card
 }
 
 // @desc: Initialize a new Camaretto instance of the game, then returns a reference to the Camaretto object
@@ -59,12 +60,14 @@ func (c *Camaretto) Init(n int) {
 	c.playerFocus = -1
 	c.cardFocus = -1
 
-	c.nbPlayers = n
-	c.Players = make([]*Player, n)
 	c.DeckPile = &Deck{}
-	// c.DeckPile.Init(sheet, tileWidth, tileHeight)
 	c.DeckPile.Init()
 	c.DeckPile.ShuffleDrawPile()
+
+	c.CenterCard = []*Card{}
+
+	c.nbPlayers = n
+	c.Players = make([]*Player, n)
 
 	var names []string = []string{"Alfred", "Robin", "Parker", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
@@ -134,6 +137,11 @@ func (c *Camaretto) EndTurn() {
 	c.playerFocus = -1
 	c.cardFocus = -1
 
+	for _, card := range c.CenterCard {
+		c.DeckPile.DiscardCard(card)
+	}
+	c.CenterCard = []*Card{}
+
 	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
 	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
 }
@@ -167,8 +175,8 @@ func (c *Camaretto) Attack() (int, string) {
 	var charge *Card
 	atkValue, charge = c.Players[src].Attack(atkCard)
 
-	c.DeckPile.DiscardCard(atkCard)
-	if charge != nil { c.DeckPile.DiscardCard(charge) }
+	c.CenterCard = append(c.CenterCard, atkCard)
+	if charge != nil { c.CenterCard = append(c.CenterCard, charge) }
 
 	var newHealthValue int
 	var joker, health1, health2 *Card
@@ -225,20 +233,21 @@ func (c *Camaretto) Attack() (int, string) {
 
 // @desc: Player at index player gets assigned a new shield
 func (c *Camaretto) Shield() (int, string) {
-	var oldCard *Card = c.Players[c.playerTurn].ShieldCard
+	var oldCard *Card = c.Players[c.playerFocus].ShieldCard
 	var newCard *Card = c.DeckPile.DrawCard()
 	newCard.Reveal()
-	c.Players[c.playerTurn].ShieldCard = newCard
-	c.DeckPile.DiscardCard(oldCard)
+	c.Players[c.playerFocus].ShieldCard = newCard
+	c.CenterCard = append(c.CenterCard, oldCard)
+	// c.DeckPile.DiscardCard(oldCard)
 
 	return 0, "It's like getting under a blanket on a rainy day !"
 }
 
 // @desc: Player at index player puts the next card into his charge slot
 func (c *Camaretto) Charge() (int, string) {
-	if c.Players[c.playerTurn].ChargeCard == nil {
+	if c.Players[c.playerFocus].ChargeCard == nil {
 		var card *Card = c.DeckPile.DrawCard()
-		c.Players[c.playerTurn].Charge(card)
+		c.Players[c.playerFocus].Charge(card)
 	}
 
 	return 0, "Loading up !"
@@ -246,7 +255,7 @@ func (c *Camaretto) Charge() (int, string) {
 
 // @desc: Player at index player heals himself
 func (c *Camaretto) Heal() (int, string) {
-	var oldCard *Card = c.Players[c.playerTurn].Heal(c.cardFocus)
+	var oldCard *Card = c.Players[c.playerFocus].Heal(c.cardFocus)
 	c.DeckPile.DiscardCard(oldCard)
 
 	return 0, "I feel a lil' bit tired, anyone has a vitamin ?"

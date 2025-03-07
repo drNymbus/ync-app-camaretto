@@ -108,3 +108,16 @@ func InitAssets() {
 		Size: 24, Language: language.English,
 	}
 }
+
+func InitIcon(filepath string) (image.Image, error) {
+	var err error
+	var file *os.File
+
+	file, err = os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	image, _, err := image.Decode(file)
+	return image, err
+}
