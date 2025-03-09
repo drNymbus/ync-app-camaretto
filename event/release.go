@@ -63,17 +63,21 @@ func HandleFocusCompleteRelease(camaretto *model.Camaretto, x float64, y float64
 // @desc:
 func HandleButtonRelease(app *model.Application, x float64, y float64) {
 	if app.Attack.SSprite.In(x, y) {
+		log.Println("ATTACK")
 		app.Camaretto.SetState(model.ATTACK)
 		app.Camaretto.SetFocus(model.PLAYER)
 	} else if app.Shield.SSprite.In(x, y) {
+		log.Println("SHIELD")
 		app.Camaretto.SetState(model.SHIELD)
 		app.Camaretto.SetFocus(model.PLAYER)
 	} else if app.Charge.SSprite.In(x, y) {
+		log.Println("CHARGE")
 		app.Camaretto.SetState(model.CHARGE)
 		var playerTurn int = app.Camaretto.GetPlayerTurn()
 		app.Camaretto.SetPlayerFocus(playerTurn)
 		app.Camaretto.SetFocus(model.COMPLETE)
 	} else if app.Heal.SSprite.In(x, y) {
+		log.Println("HEAL")
 		app.Camaretto.SetState(model.HEAL)
 		var playerTurn int = app.Camaretto.GetPlayerTurn()
 		app.Camaretto.SetPlayerFocus(playerTurn)

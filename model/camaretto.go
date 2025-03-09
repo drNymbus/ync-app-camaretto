@@ -16,7 +16,7 @@ const (
 	SHIELD GameState = 2
 	CHARGE GameState = 3
 	HEAL GameState = 4
-	PLAY GameState = 5
+	REVEAL GameState = 5
 	END GameState = 6
 )
 

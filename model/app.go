@@ -3,7 +3,7 @@ package model
 import (
 	// "log"
 	// "math"
-	"strconv"
+	// "strconv"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -36,8 +36,6 @@ type Application struct{
 	Heal *Button
 
 	Info *Button
-
-	count int
 }
 
 func (app *Application) Init(nbPlayers int) {
@@ -51,8 +49,6 @@ func (app *Application) Init(nbPlayers int) {
 	app.Heal = NewButton(ButtonWidth, ButtonHeight, "HEAL", color.RGBA{0, 0, 0, 255}, color.RGBA{3, 173, 18, 127})
 
 	app.Info = NewButton(WinWidth, WinHeight/16, "This contains information.", color.RGBA{0, 0, 0, 255}, color.RGBA{127, 127, 127, 255})
-
-	app.count = 0
 }
 
 /************ ***************************************************************************** ************/
@@ -76,13 +72,9 @@ func (app *Application) Update() {
 		if state == SET {
 			msgInfo = playerName + " needs to choose an action"
 		} else if state == END {
-			app.count++
-			if app.count >= 150 {
-				app.count = 0
-				app.Camaretto.EndTurn()
-				app.Camaretto.SetState(SET)
-			}
-			msgInfo = playerName + " end turn (" + strconv.Itoa(app.count) + ")"
+			app.Camaretto.EndTurn()
+			app.Camaretto.SetState(SET)
+			msgInfo = playerName + " end turn"
 		} else {
 			var focus FocusState = app.Camaretto.GetFocus()
 			if focus == PLAYER {
@@ -92,7 +84,7 @@ func (app *Application) Update() {
 				playerName = player.Name
 				msgInfo = playerName + " needs to select a health card"
 			} else if focus == COMPLETE {
-				msgInfo = playerName + " draw a card"
+				msgInfo = playerName + " reveal card"
 			}
 		}
 		app.Info.SetMessage(msgInfo)
