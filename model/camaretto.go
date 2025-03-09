@@ -16,8 +16,6 @@ const (
 	SHIELD GameState = 2
 	CHARGE GameState = 3
 	HEAL GameState = 4
-	REVEAL GameState = 5
-	END GameState = 6
 )
 
 type FocusState int
@@ -25,7 +23,8 @@ const (
 	NONE FocusState = 0
 	PLAYER FocusState = 1
 	CARD FocusState = 2
-	COMPLETE FocusState = 3
+	REVEAL FocusState = 3
+	COMPLETE FocusState = 4
 )
 
 /************ *************************************************************************** ************/
@@ -44,6 +43,8 @@ type Camaretto struct {
 	Players []*Player
 	DeckPile *Deck
 	DrawnCard *Card
+
+	ToReveal []*Card
 }
 
 // @desc: Initialize a new Camaretto instance of the game, then returns a reference to the Camaretto object
@@ -113,15 +114,17 @@ func (c *Camaretto) Init(n int) {
 /************ ***************************************************************************** ************/
 
 func (c *Camaretto) SetState(s GameState) (int, string) {
-	if s == CHARGE && c.Players[c.playerTurn].ChargeCard != nil {
-		return 1, "Already a card in charge !"
+	if s == ATTACK || s == SHIELD {
+		c.focus = PLAYER
+	} else if s == CHARGE && c.Players[c.playerTurn].ChargeCard == nil {
+		c.playerFocus = c.playerTurn
+		c.focus = REVEAL
+	} else if s == HEAL && c.Players[c.playerTurn].ChargeCard != nil {
+		c.playerFocus = c.playerTurn
+		c.focus = CARD
 	}
-
-	if s == HEAL && c.Players[c.playerTurn].ChargeCard == nil {
-		return 1, "Cannot heal without a card in charge"
-	}
-
 	c.state = s
+
 	return 0, ""
 }
 func (c *Camaretto) GetState() GameState { return c.state }
@@ -129,16 +132,27 @@ func (c *Camaretto) GetState() GameState { return c.state }
 func (c *Camaretto) SetFocus(f FocusState) { c.focus = f }
 func (c *Camaretto) GetFocus() FocusState { return c.focus }
 
-func (c *Camaretto) SetPlayerFocus(i int)  { c.playerFocus = i }
+func (c *Camaretto) SetPlayerFocus(i int) {
+	if i > -1 && i < c.nbPlayers {
+		if c.state == ATTACK {
+			c.focus = CARD
+		} else if c.state == SHIELD {
+			c.focus = REVEAL
+		}
+		c.playerFocus = i
+	}
+}
 func (c *Camaretto) GetPlayerFocus() int { return c.playerFocus }
 
-func (c *Camaretto) SetCardFocus(i int)  { 
+func (c *Camaretto) SetCardFocus(i int) {
+	c.focus = REVEAL
 	c.cardFocus = i
 }
 func (c *Camaretto) GetCardFocus() int { return c.cardFocus }
 
 func (c *Camaretto) EndTurn() {
 	c.state = SET
+	c.focus = NONE
 	c.playerFocus = -1
 	c.cardFocus = -1
 

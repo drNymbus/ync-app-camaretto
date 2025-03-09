@@ -152,13 +152,15 @@ func (s *Sprite) tickTranslateOffset() {
 		s.yOffset = s.yOffset + vy
 	}
 }
+
 func (s *Sprite) tickRotateOffset() {
-	var vr float64 = s.targetROffset * s.rSpeedOffset/50
-	if s.targetROffset - s.rOffset < math.Pi/180 {
-		s.rOffset = s.targetROffset
-	} else {
-		s.rOffset = s.rOffset + vr
-	}
+	// var vr float64 = s.targetROffset * s.rSpeedOffset/50
+	// if s.targetROffset - s.rOffset < math.Pi/180 {
+	// 	s.rOffset = s.targetROffset
+	// } else {
+	// 	s.rOffset = s.rOffset + vr
+	// }
+	s.rOffset = s.targetROffset
 }
 
 func (s *Sprite) tick() {
@@ -184,6 +186,7 @@ func (s *Sprite) Display(dst *ebiten.Image) {
 }
 
 func (s *Sprite) ToString() string {
-	msg := "DX" + strconv.FormatFloat((s.targetXCenter - s.xCenter), 'f', 3, 64) + ", DY" + strconv.FormatFloat((s.targetYCenter - s.yCenter), 'f', 3, 64)
+	msg := "DX" + strconv.FormatFloat((s.targetXCenter - s.xCenter), 'f', 3, 64)
+	msg = msg + ", DY" + strconv.FormatFloat((s.targetYCenter - s.yCenter), 'f', 3, 64)
 	return msg
 }

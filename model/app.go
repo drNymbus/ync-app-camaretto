@@ -68,10 +68,9 @@ func (app *Application) Update() {
 
 	var msgInfo string = ""
 	if app.state == GAME {
-		var state GameState = app.Camaretto.GetState()
-		if state == SET {
+		if app.Camaretto.GetState() == SET {
 			msgInfo = playerName + " needs to choose an action"
-		} else if state == END {
+		} else if app.Camaretto.GetFocus() == COMPLETE {
 			app.Camaretto.EndTurn()
 			app.Camaretto.SetState(SET)
 			msgInfo = playerName + " end turn"

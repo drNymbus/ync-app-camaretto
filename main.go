@@ -34,12 +34,12 @@ func NewGame(nbPlayers int) *Game {
 func (g *Game) Update() error {
 	g.mouse.Update()
 
+	// g.application.Hover(g.mouse.X, g.mouse.Y)
 	event.HandleGameHover(g.application, g.mouse.X, g.mouse.Y)
 
 	var e *event.MouseEvent = nil
 	for ;!g.mouse.IsEmpty(); {
 		e = g.mouse.ReadEvent()
-
 		if e.MET == event.RELEASED && e.Click == ebiten.MouseButtonLeft {
 			event.HandleCamarettoMouseRelease(g.application, float64(e.X), float64(e.Y))
 		} else if e.MET == event.PRESSED && e.Click == ebiten.MouseButtonLeft {

@@ -24,6 +24,8 @@ type Player struct {
 	ShieldCard *Card
 	JokerShield *Card
 	ChargeCard *Card
+
+	Discarding  []*Card
 }
 
 func NewPlayer(name string) *Player {
@@ -36,7 +38,7 @@ func NewPlayer(name string) *Player {
 
 	var ds *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
 
-	return &Player{name, s, ds, false, [2]*Card{nil, nil}, nil, nil, nil, nil}
+	return &Player{name, s, ds, false, [2]*Card{nil, nil}, nil, nil, nil, nil, []*Card{}}
 }
 
 // @desc: Player attacks an enemy with a given card and the one in charge, the total attack value and the charge card are returned
@@ -68,7 +70,6 @@ func (p *Player) LoseHealth(attack int, at int) (int, *Card, *Card, *Card) {
 	// Attack is bigger than shield, we loose HP
 	if p.ShieldCard != nil { attack = attack - p.ShieldCard.Value }
 	if attack > 0 {
-
 		// Do we have a joker health ? Then it's tanking (wether you like it or not)
 		if p.JokerHealth != nil {
 			attack = attack - p.JokerHealth.Value
@@ -149,7 +150,7 @@ func (p *Player) getChargeOffset() (float64, float64, float64) {
 }
 
 func (p *Player) Render(dst *ebiten.Image, x, y, theta float64) {
-	var speed, rSpeed float64 = 1, 0.5
+	var speed, rSpeed float64 = 2.5, 0.5
 	var xOff, yOff, rotate float64
 	var s *view.Sprite
 

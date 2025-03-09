@@ -15,7 +15,7 @@ func HandleFocusPlayerRelease(camaretto *model.Camaretto, x float64, y float64) 
 			camaretto.SetFocus(model.CARD)
 			camaretto.SetPlayerFocus(i)
 		} else if state == model.SHIELD {
-			camaretto.SetFocus(model.COMPLETE)
+			camaretto.SetFocus(model.REVEAL)
 			camaretto.SetPlayerFocus(i)
 		}
 	}
@@ -27,18 +27,18 @@ func HandleFocusCardRelease(camaretto *model.Camaretto, x float64, y float64) {
 	var i int = mouseOnHealthCard(player, x, y)
 	if i != -1 {
 		camaretto.SetCardFocus(i)
-		camaretto.SetFocus(model.COMPLETE)
+		camaretto.SetFocus(model.REVEAL)
 	}
 }
 
 // @desc:
-func HandleFocusCompleteRelease(camaretto *model.Camaretto, x float64, y float64) {
+func HandleFocusRevealRelease(camaretto *model.Camaretto, x float64, y float64) {
 	var state model.GameState = camaretto.GetState()
 	if state == model.HEAL {
 		var player *model.Player = camaretto.Players[camaretto.GetPlayerTurn()]
 		if player.ChargeCard.SSprite.In(x, y) {
 			camaretto.Heal()
-			camaretto.SetState(model.END)
+			camaretto.SetFocus(model.COMPLETE)
 		}
 	} else {
 		if mouseOnDeck(camaretto.DeckPile, x, y) {
@@ -55,9 +55,38 @@ func HandleFocusCompleteRelease(camaretto *model.Camaretto, x float64, y float64
 			} else if state == model.CHARGE {
 				camaretto.Charge()
 			}
-			camaretto.SetState(model.END)
+			camaretto.SetFocus(model.COMPLETE)
 		}
 	}
+}
+
+// @desc:
+func HandleFocusCompleteRelease(camaretto *model.Camaretto, x float64, y float64) {
+	// var state model.GameState = camaretto.GetState()
+	// if state == model.HEAL {
+	// 	var player *model.Player = camaretto.Players[camaretto.GetPlayerTurn()]
+	// 	if player.ChargeCard.SSprite.In(x, y) {
+	// 		camaretto.Heal()
+	// 		camaretto.SetFocus(model.COMPLETE)
+	// 	}
+	// } else {
+	// 	if mouseOnDeck(camaretto.DeckPile, x, y) {
+	// 		if state == model.ATTACK {
+	// 			pTurn := camaretto.Players[camaretto.GetPlayerTurn()].Name
+	// 			pFocus := camaretto.Players[camaretto.GetPlayerFocus()].Name
+	// 			log.Println(pTurn, "attack", pFocus)
+	// 			camaretto.Attack()
+	// 		} else if state == model.SHIELD {
+	// 			pTurn := camaretto.Players[camaretto.GetPlayerTurn()].Name
+	// 			pFocus := camaretto.Players[camaretto.GetPlayerFocus()].Name
+	// 			log.Println(pTurn, "shield", pFocus)
+	// 			camaretto.Shield()
+	// 		} else if state == model.CHARGE {
+	// 			camaretto.Charge()
+	// 		}
+	// 		camaretto.SetFocus(model.COMPLETE)
+	// 	}
+	// }
 }
 
 // @desc:
@@ -88,20 +117,16 @@ func HandleButtonRelease(app *model.Application, x float64, y float64) {
 // @desc:
 func HandleCamarettoMouseRelease(app *model.Application, x float64, y float64) {
 	var state model.GameState = app.Camaretto.GetState()
-	var focus model.FocusState = app.Camaretto.GetFocus()
-
-	// app.Attack.SSprite.Scale(1, 1)
-	// app.Shield.SSprite.Scale(1, 1)
-	// app.Charge.SSprite.Scale(1, 1)
-	// app.Heal.SSprite.Scale(1, 1)
-
 	if state == model.SET {
 		HandleButtonRelease(app, x, y)
 	} else {
+		var focus model.FocusState = app.Camaretto.GetFocus()
 		if focus == model.PLAYER {
 			HandleFocusPlayerRelease(app.Camaretto, x, y)
 		} else if focus == model.CARD {
 			HandleFocusCardRelease(app.Camaretto, x, y)
+		} else if focus == model.REVEAL {
+			HandleFocusCompleteRelease(app.Camaretto, x, y)
 		} else if focus == model.COMPLETE {
 			HandleFocusCompleteRelease(app.Camaretto, x, y)
 		}

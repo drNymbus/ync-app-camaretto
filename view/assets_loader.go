@@ -55,13 +55,23 @@ func getFileByte(filename string) []byte {
 	return fileByte
 }
 
+func GetImage(filename string) *ebiten.Image {
+	var err error
+	var img *ebiten.Image
+
+	img, _, err = ebitenutil.NewImageFromFile(filename)
+	if err != nil {
+		var msg string = "[view.GetImage] Load image (" + filename + "):"
+		log.Fatal(msg, err)
+	}
+
+	return img
+}
+
 // @desc: Sets the global variables of the view package (a.k.a all images used throughout the game)
 func InitAssets() {
 	var err error
-	var ogSheet *ebiten.Image
-	// ogSheet, _, err = ebitenutil.NewImageFromFile("assets/cardsMedium_tilemap_packed.png")
-	ogSheet, _, err = ebitenutil.NewImageFromFile("assets/cardsLarge_tilemap_packed.png")
-	if err != nil { log.Fatal("[parameters.InitAssets] Load tilemap:", err) }
+	var ogSheet *ebiten.Image = GetImage("assets/cards/cardsLarge_tilemap_packed.png")
 
 	// Scale down the original sheet
 	var width, height int = ogSheet.Size()
@@ -86,9 +96,7 @@ func InitAssets() {
 	HiddenCardImage = Sheet.SubImage(image.Rect((13*TileWidth), TileHeight, (13*TileWidth) + TileWidth, TileHeight + TileHeight)).(*ebiten.Image)
 
 	// Death Sprite
-	var tmp *ebiten.Image
-	tmp, _, err = ebitenutil.NewImageFromFile("assets/jesus.jpg")
-	if err != nil { log.Fatal("[parameters.InitAssets] Load jesus:", err) }
+	var tmp *ebiten.Image = GetImage("assets/characters/jesus.jpg")
 
 	width, height = tmp.Size()
 	xScale, yScale = 0.1, 0.1
@@ -98,7 +106,8 @@ func InitAssets() {
 	GraveImage.DrawImage(tmp, op)
 
 	// Load font file
-	var fontByte []byte = getFileByte("assets/NaturalMono_Regular.ttf")
+	var fontByte []byte = getFileByte("assets/fonts/NaturalMono_Regular.ttf")
+	// var fontByte []byte = getFileByte("assets/fonts/Kenney_Future_Narrow.ttf")
 	FaceSource, err = text.NewGoTextFaceSource(bytes.NewReader(fontByte))
 	if err != nil { log.Fatal("[parametersInitAssets] Set FaceSource:", err) }
 
