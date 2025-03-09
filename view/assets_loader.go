@@ -24,6 +24,7 @@ var (
 	JokerImage *ebiten.Image
 	EmptyCardImage *ebiten.Image
 	HiddenCardImage *ebiten.Image
+	GraveImage *ebiten.Image
 
 	FaceSource *text.GoTextFaceSource
 	TextFace *text.GoTextFace
@@ -63,9 +64,13 @@ func InitAssets() {
 	if err != nil { log.Fatal("[parameters.InitAssets] Load tilemap:", err) }
 
 	// Scale down the original sheet
-	var xScale, yScale float64 = 1/1, 1/1
+	var width, height int = ogSheet.Size()
+	var xScale, yScale float64 = 1, 1
+
+	width, height = int(float64(width) * xScale), int(float64(height) * yScale)
 	TileWidth, TileHeight = int(float64(TileWidth) * xScale), int(float64(TileHeight) * yScale)
-	Sheet = ebiten.NewImage(ogSheet.Size())
+
+	Sheet = ebiten.NewImage(width, height)
 	op := &ebiten.DrawImageOptions{}; op.GeoM.Scale(xScale, yScale)
 	Sheet.DrawImage(ogSheet, op)
 
@@ -80,6 +85,18 @@ func InitAssets() {
 	EmptyCardImage = Sheet.SubImage(image.Rect((13*TileWidth), 0, (13*TileWidth) + TileWidth, TileHeight)).(*ebiten.Image)
 	HiddenCardImage = Sheet.SubImage(image.Rect((13*TileWidth), TileHeight, (13*TileWidth) + TileWidth, TileHeight + TileHeight)).(*ebiten.Image)
 
+	// Death Sprite
+	var tmp *ebiten.Image
+	tmp, _, err = ebitenutil.NewImageFromFile("assets/jesus.jpg")
+	if err != nil { log.Fatal("[parameters.InitAssets] Load jesus:", err) }
+
+	width, height = tmp.Size()
+	xScale, yScale = 0.1, 0.1
+	width, height = int(float64(width) * xScale), int(float64(height) * yScale)
+	GraveImage = ebiten.NewImage(width, height)
+	op.GeoM.Reset(); op.GeoM.Scale(xScale, yScale)
+	GraveImage.DrawImage(tmp, op)
+
 	// Load font file
 	var fontByte []byte = getFileByte("assets/NaturalMono_Regular.ttf")
 	FaceSource, err = text.NewGoTextFaceSource(bytes.NewReader(fontByte))
@@ -90,4 +107,17 @@ func InitAssets() {
 		Direction: text.DirectionLeftToRight,
 		Size: 24, Language: language.English,
 	}
+}
+
+func InitIcon(filepath string) (image.Image, error) {
+	var err error
+	var file *os.File
+
+	file, err = os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	image, _, err := image.Decode(file)
+	return image, err
 }
