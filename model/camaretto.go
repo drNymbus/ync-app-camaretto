@@ -2,6 +2,11 @@ package model
 
 import (
 	"log"
+	"math"
+
+	"github.com/hajimehoshi/ebiten/v2"
+
+	// "camaretto/view"
 )
 
 type GameState int
@@ -38,7 +43,7 @@ type Camaretto struct {
 	nbPlayers int
 	Players []*Player
 	DeckPile *Deck
-	CenterCard []*Card
+	DrawnCard *Card
 }
 
 // @desc: Initialize a new Camaretto instance of the game, then returns a reference to the Camaretto object
@@ -64,7 +69,7 @@ func (c *Camaretto) Init(n int) {
 	c.DeckPile.Init()
 	c.DeckPile.ShuffleDrawPile()
 
-	c.CenterCard = []*Card{}
+	c.DrawnCard = nil
 
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
@@ -137,11 +142,6 @@ func (c *Camaretto) EndTurn() {
 	c.playerFocus = -1
 	c.cardFocus = -1
 
-	for _, card := range c.CenterCard {
-		c.DeckPile.DiscardCard(card)
-	}
-	c.CenterCard = []*Card{}
-
 	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
 	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
 }
@@ -175,8 +175,8 @@ func (c *Camaretto) Attack() (int, string) {
 	var charge *Card
 	atkValue, charge = c.Players[src].Attack(atkCard)
 
-	c.CenterCard = append(c.CenterCard, atkCard)
-	if charge != nil { c.CenterCard = append(c.CenterCard, charge) }
+	c.DeckPile.DiscardCard(atkCard)
+	if charge != nil { c.DeckPile.DiscardCard(charge) }
 
 	var newHealthValue int
 	var joker, health1, health2 *Card
@@ -234,20 +234,22 @@ func (c *Camaretto) Attack() (int, string) {
 // @desc: Player at index player gets assigned a new shield
 func (c *Camaretto) Shield() (int, string) {
 	var oldCard *Card = c.Players[c.playerFocus].ShieldCard
+
 	var newCard *Card = c.DeckPile.DrawCard()
 	newCard.Reveal()
+
 	c.Players[c.playerFocus].ShieldCard = newCard
-	c.CenterCard = append(c.CenterCard, oldCard)
-	// c.DeckPile.DiscardCard(oldCard)
+	c.DeckPile.DiscardCard(oldCard)
 
 	return 0, "It's like getting under a blanket on a rainy day !"
 }
 
 // @desc: Player at index player puts the next card into his charge slot
 func (c *Camaretto) Charge() (int, string) {
-	if c.Players[c.playerFocus].ChargeCard == nil {
+	var p *Player = c.Players[c.playerFocus]
+	if p.ChargeCard == nil {
 		var card *Card = c.DeckPile.DrawCard()
-		c.Players[c.playerFocus].Charge(card)
+		p.Charge(card)
 	}
 
 	return 0, "Loading up !"
@@ -259,4 +261,33 @@ func (c *Camaretto) Heal() (int, string) {
 	c.DeckPile.DiscardCard(oldCard)
 
 	return 0, "I feel a lil' bit tired, anyone has a vitamin ?"
+}
+
+/************ *************************************************************************** ************/
+/************ ********************************** RENDER ********************************* ************/
+/************ *************************************************************************** ************/
+
+
+func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
+	var nbPlayers int = len(c.Players)
+	var angleStep float64 = 2*math.Pi / float64(nbPlayers)
+	var radius float64 = 200
+
+	var theta float64 = angleStep * float64(i)
+	var x float64 = radius * math.Cos(theta + math.Pi/2)
+	var y float64 = radius * math.Sin(theta + math.Pi/2)
+
+	return x, y, theta
+}
+
+func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
+	var centerX float64 = width/2
+	var centerY float64 = (height * 6/8)/2
+
+	for i, player := range c.Players {
+		var x, y, theta float64 = c.getPlayerGeoM(i)
+		player.Render(dst, centerX + x, centerY + y, theta)
+	}
+
+	c.DeckPile.Render(dst, centerX, centerY)
 }

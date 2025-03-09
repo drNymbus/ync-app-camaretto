@@ -86,16 +86,13 @@ func HandleCamarettoMouseRelease(app *model.Application, x float64, y float64) {
 	var state model.GameState = app.Camaretto.GetState()
 	var focus model.FocusState = app.Camaretto.GetFocus()
 
-	app.Attack.SSprite.Scale(1, 1)
-	app.Shield.SSprite.Scale(1, 1)
-	app.Charge.SSprite.Scale(1, 1)
-	app.Heal.SSprite.Scale(1, 1)
+	// app.Attack.SSprite.Scale(1, 1)
+	// app.Shield.SSprite.Scale(1, 1)
+	// app.Charge.SSprite.Scale(1, 1)
+	// app.Heal.SSprite.Scale(1, 1)
 
 	if state == model.SET {
 		HandleButtonRelease(app, x, y)
-	} else if state == model.END {
-		app.Camaretto.EndTurn()
-		app.Camaretto.SetState(model.SET)
 	} else {
 		if focus == model.PLAYER {
 			HandleFocusPlayerRelease(app.Camaretto, x, y)

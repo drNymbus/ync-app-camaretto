@@ -16,6 +16,7 @@ import (
 type Player struct {
 	Name string
 	NameSprite *view.Sprite
+	DeadSprite *view.Sprite
 
 	Dead bool
 	HealthCard [2]*Card
@@ -33,7 +34,9 @@ func NewPlayer(name string) *Player {
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 	var s *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
 
-	return &Player{name, s, false, [2]*Card{nil, nil}, nil, nil, nil, nil}
+	var ds *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
+
+	return &Player{name, s, ds, false, [2]*Card{nil, nil}, nil, nil, nil, nil}
 }
 
 // @desc: Player attacks an enemy with a given card and the one in charge, the total attack value and the charge card are returned
@@ -96,8 +99,9 @@ func (p *Player) LoseHealth(attack int, at int) (int, *Card, *Card, *Card) {
 
 // @desc: Swap shield with the given card then returns the old shield
 func (p *Player) Shield(c *Card) *Card {
-	c, p.ShieldCard = p.ShieldCard, c
-	return c
+	var tmp *Card = p.ShieldCard
+	p.ShieldCard = c
+	return tmp
 }
 
 // @desc: Swap charge slot's card with the health card at index at then returns the old health card
@@ -123,79 +127,102 @@ func (p *Player) Uncharge() *Card {
 	return c
 }
 
-func (p *Player) Render(dst *ebiten.Image, x float64, y float64, r float64) {
-	var s *view.Sprite = nil
+func (p *Player) getShieldOffset() (float64, float64, float64) {
+	return 0, -float64(view.TileWidth)/2, math.Pi/2
+}
+
+func (p *Player) getJokerShieldOffset() (float64, float64, float64) {
+	return 0, -float64(view.TileWidth)/2 - 15, math.Pi/2
+}
+
+func (p *Player) getJokerHealthOffset() (float64, float64, float64) {
+	return - float64(view.TileWidth) - float64(view.TileWidth)/2, float64(view.TileHeight)/2, 0
+}
+
+func (p *Player) getHealthOffset(i int) (float64, float64, float64) {
+	var x float64 = float64((i-1) * view.TileWidth) + float64(view.TileWidth)/2
+	return x, float64(view.TileHeight)/2, 0
+}
+
+func (p *Player) getChargeOffset() (float64, float64, float64) {
+	return float64(view.TileWidth) + float64(view.TileWidth)/2, float64(view.TileHeight)/2, 0
+}
+
+func (p *Player) Render(dst *ebiten.Image, x, y, theta float64) {
+	var speed, rSpeed float64 = 1, 0.5
+	var xOff, yOff, rotate float64
+	var s *view.Sprite
 
 	if p.Dead {
-		s = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
-		s.CenterImg()
-		s.RotateImg(r)
-		s.MoveImg(x, y)
+		s = p.DeadSprite
+		s.Rotate(theta, speed)
+		s.Move(x, y, speed)
 		s.Display(dst)
 	} else {
 		if p.ShieldCard != nil {
 			s = p.ShieldCard.SSprite
-			s.ResetGeoM()
-			s.CenterImg()
-			s.RotateImg(math.Pi/2)
-			s.MoveImg(0, 0 - s.Width/2)
-			s.RotateImg(r)
-			s.MoveImg(x, y)
+			xOff, yOff, rotate = p.getShieldOffset()
+			s.Rotate(rotate, rSpeed)
+			s.MoveOffset(xOff, yOff, speed)
+			s.RotateOffset(theta, rSpeed)
+			s.Move(x, y, speed)
 			s.Display(dst)
 		}
 	
 		if p.JokerShield != nil {
-			s.ResetGeoM()
-			s.CenterImg()
-			s.RotateImg(math.Pi/2)
-			s.MoveImg(0, 0 - s.Width/2 - 15)
-			s.RotateImg(r)
-			s.MoveImg(x, y)
+			s = p.JokerShield.SSprite
+			xOff, yOff, rotate = p.getJokerShieldOffset()
+			s.Rotate(rotate, rSpeed)
+			s.MoveOffset(xOff, yOff, speed)
+			s.RotateOffset(theta, rSpeed)
+			s.Move(x, y, speed)
 			s.Display(dst)
 		}
 	
 		if p.JokerHealth != nil {
 			s = p.JokerHealth.SSprite
-			s.ResetGeoM()
-			s.MoveImg(-s.Width*2, 0)
-			s.RotateImg(r)
-			s.MoveImg(x, y)
+			xOff, yOff, rotate = p.getJokerHealthOffset()
+			s.Rotate(rotate, rSpeed)
+			s.MoveOffset(xOff, yOff, speed)
+			s.RotateOffset(theta, rSpeed)
+			s.Move(x, y, speed)
 			s.Display(dst)
 		}
 	
 		if p.HealthCard[0] != nil {
 			s = p.HealthCard[0].SSprite
-			s.ResetGeoM()
-			s.MoveImg(-s.Width, 0)
-			s.RotateImg(r)
-			s.MoveImg(x, y)
+			xOff, yOff, rotate = p.getHealthOffset(0)
+			s.Rotate(rotate, rSpeed)
+			s.MoveOffset(xOff, yOff, speed)
+			s.RotateOffset(theta, rSpeed)
+			s.Move(x, y, speed)
 			s.Display(dst)
 		}
 	
 		if p.HealthCard[1] != nil {
 			s = p.HealthCard[1].SSprite
-			s.ResetGeoM()
-			s.MoveImg(0, 0)
-			s.RotateImg(r)
-			s.MoveImg(x, y)
+			xOff, yOff, rotate = p.getHealthOffset(1)
+			s.Rotate(rotate, rSpeed)
+			s.MoveOffset(xOff, yOff, speed)
+			s.RotateOffset(theta, rSpeed)
+			s.Move(x, y, speed)
 			s.Display(dst)
 		}
 	
 		if p.ChargeCard != nil {
 			s = p.ChargeCard.SSprite
-			s.ResetGeoM()
-			s.MoveImg(-s.Width/2, s.Height)
-			s.RotateImg(r)
-			s.MoveImg(x, y)
+			xOff, yOff, rotate = p.getChargeOffset()
+			s.Rotate(rotate, rSpeed)
+			s.MoveOffset(xOff, yOff, speed)
+			s.RotateOffset(theta, rSpeed)
+			s.Move(x, y, speed)
 			s.Display(dst)
 		}
 	}
 
 	s = p.NameSprite
-	s.ResetGeoM()
-	s.CenterImg()
-	s.MoveImg(0, float64(view.TileHeight) * 8/5)
-	s.RotateImg(r)
-	s.MoveImg(x, y)
+	s.MoveOffset(0, float64(view.TileHeight) * 3/2, speed)
+	s.RotateOffset(theta, rSpeed)
+	s.Move(x, y, speed)
 	s.Display(dst)
 }

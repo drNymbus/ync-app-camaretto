@@ -33,20 +33,22 @@ func NewCard(name string, value int, img *ebiten.Image) *Card {
 // @desc: Replace original sprite image to the back of a card
 func (c *Card) Hide() {
 	c.Hidden = false
-	c.SSprite.Img = view.HiddenCardImage
+	c.SSprite.SetImage(view.HiddenCardImage)
 }
 
 // @desc: Put back the img field of the card to the SSprite.Img
 func (c *Card) Reveal() {
 	c.Hidden = true
-	c.SSprite.Img = c.img
+	c.SSprite.SetImage(c.img)
 }
 
 type Deck struct {
 	DrawPile []*Card
 	LenDrawPile int
+	DrawPileX, DrawPileY float64
 	DiscardPile []*Card
 	LenDiscardPile int
+	DiscardPileX, DiscardPileY float64
 }
 
 // @desc: Initialize the deck object with 52 cards, 2 Jokers and 1 Non-value card (a.k.a "the rule card")
@@ -60,9 +62,15 @@ func (d *Deck) Init() {
 		d.DrawPile[i].Hide()
 	}
 
-	d.DrawPile[52] = NewCard("Zero", 0, view.EmptyCardImage) // Add a non-value card
-	d.DrawPile[53] = NewCard("Joker", 14, view.JokerImage) // Add a Joker
-	d.DrawPile[54] = NewCard("Joker", 14, view.JokerImage) // Add a Joker
+	// Add a non-value card
+	d.DrawPile[52] = NewCard("Zero", 0, view.EmptyCardImage)
+	d.DrawPile[52].Hide()
+	// Add a Joker
+	d.DrawPile[53] = NewCard("Joker", 14, view.JokerImage)
+	d.DrawPile[53].Hide()
+	// Add a Joker
+	d.DrawPile[54] = NewCard("Joker", 14, view.JokerImage)
+	d.DrawPile[54].Hide()
 }
 
 // @desc: Puts all cards in the discard pile on top of the draw pile
@@ -131,4 +139,28 @@ func (d *Deck) FindInDiscardPile(val int) *Card {
 		}
 	}
 	return nil
+}
+
+func (d *Deck) Render(dst *ebiten.Image, x, y float64) {
+	var speed, rSpeed float64 = 1, 0.5
+	d.DrawPileX, d.DrawPileY = x - float64(view.TileWidth)/2, y
+	var posX, posY float64
+	for i, card := range d.DrawPile[:d.LenDrawPile] {
+		posX, posY = d.DrawPileX, d.DrawPileY - float64(i)*0.4
+		card.SSprite.Move(posX, posY, speed)
+		card.SSprite.Rotate(0, rSpeed)
+		card.SSprite.MoveOffset(0, 0, speed)
+		card.SSprite.RotateOffset(0, rSpeed)
+		card.SSprite.Display(dst)
+	}
+
+	d.DiscardPileX, d.DiscardPileY = x + float64(view.TileWidth)/2, y
+	for i, card := range d.DiscardPile[:d.LenDiscardPile] {
+		posX, posY = d.DiscardPileX, d.DiscardPileY - float64(i)*0.4
+		card.SSprite.Move(posX, posY, speed)
+		card.SSprite.Rotate(0, rSpeed)
+		card.SSprite.MoveOffset(0, 0, speed)
+		card.SSprite.RotateOffset(0, rSpeed)
+		card.SSprite.Display(dst)
+	}
 }

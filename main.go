@@ -26,7 +26,6 @@ func NewGame(nbPlayers int) *Game {
 
 	g.application = &model.Application{}
 	g.application.Init(nbPlayers)
-
 	g.mouse = event.NewMouse(20)
 
 	return g
@@ -56,12 +55,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
-	g.application.DrawPlayers(screen)
-
-	g.application.DrawDeck(screen)
-	g.application.DrawCenterCards(screen)
-
-	g.application.DrawButtons(screen)
+	g.application.Display(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

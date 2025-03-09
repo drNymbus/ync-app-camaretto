@@ -2,13 +2,13 @@ package model
 
 import (
 	// "log"
-	"math"
+	// "math"
 	"strconv"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"camaretto/view"
+	// "camaretto/view"
 )
 
 const (
@@ -36,6 +36,8 @@ type Application struct{
 	Heal *Button
 
 	Info *Button
+
+	count int
 }
 
 func (app *Application) Init(nbPlayers int) {
@@ -49,7 +51,8 @@ func (app *Application) Init(nbPlayers int) {
 	app.Heal = NewButton(ButtonWidth, ButtonHeight, "HEAL", color.RGBA{0, 0, 0, 255}, color.RGBA{3, 173, 18, 127})
 
 	app.Info = NewButton(WinWidth, WinHeight/16, "This contains information.", color.RGBA{0, 0, 0, 255}, color.RGBA{127, 127, 127, 255})
-	app.Info.SetMessage("PLAYER" + strconv.Itoa(app.Camaretto.GetPlayerTurn()) + ": Choose an action.")
+
+	app.count = 0
 }
 
 /************ ***************************************************************************** ************/
@@ -73,7 +76,13 @@ func (app *Application) Update() {
 		if state == SET {
 			msgInfo = playerName + " needs to choose an action"
 		} else if state == END {
-			msgInfo = playerName + " end turn"
+			app.count++
+			if app.count >= 150 {
+				app.count = 0
+				app.Camaretto.EndTurn()
+				app.Camaretto.SetState(SET)
+			}
+			msgInfo = playerName + " end turn (" + strconv.Itoa(app.count) + ")"
 		} else {
 			var focus FocusState = app.Camaretto.GetFocus()
 			if focus == PLAYER {
@@ -91,103 +100,44 @@ func (app *Application) Update() {
 }
 
 /************ *************************************************************************** ************/
-/************ *********************************** DRAW ********************************** ************/
+/************ ********************************** RENDER ********************************* ************/
 /************ *************************************************************************** ************/
 
-func (app *Application) DrawPlayers(dst *ebiten.Image) {
-	var nbPlayers int = len(app.Camaretto.Players)
-	var angleStep float64 = 2*math.Pi / float64(nbPlayers)
-	var radius float64 = 200
-
-	var centerX float64 = float64(WinWidth)/2
-	var centerY float64 = (float64(WinHeight) * 6/8)/2
-
-	for i, player := range app.Camaretto.Players {
-		var theta float64 = angleStep * float64(i)
-		var x float64 = centerX + (radius * math.Cos(theta + math.Pi/2))
-		var y float64 = centerY + (radius * math.Sin(theta + math.Pi/2))
-		player.Render(dst, x, y, theta)
-	}
-}
-
-func (app *Application) DrawDeck(dst *ebiten.Image) {
-	var centerX float64 = float64(WinWidth)/2
-	var centerY float64 = (float64(WinHeight) * 6/8)/2
-	
-	var deck *Deck = app.Camaretto.DeckPile
-	for i, card := range deck.DrawPile[:deck.LenDrawPile] {
-		card.SSprite.ResetGeoM()
-		card.SSprite.CenterImg()
-		card.SSprite.MoveImg(centerX - card.SSprite.Width/2, centerY - float64(i)*0.2)
-		card.SSprite.Display(dst)
-	}
-	for i, card := range deck.DiscardPile[:deck.LenDiscardPile] {
-		card.SSprite.ResetGeoM()
-		card.SSprite.CenterImg()
-		card.SSprite.MoveImg(centerX + card.SSprite.Width/2, centerY - float64(i)*0.2)
-		card.SSprite.Display(dst)
-	}
-}
-
-func (app *Application) DrawCenterCards(dst *ebiten.Image) {
-	var centerX float64 = float64(WinWidth)/2
-	var centerY float64 = (float64(WinHeight) * 6/8)/2
-
-	for i, card := range app.Camaretto.CenterCard {
-		if card.SSprite.State == view.INIT {
-			card.SSprite.AnimateMove(centerX - card.SSprite.Width/2, centerY, centerX, centerY - 32 - float64(i)*10, 0.05)
-		} else if card.SSprite.State == view.WHILE {
-			card.SSprite.ResetGeoM()
-			card.SSprite.CenterImg()
-			card.SSprite.ComputeAnimation()
-		}
-		card.SSprite.Display(dst)
-	}
-}
-
-func (app *Application) DrawCardMovements(dst *ebiten.Image) {
-	
-}
-
-func (app *Application) DrawButtons(dst *ebiten.Image) {
+func (app *Application) RenderButtons(dst *ebiten.Image) {
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
 
 	buttonXPos = float64(WinWidth)/2
-	app.Info.SSprite.ResetGeoM()
-	app.Info.SSprite.CenterImg()
-	app.Info.SSprite.MoveImg(buttonXPos, buttonYPos - app.Info.SSprite.Height*2)
+	app.Info.SSprite.SetCenter(buttonXPos, buttonYPos - 120, 0)
 	app.Info.SSprite.Display(dst)
 
 	buttonXPos = (float64(WinWidth) * 1/4) + (float64(ButtonWidth)/2)
-	app.Attack.SSprite.ResetGeoM()
-	app.Attack.SSprite.CenterImg()
-	app.Attack.SSprite.MoveImg(buttonXPos, buttonYPos)
+	app.Attack.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 	app.Attack.SSprite.Display(dst)
 
 	buttonXPos = (float64(WinWidth) * 2/4) + (float64(ButtonWidth)/2)
-	app.Shield.SSprite.ResetGeoM()
-	app.Shield.SSprite.CenterImg()
-	app.Shield.SSprite.MoveImg(buttonXPos, buttonYPos)
+	app.Shield.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 	app.Shield.SSprite.Display(dst)
 
 	buttonXPos = (float64(WinWidth) * 3/4) + (float64(ButtonWidth)/2)
 
-	var playerTurn int = app.Camaretto.GetPlayerTurn()
-	var p *Player = app.Camaretto.Players[playerTurn]
-	if p.ChargeCard == nil {
-		app.Heal.SSprite.ResetGeoM()
-
-		app.Charge.SSprite.ResetGeoM()
-		app.Charge.SSprite.CenterImg()
-		app.Charge.SSprite.MoveImg(buttonXPos, buttonYPos)
+	var c *Camaretto = app.Camaretto
+	if c.Players[c.GetPlayerTurn()].ChargeCard == nil {
+		app.Heal.SSprite.SetCenter(0, 0, 0)
+		app.Heal.SSprite.SetOffset(0, 0, 0)
+		app.Charge.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		app.Charge.SSprite.Display(dst)
 	} else {
-		app.Charge.SSprite.ResetGeoM()
-
-		app.Heal.SSprite.ResetGeoM()
-		app.Heal.SSprite.CenterImg()
-		app.Heal.SSprite.MoveImg(buttonXPos, buttonYPos)
+		app.Charge.SSprite.SetCenter(0, 0, 0)
+		app.Charge.SSprite.SetOffset(0, 0, 0)
+		app.Heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		app.Heal.SSprite.Display(dst)
+	}
+}
+
+func (app *Application) Display(dst *ebiten.Image) {
+	if app.state == GAME {
+		app.RenderButtons(dst)
+		app.Camaretto.Render(dst, float64(WinWidth), float64(WinHeight))
 	}
 }
