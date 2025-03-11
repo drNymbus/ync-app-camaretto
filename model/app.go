@@ -48,6 +48,8 @@ func (app *Application) GetState() AppState { return app.state }
 /************ ********************************* UPDATE ********************************** ************/
 /************ *************************************************************************** ************/
 
+func (app *Application) Hover(x, y float64) {}
+
 func (app *Application) EventUpdate(e *event.MouseEvent) {
 	if app.state == MENU {
 	} else if app.state == GAME {

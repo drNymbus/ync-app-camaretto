@@ -131,58 +131,6 @@ func (c *Camaretto) Init(n int) {
 }
 
 /************ ***************************************************************************** ************/
-/************ ********************************** GET/SET ********************************** ************/
-/************ ***************************************************************************** ************/
-
-// func (c *Camaretto) SetState(s GameState) (int, string) {
-// 	if s == ATTACK || s == SHIELD {
-// 		c.focus = PLAYER
-// 	} else if s == CHARGE && c.Players[c.playerTurn].ChargeCard == nil {
-// 		c.playerFocus = c.playerTurn
-// 		c.focus = REVEAL
-// 	} else if s == HEAL && c.Players[c.playerTurn].ChargeCard != nil {
-// 		c.playerFocus = c.playerTurn
-// 		c.focus = CARD
-// 	}
-// 	c.state = s
-
-// 	return 0, ""
-// }
-// func (c *Camaretto) GetState() GameState { return c.state }
-
-// func (c *Camaretto) SetFocus(f FocusState) { c.focus = f }
-// func (c *Camaretto) GetFocus() FocusState { return c.focus }
-
-// func (c *Camaretto) SetPlayerFocus(i int) {
-// 	if i > -1 && i < c.nbPlayers {
-// 		if c.state == ATTACK {
-// 			c.focus = CARD
-// 		} else if c.state == SHIELD {
-// 			c.focus = REVEAL
-// 		}
-// 		c.playerFocus = i
-// 	}
-// }
-// func (c *Camaretto) GetPlayerFocus() int { return c.playerFocus }
-
-// func (c *Camaretto) SetCardFocus(i int) {
-// 	c.focus = REVEAL
-// 	c.cardFocus = i
-// }
-// func (c *Camaretto) GetCardFocus() int { return c.cardFocus }
-
-func (c *Camaretto) EndTurn() {
-	c.state = SET
-	c.focus = NONE
-	c.playerFocus = -1
-	c.cardFocus = -1
-
-	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
-	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
-}
-func (c *Camaretto) GetPlayerTurn() int { return c.playerTurn }
-
-/************ ***************************************************************************** ************/
 /************ ********************************** ACTIONS ********************************** ************/
 /************ ***************************************************************************** ************/
 
@@ -195,6 +143,16 @@ func (c *Camaretto) IsGameOver() bool {
 
 	if count > 1 { return true }
 	return false
+}
+
+func (c *Camaretto) endTurn() {
+	c.state = SET
+	c.focus = NONE
+	c.playerFocus = -1
+	c.cardFocus = -1
+
+	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
+	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
 }
 
 func (c *Camaretto) attackPlayer(dst *Player, amount int) {
@@ -468,20 +426,16 @@ func (c *Camaretto) Update() {
 	} else if c.focus == COMPLETE {
 		if c.state == ATTACK {
 			c.attack()
-			c.focus = NONE
-			c.state = SET
+			c.endTurn()
 		} else if c.state == SHIELD {
 			c.shield()
-			c.focus = NONE
-			c.state = SET
+			c.endTurn()
 		} else if c.state == CHARGE {
 			c.charge()
-			c.focus = NONE
-			c.state = SET
+			c.endTurn()
 		} else if c.state == HEAL {
 			c.heal()
-			c.focus = NONE
-			c.state = SET
+			c.endTurn()
 		}
 	}
 }

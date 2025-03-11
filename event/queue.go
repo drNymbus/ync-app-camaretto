@@ -24,7 +24,7 @@ type KeyEvent struct {
 }
 
 type EventQueue struct {
-	x, y float64
+	X, Y float64
 	mouse []*MouseEvent
 	keyboard []*KeyEvent
 	capacity int
@@ -36,15 +36,15 @@ func NewEventQueue(capacity int) *EventQueue {
 
 func (q *EventQueue) Update() {
 	var xi, yi int = ebiten.CursorPosition()
-	q.x, q.y = float64(xi), float64(yi)
+	q.X, q.Y = float64(xi), float64(yi)
 
 	if len(q.mouse) < q.capacity {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			q.mouse = append(q.mouse, &MouseEvent{q.x, q.y, ebiten.MouseButtonLeft, PRESSED})
+			q.mouse = append(q.mouse, &MouseEvent{q.X, q.Y, ebiten.MouseButtonLeft, PRESSED})
 		}
 	
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-			q.mouse = append(q.mouse, &MouseEvent{q.x, q.y, ebiten.MouseButtonLeft, RELEASED})
+			q.mouse = append(q.mouse, &MouseEvent{q.X, q.Y, ebiten.MouseButtonLeft, RELEASED})
 		}
 	}
 }
