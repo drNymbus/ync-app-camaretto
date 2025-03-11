@@ -54,7 +54,6 @@ type Camaretto struct {
 	shieldButton *Button
 	chargeButton *Button
 	healButton *Button
-	infoButton *Button
 
 	count int
 }
@@ -120,12 +119,10 @@ func (c *Camaretto) Init(n int) {
 		}
 	}
 
-	c.attackButton = NewButton(ButtonWidth, ButtonHeight, "ATTACK", color.RGBA{0, 0, 0, 255}, color.RGBA{163, 3, 9, 127})
-	c.shieldButton = NewButton(ButtonWidth, ButtonHeight, "SHIELD", color.RGBA{0, 0, 0, 255}, color.RGBA{2, 42, 201, 127})
-	c.chargeButton = NewButton(ButtonWidth, ButtonHeight, "CHARGE", color.RGBA{0, 0, 0, 255}, color.RGBA{224, 144, 4, 127})
-	c.healButton = NewButton(ButtonWidth, ButtonHeight, "HEAL", color.RGBA{0, 0, 0, 255}, color.RGBA{3, 173, 18, 127})
-
-	c.infoButton = NewButton(WinWidth, WinHeight/16, "This contains information.", color.RGBA{0, 0, 0, 255}, color.RGBA{127, 127, 127, 0})
+	c.attackButton = NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED")
+	c.shieldButton = NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE")
+	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
 	c.count = 0
 }
@@ -344,6 +341,15 @@ func (c *Camaretto) onPlayer(x, y float64) int {
 
 func (c *Camaretto) mousePress(e *event.MouseEvent) {
 	if c.state == SET {
+		if c.attackButton.SSprite.In(e.X, e.Y) {
+			c.attackButton.Pressed()
+		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
+			c.shieldButton.Pressed()
+		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
+			c.chargeButton.Pressed()
+		} else if c.healButton.SSprite.In(e.X, e.Y) {
+			c.healButton.Pressed()
+		}
 	} else if c.state == ATTACK {
 	} else if c.state == SHIELD {
 	} else if c.state == CHARGE {
@@ -352,25 +358,26 @@ func (c *Camaretto) mousePress(e *event.MouseEvent) {
 }
 
 func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
+	c.attackButton.Released()
+	c.shieldButton.Released()
+	c.chargeButton.Released()
+	c.healButton.Released()
+
 	if c.state == SET {
 		if c.attackButton.SSprite.In(e.X, e.Y) {
 			c.state = ATTACK
 			c.focus = PLAYER
-			c.infoButton.SetMessage("choose player to attack")
 		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
 			c.state = SHIELD
 			c.focus = PLAYER
-			c.infoButton.SetMessage("choose player to shield")
 		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
 			c.state = CHARGE
 			c.playerFocus = c.playerTurn
 			c.focus = COMPLETE
-			c.infoButton.SetMessage("charging")
 		} else if c.healButton.SSprite.In(e.X, e.Y) {
 			c.state = HEAL
 			c.playerFocus = c.playerTurn
 			c.focus = CARD
-			c.infoButton.SetMessage("choose card to heal")
 		}
 	} else {
 		if c.focus == PLAYER {
@@ -379,12 +386,10 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				if c.state == ATTACK {
 					c.playerFocus = i
 					c.focus = CARD
-					c.infoButton.SetMessage("defense ! defense !")
 				} else if c.state == SHIELD {
 					c.playerFocus = i
 					c.reveal()
 					c.focus = REVEAL
-					c.infoButton.SetMessage("what shield are you going to get ?")
 				}
 			}
 		} else if c.focus == CARD {
@@ -393,7 +398,6 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				c.cardFocus = i
 				c.reveal()
 				c.focus = REVEAL
-				c.infoButton.SetMessage("nice choice, let's see what will happen")
 			}
 		} else if c.focus == REVEAL {
 			var i int = c.onReveal(e.X, e.Y)
@@ -412,16 +416,20 @@ func (c *Camaretto) EventUpdate(e *event.MouseEvent) {
 
 func (c *Camaretto) Update() {
 	if c.state == SET {
-		c.infoButton.SetMessage(c.Players[c.playerTurn].Name + " needs to choose")
 	}
-	if c.focus == REVEAL {
-		var done bool = true
-		for _, card := range c.toReveal { done = done && (!card.Hidden) }
 
-		if done { c.count++ }
-		if done && c.count > 33 {
+	if c.focus == REVEAL {
+		if len(c.toReveal) == 0 {
 			c.focus = COMPLETE
-			c.count = 0
+		} else {
+			var done bool = true
+			for _, card := range c.toReveal { done = done && (!card.Hidden) }
+
+			if done { c.count++ }
+			if done && c.count > 33 {
+				c.focus = COMPLETE
+				c.count = 0
+			}
 		}
 	} else if c.focus == COMPLETE {
 		if c.state == ATTACK {
@@ -461,10 +469,6 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
 
-	buttonXPos = float64(WinWidth)/2
-	c.infoButton.SSprite.SetCenter(buttonXPos, buttonYPos - 120, 0)
-	c.infoButton.SSprite.Display(dst)
-
 	if c.state == SET {
 		buttonXPos = (float64(WinWidth) * 1/4) + (float64(ButtonWidth)/2)
 		c.attackButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
@@ -499,7 +503,7 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 		player.Render(dst, centerX + x, centerY + y, theta)
 	}
 
-	c.DeckPile.Render(dst, centerX, centerY + float64(view.TileHeight)*3/2)
+	c.DeckPile.Render(dst, centerX, centerY)
 
 	for i, card := range c.toReveal {
 		var s *view.Sprite = card.SSprite

@@ -26,6 +26,25 @@ var (
 	HiddenCardImage *ebiten.Image
 	GraveImage *ebiten.Image
 
+	BlueButtonFlatImage *ebiten.Image
+	BlueButtonDepthImage *ebiten.Image
+	RedButtonFlatImage *ebiten.Image
+	RedButtonDepthImage *ebiten.Image
+	GreenButtonFlatImage *ebiten.Image
+	GreenButtonDepthImage *ebiten.Image
+	YellowButtonFlatImage *ebiten.Image
+	YellowButtonDepthImage *ebiten.Image
+	ButtonWidth int = 192
+	ButtonHeight int = 64
+
+	CursorImage *ebiten.Image
+	CursorWidth int = 32
+	CursorHeight int = 32
+
+	BarImage *ebiten.Image
+	BarWidth int = 96
+	BarHeight int = 16
+
 	FaceSource *text.GoTextFaceSource
 	TextFace *text.GoTextFace
 	FontSize float64 = 24
@@ -104,6 +123,22 @@ func InitAssets() {
 	GraveImage = ebiten.NewImage(width, height)
 	op.GeoM.Reset(); op.GeoM.Scale(xScale, yScale)
 	GraveImage.DrawImage(tmp, op)
+
+	//Buttons
+	BlueButtonFlatImage = GetImage("assets/buttons/blue_button_pressed_gloss.png")
+	BlueButtonDepthImage = GetImage("assets/buttons/blue_button.png")
+	RedButtonFlatImage = GetImage("assets/buttons/red_button_pressed_gloss.png")
+	RedButtonDepthImage = GetImage("assets/buttons/red_button.png")
+	GreenButtonFlatImage = GetImage("assets/buttons/green_button_pressed_gloss.png")
+	GreenButtonDepthImage = GetImage("assets/buttons/green_button.png")
+	YellowButtonFlatImage = GetImage("assets/buttons/yellow_button_pressed_gloss.png")
+	YellowButtonDepthImage = GetImage("assets/buttons/yellow_button.png")
+
+	//Cursor
+	CursorImage = GetImage("assets/cursor.png")
+
+	//Bar
+	BarImage = GetImage("assets/black_bar.png")
 
 	// Load font file
 	var fontByte []byte = getFileByte("assets/fonts/NaturalMono_Regular.ttf")

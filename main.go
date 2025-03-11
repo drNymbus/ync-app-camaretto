@@ -63,7 +63,7 @@ func main() {
 	view.InitAssets()
 
 	// Init Game
-	var g *Game = NewGame(3)
+	var g *Game = NewGame(5)
 
 	// Init Window
 	ebiten.SetWindowSize(model.WinWidth, model.WinHeight)
