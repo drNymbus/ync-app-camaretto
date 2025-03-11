@@ -32,13 +32,13 @@ func NewCard(name string, value int, img *ebiten.Image) *Card {
 
 // @desc: Replace original sprite image to the back of a card
 func (c *Card) Hide() {
-	c.Hidden = false
+	c.Hidden = true
 	c.SSprite.SetImage(view.HiddenCardImage)
 }
 
 // @desc: Put back the img field of the card to the SSprite.Img
 func (c *Card) Reveal() {
-	c.Hidden = true
+	c.Hidden = false
 	c.SSprite.SetImage(c.img)
 }
 
@@ -142,7 +142,7 @@ func (d *Deck) FindInDiscardPile(val int) *Card {
 }
 
 func (d *Deck) Render(dst *ebiten.Image, x, y float64) {
-	var speed, rSpeed float64 = 1, 0.5
+	var speed, rSpeed float64 = 0.5, 0.2
 	d.DrawPileX, d.DrawPileY = x - float64(view.TileWidth)/2, y
 	var posX, posY float64
 	for i, card := range d.DrawPile[:d.LenDrawPile] {

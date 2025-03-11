@@ -25,7 +25,7 @@ type Player struct {
 	JokerShield *Card
 	ChargeCard *Card
 
-	Discarding  []*Card
+	// Discarding  []*Card
 }
 
 func NewPlayer(name string) *Player {
@@ -38,71 +38,7 @@ func NewPlayer(name string) *Player {
 
 	var ds *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
 
-	return &Player{name, s, ds, false, [2]*Card{nil, nil}, nil, nil, nil, nil, []*Card{}}
-}
-
-// @desc: Player attacks an enemy with a given card and the one in charge, the total attack value and the charge card are returned
-func (p *Player) Attack(c *Card) (int, *Card) {
-	var attack int = c.Value
-
-	var charge *Card = nil
-	if p.ChargeCard != nil {
-		charge = p.Uncharge()
-		attack = attack + charge.Value
-	}
-
-	return attack, charge
-}
-
-// @desc: Player loose health based on the "attack" value parameter
-//        "at" parameter specifies which card to lose health from in priority
-//        then returns the new health value to be set and
-//        all cards lost in the process of the attack (Maximum 3: joker health and both health cards)
-func (p *Player) LoseHealth(attack int, at int) (int, *Card, *Card, *Card) {
-	if p.JokerShield != nil {
-		var c *Card = p.JokerShield
-		p.JokerShield = nil
-		return 0, c, nil, nil
-	}
-
-	var joker, health1, health2 *Card = nil, nil, nil
-
-	// Attack is bigger than shield, we loose HP
-	if p.ShieldCard != nil { attack = attack - p.ShieldCard.Value }
-	if attack > 0 {
-		// Do we have a joker health ? Then it's tanking (wether you like it or not)
-		if p.JokerHealth != nil {
-			attack = attack - p.JokerHealth.Value
-			joker = p.JokerHealth
-			p.JokerHealth = nil
-		}
-
-		// Is the attack still going ?
-		if attack > 0 {
-			attack = attack - p.HealthCard[at].Value
-			health1 = p.HealthCard[at]
-			p.HealthCard[at] = nil
-		}
-
-		// Wow that's a really big hit
-		if attack > 0 && p.HealthCard[1-at] != nil {
-			attack = attack - p.HealthCard[1-at].Value
-			health2 = p.HealthCard[1-at]
-			p.HealthCard[1-at] = nil
-		}
-
-		// R.I.P in Peperonni
-		if attack >= 0 { p.Dead = true }
-	}
-
-	return -1*attack, joker, health1, health2
-}
-
-// @desc: Swap shield with the given card then returns the old shield
-func (p *Player) Shield(c *Card) *Card {
-	var tmp *Card = p.ShieldCard
-	p.ShieldCard = c
-	return tmp
+	return &Player{name, s, ds, false, [2]*Card{nil, nil}, nil, nil, nil, nil}
 }
 
 // @desc: Swap charge slot's card with the health card at index at then returns the old health card
@@ -150,7 +86,7 @@ func (p *Player) getChargeOffset() (float64, float64, float64) {
 }
 
 func (p *Player) Render(dst *ebiten.Image, x, y, theta float64) {
-	var speed, rSpeed float64 = 2.5, 0.5
+	var speed, rSpeed float64 = 0.5, 0.2
 	var xOff, yOff, rotate float64
 	var s *view.Sprite
 

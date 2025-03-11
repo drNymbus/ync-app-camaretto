@@ -106,7 +106,7 @@ func (s *Sprite) Move(x, y, sp float64) { s.targetXCenter, s.targetYCenter, s.sp
 func (s *Sprite) Rotate(r, sp float64) { s.targetRCenter, s.rSpeedCenter = r, sp }
 
 func (s *Sprite) MoveOffset(x, y, sp float64) { s.targetXOffset, s.targetYOffset, s.speedOffset = x, y, sp }
-func (s *Sprite) RotateOffset(r, sp float64) { s.targetROffset, s.rSpeedOffset = r, sp }
+func (s *Sprite) RotateOffset(r, sp float64) { s.targetROffset, s.rSpeedOffset = math.Mod(r, math.Pi*2), sp }
 
 func (s *Sprite) tickTranslateCenter() {
 	var dx, dy float64 = (s.targetXCenter - s.xCenter), (s.targetYCenter - s.yCenter)
@@ -128,7 +128,7 @@ func (s *Sprite) tickTranslateCenter() {
 
 func (s *Sprite) tickRotateCenter() {
 	var vr float64 = s.targetRCenter * s.rSpeedCenter/50
-	if s.targetRCenter - s.rCenter < math.Pi/180 {
+	if s.targetRCenter - s.rCenter < math.Pi/90 {
 		s.rCenter = s.targetRCenter
 	} else {
 		s.rCenter = s.rCenter + vr
@@ -155,7 +155,7 @@ func (s *Sprite) tickTranslateOffset() {
 
 func (s *Sprite) tickRotateOffset() {
 	// var vr float64 = s.targetROffset * s.rSpeedOffset/50
-	// if s.targetROffset - s.rOffset < math.Pi/180 {
+	// if s.targetROffset - s.rOffset < math.Pi/90 {
 	// 	s.rOffset = s.targetROffset
 	// } else {
 	// 	s.rOffset = s.rOffset + vr
