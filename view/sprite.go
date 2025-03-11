@@ -23,6 +23,8 @@ type Sprite struct {
 	targetROffset float64
 	speedOffset, rSpeedOffset float64
 
+	scaleX, scaleY float64
+
 	bg bool
 	bgColor color.RGBA
 
@@ -102,6 +104,7 @@ func (s *Sprite) In(x, y float64) bool {
 	return true
 }
 
+func (s *Sprite) Scale(x, y float64) {}
 func (s *Sprite) Move(x, y, sp float64) { s.targetXCenter, s.targetYCenter, s.speedCenter = x, y, sp }
 func (s *Sprite) Rotate(r, sp float64) { s.targetRCenter, s.rSpeedCenter = r, sp }
 

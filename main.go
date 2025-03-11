@@ -63,14 +63,14 @@ func main() {
 	view.InitAssets()
 
 	// Init Game
-	var g *Game = NewGame(3)
+	var g *Game = NewGame(5)
 
 	// Init Window
 	ebiten.SetWindowSize(model.WinWidth, model.WinHeight)
 	ebiten.SetWindowTitle("Camaretto")
 
 	var icon image.Image
-	icon, err = view.InitIcon("assets/amaretto_trans.png")
+	icon, err = view.InitIcon("assets/amaretto_icon.png")
 	if err != nil {
 		log.Fatal("[MAIN] InitIcon failed", err)
 	}
