@@ -34,7 +34,7 @@ type Application struct{
 
 func (app *Application) Init(nbPlayers int) {
 	app.state = GAME
-	app.Camaretto = NewCamaretto(nbPlayers)
+	app.Camaretto = NewCamaretto(nbPlayers, float64(WinWidth), float64(WinHeight))
 }
 
 /************ ***************************************************************************** ************/

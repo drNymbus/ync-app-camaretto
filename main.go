@@ -70,7 +70,7 @@ func main() {
 	ebiten.SetWindowTitle("Camaretto")
 
 	var icon image.Image
-	icon, err = view.InitIcon("assets/amaretto_trans.png")
+	icon, err = view.InitIcon("assets/amaretto_icon.png")
 	if err != nil {
 		log.Fatal("[MAIN] InitIcon failed", err)
 	}

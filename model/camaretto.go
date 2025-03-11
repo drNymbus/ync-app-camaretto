@@ -55,21 +55,23 @@ type Camaretto struct {
 	chargeButton *Button
 	healButton *Button
 
+	info *TextBox
+
 	count int
 }
 
 // @desc: Initialize a new Camaretto instance of the game, then returns a reference to the Camaretto object
 // func NewCamaretto(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) *Camaretto {
-func NewCamaretto(n int) *Camaretto {
+func NewCamaretto(n int, width, height float64) *Camaretto {
 	var c *Camaretto = &Camaretto{}
 	// c.Init(n, sheet, tileWidth, tileHeight)
-	c.Init(n)
+	c.Init(n, width, height)
 	return c
 }
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 // func (c *Camaretto) Init(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) {
-func (c *Camaretto) Init(n int) {
+func (c *Camaretto) Init(n int, width, height float64) {
 	c.state = SET
 	c.focus = NONE
 
@@ -124,6 +126,7 @@ func (c *Camaretto) Init(n int) {
 	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
+	c.info = NewTextBox(width - 50, height*1/5 + 30, "Choisit une action: zmljldfhqsmklfjbqsfmqsljhfmsqfjhqsdmfljsqhfmqdslkjfhqsdlfkjhqsdflkqsdjhfldsqkjfhsqdlkfjhsqdflkdsqjhflqskjfhqdslkfjhqdsflkqdsjhflqsdkjfhqsdlkfjhqsdflkqsjh", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
 	c.count = 0
 }
 
@@ -466,6 +469,10 @@ func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 }
 
 func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
+	c.info.Render()
+	c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
+	c.info.SSprite.Display(dst)
+
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
 
@@ -503,15 +510,17 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 		player.Render(dst, centerX + x, centerY + y, theta)
 	}
 
-	c.DeckPile.Render(dst, centerX, centerY)
-
-	for i, card := range c.toReveal {
-		var s *view.Sprite = card.SSprite
-		var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.TileWidth)
-		s.Move(centerX + x, centerY, 0.5)
-		card.SSprite.Rotate(0, 0.2)
-		s.MoveOffset(0, 0, 0.2)
-		card.SSprite.RotateOffset(0, 0.2)
-		card.SSprite.Display(dst)
+	if len(c.toReveal) > 0 {
+		for i, card := range c.toReveal {
+			var s *view.Sprite = card.SSprite
+			var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.TileWidth)
+			s.Move(centerX + x, centerY, 0.5)
+			card.SSprite.Rotate(0, 0.2)
+			s.MoveOffset(0, 0, 0.2)
+			card.SSprite.RotateOffset(0, 0.2)
+			card.SSprite.Display(dst)
+		}
+	} else {
+		c.DeckPile.Render(dst, centerX, centerY)
 	}
 }

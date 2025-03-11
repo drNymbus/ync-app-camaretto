@@ -24,8 +24,6 @@ type Player struct {
 	ShieldCard *Card
 	JokerShield *Card
 	ChargeCard *Card
-
-	// Discarding  []*Card
 }
 
 func NewPlayer(name string) *Player {

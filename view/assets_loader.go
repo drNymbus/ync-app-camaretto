@@ -45,6 +45,14 @@ var (
 	BarWidth int = 96
 	BarHeight int = 16
 
+	CoffeeImage *ebiten.Image
+	CoffeeWidth int = 1640
+	CoffeeHeight int = 2360
+
+	AmarettoImage *ebiten.Image
+	AmarettoWidth int = 1640
+	AmarettoHeight int = 2360
+
 	FaceSource *text.GoTextFaceSource
 	TextFace *text.GoTextFace
 	FontSize float64 = 24
@@ -136,9 +144,12 @@ func InitAssets() {
 
 	//Cursor
 	CursorImage = GetImage("assets/cursor.png")
-
 	//Bar
 	BarImage = GetImage("assets/black_bar.png")
+	//Coffee
+	CoffeeImage = GetImage("assets/cafe.png")
+	//Amaretto
+	AmarettoImage = GetImage("assets/amaretto.png")
 
 	// Load font file
 	var fontByte []byte = getFileByte("assets/fonts/NaturalMono_Regular.ttf")
