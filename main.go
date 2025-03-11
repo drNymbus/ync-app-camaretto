@@ -18,7 +18,8 @@ var (
 
 type Game struct{
 	application *model.Application
-	mouse *event.Mouse
+	events *event.EventQueue
+	// mouse *event.Mouse
 }
 
 func NewGame(nbPlayers int) *Game {
@@ -26,25 +27,26 @@ func NewGame(nbPlayers int) *Game {
 
 	g.application = &model.Application{}
 	g.application.Init(nbPlayers)
-	g.mouse = event.NewMouse(20)
+	g.events = event.NewEventQueue(20)
 
 	return g
 }
 
 func (g *Game) Update() error {
-	g.mouse.Update()
+	g.events.Update()
 
-	event.HandleGameHover(g.application, g.mouse.X, g.mouse.Y)
+	// g.application.Hover(g.mouse.X, g.mouse.Y)
+	// event.HandleGameHover(g.application, g.mouse.X, g.mouse.Y)
 
 	var e *event.MouseEvent = nil
-	for ;!g.mouse.IsEmpty(); {
-		e = g.mouse.ReadEvent()
-
-		if e.MET == event.RELEASED && e.Click == ebiten.MouseButtonLeft {
-			event.HandleCamarettoMouseRelease(g.application, float64(e.X), float64(e.Y))
-		} else if e.MET == event.PRESSED && e.Click == ebiten.MouseButtonLeft {
-			event.HandleCamarettoMousePress(g.application, float64(e.X), float64(e.Y))
-		}
+	for ;!g.events.IsEmpty(); {
+		e = g.events.ReadMouseEvent()
+		g.application.EventUpdate(e)
+		// if e.MET == event.RELEASED && e.Click == ebiten.MouseButtonLeft {
+		// 	event.HandleCamarettoMouseRelease(g.application, float64(e.X), float64(e.Y))
+		// } else if e.MET == event.PRESSED && e.Click == ebiten.MouseButtonLeft {
+		// 	event.HandleCamarettoMousePress(g.application, float64(e.X), float64(e.Y))
+		// }
 	}
 
 	g.application.Update()

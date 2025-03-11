@@ -106,7 +106,7 @@ func (s *Sprite) Move(x, y, sp float64) { s.targetXCenter, s.targetYCenter, s.sp
 func (s *Sprite) Rotate(r, sp float64) { s.targetRCenter, s.rSpeedCenter = r, sp }
 
 func (s *Sprite) MoveOffset(x, y, sp float64) { s.targetXOffset, s.targetYOffset, s.speedOffset = x, y, sp }
-func (s *Sprite) RotateOffset(r, sp float64) { s.targetROffset, s.rSpeedOffset = r, sp }
+func (s *Sprite) RotateOffset(r, sp float64) { s.targetROffset, s.rSpeedOffset = math.Mod(r, math.Pi*2), sp }
 
 func (s *Sprite) tickTranslateCenter() {
 	var dx, dy float64 = (s.targetXCenter - s.xCenter), (s.targetYCenter - s.yCenter)
@@ -128,7 +128,7 @@ func (s *Sprite) tickTranslateCenter() {
 
 func (s *Sprite) tickRotateCenter() {
 	var vr float64 = s.targetRCenter * s.rSpeedCenter/50
-	if s.targetRCenter - s.rCenter < math.Pi/180 {
+	if s.targetRCenter - s.rCenter < math.Pi/90 {
 		s.rCenter = s.targetRCenter
 	} else {
 		s.rCenter = s.rCenter + vr
@@ -152,13 +152,15 @@ func (s *Sprite) tickTranslateOffset() {
 		s.yOffset = s.yOffset + vy
 	}
 }
+
 func (s *Sprite) tickRotateOffset() {
-	var vr float64 = s.targetROffset * s.rSpeedOffset/50
-	if s.targetROffset - s.rOffset < math.Pi/180 {
-		s.rOffset = s.targetROffset
-	} else {
-		s.rOffset = s.rOffset + vr
-	}
+	// var vr float64 = s.targetROffset * s.rSpeedOffset/50
+	// if s.targetROffset - s.rOffset < math.Pi/90 {
+	// 	s.rOffset = s.targetROffset
+	// } else {
+	// 	s.rOffset = s.rOffset + vr
+	// }
+	s.rOffset = s.targetROffset
 }
 
 func (s *Sprite) tick() {
@@ -184,6 +186,7 @@ func (s *Sprite) Display(dst *ebiten.Image) {
 }
 
 func (s *Sprite) ToString() string {
-	msg := "DX" + strconv.FormatFloat((s.targetXCenter - s.xCenter), 'f', 3, 64) + ", DY" + strconv.FormatFloat((s.targetYCenter - s.yCenter), 'f', 3, 64)
+	msg := "DX" + strconv.FormatFloat((s.targetXCenter - s.xCenter), 'f', 3, 64)
+	msg = msg + ", DY" + strconv.FormatFloat((s.targetYCenter - s.yCenter), 'f', 3, 64)
 	return msg
 }
