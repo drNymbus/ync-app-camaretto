@@ -54,6 +54,11 @@ var (
 	AmarettoWidth int = 325
 	AmarettoHeight int = 297
 
+	CharacterWidth int = 1640
+	CharacterHeight int = 2360
+	MouthWidth int = 635
+	MouthHeight int = 326
+
 	FaceSource *text.GoTextFaceSource
 	TextFace *text.GoTextFace
 	FontSize float64 = 24

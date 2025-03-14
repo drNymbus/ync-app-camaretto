@@ -52,6 +52,8 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 	s.targetXOffset, s.targetYOffset, s.targetROffset = 0, 0, 0
 	s.speedOffset, s.rSpeedOffset = 0, 0
 
+	s.scaleX, s.scaleY = 1, 1
+
 	if bgEnabled { s.RenderBackground() }
 	return s
 }
@@ -77,6 +79,8 @@ func (s *Sprite) SetBackgroundColor(c color.RGBA) {
 }
 func (s *Sprite) GetBackgroundColor() color.RGBA { return s.bgColor }
 
+func (s *Sprite) SetImage(img *ebiten.Image) { s.image = img }
+
 func (s *Sprite) SetCenter(x, y, r float64) {
 	s.xCenter, s.yCenter, s.rCenter = x, y, r
 	s.targetXCenter, s.targetYCenter, s.targetRCenter = x, y, r
@@ -91,8 +95,6 @@ func (s *Sprite) SetOffset(x, y, r float64) {
 }
 func (s *Sprite) GetOffset() (float64, float64, float64) { return s.xOffset, s.yOffset, s.rOffset }
 
-func (s *Sprite) SetImage(img *ebiten.Image) { s.image = img }
-
 // @desc: Returns true if the coordinates (x,y) are within the sprite, false otherwise
 func (s *Sprite) In(x, y float64) bool {
 	var inv ebiten.GeoM = s.options.GeoM
@@ -104,7 +106,11 @@ func (s *Sprite) In(x, y float64) bool {
 	return true
 }
 
-func (s *Sprite) Scale(x, y float64) {}
+func (s *Sprite) Scale(x, y float64) {
+	s.scaleX, s.scaleY = x, y
+	s.Width, s.Height = s.Width * x, s.Height * y
+}
+
 func (s *Sprite) Move(x, y, sp float64) { s.targetXCenter, s.targetYCenter, s.speedCenter = x, y, sp }
 func (s *Sprite) Rotate(r, sp float64) { s.targetRCenter, s.rSpeedCenter = r, sp }
 
@@ -178,6 +184,7 @@ func (s *Sprite) Display(dst *ebiten.Image) {
 	s.tick()
 
 	s.options.GeoM.Reset()
+	s.options.GeoM.Scale(s.scaleX, s.scaleY)
 	s.options.GeoM.Translate(-s.Width/2, -s.Height/2) // Center img
 	s.options.GeoM.Rotate(s.rCenter) // Rotate in place
 	s.options.GeoM.Translate(s.xOffset, s.yOffset) // Offset img

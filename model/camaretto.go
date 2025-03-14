@@ -60,6 +60,8 @@ type Camaretto struct {
 	cursor *view.Sprite
 
 	count int
+
+	char *Character
 }
 
 // @desc: Initialize a new Camaretto instance of the game, then returns a reference to the Camaretto object
@@ -128,11 +130,13 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
-	c.info = NewTextBox(width - 50, height*1/5 + 30, "Choisit une action:", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	c.info = NewTextBox(width - 50, height*1/5 + 30, "Choisit une action, ego player que tu es ! Tu crois j'tai pas vu ? va jouer à la dinette plutot", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
 
 	c.cursor = view.NewSprite(view.CursorImage, false, color.RGBA{0, 0, 0, 0}, nil)
 
 	c.count = 0
+
+	c.char = NewCharacter(c.info)
 }
 
 /************ ***************************************************************************** ************/
@@ -431,21 +435,21 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 		if c.attackButton.SSprite.In(e.X, e.Y) {
 			c.state = ATTACK
 			c.focus = PLAYER
-			c.info.SetMessage("Oooh ! Look at him, he's launching an attack !")
+			// c.info.SetMessage("Oooh ! Look at him, he's launching an attack !")
 		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
 			c.state = SHIELD
 			c.focus = PLAYER
-			c.info.SetMessage("Ahahah XD This looser too afraid he's switching shield !")
+			// c.info.SetMessage("Ahahah XD This looser too afraid he's switching shield !")
 		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
 			c.state = CHARGE
 			c.playerFocus = c.playerTurn
 			c.focus = COMPLETE
-			c.info.SetMessage("Wise decision my guy, the turtle always win at the end")
+			// c.info.SetMessage("Wise decision my guy, the turtle always win at the end")
 		} else if c.healButton.SSprite.In(e.X, e.Y) {
 			c.state = HEAL
 			c.playerFocus = c.playerTurn
 			c.focus = CARD
-			c.info.SetMessage("Meditation is a way of thinking, not just a phase")
+			// c.info.SetMessage("Meditation is a way of thinking, not just a phase")
 		}
 	} else {
 		if c.focus == PLAYER {
@@ -454,12 +458,12 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				if c.state == ATTACK {
 					c.playerFocus = i
 					c.focus = CARD
-					c.info.SetMessage(c.Players[c.playerFocus].Name + " is about to get an ass kicking worth remembering until the end of his life...")
+					// c.info.SetMessage(c.Players[c.playerFocus].Name + " is about to get an ass kicking worth remembering until the end of his life...")
 				} else if c.state == SHIELD {
 					c.playerFocus = i
 					c.reveal()
 					c.focus = REVEAL
-					c.info.SetMessage(c.Players[c.playerFocus].Name + " really just chose the worst card ! And he had only two choices ... you little turd")
+					// c.info.SetMessage(c.Players[c.playerFocus].Name + " really just chose the worst card ! And he had only two choices ... you little turd")
 				}
 			}
 		} else if c.focus == CARD {
@@ -468,12 +472,12 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				c.cardFocus = i
 				c.reveal()
 				c.focus = REVEAL
-				c.info.SetMessage("*drum roll*")
+				// c.info.SetMessage("*drum roll*")
 			}
 		} else if c.focus == REVEAL {
 			var i int = c.onReveal(e.X, e.Y)
 			if i != -1 { c.toReveal[i].Reveal() }
-			c.info.SetMessage("Ok nice but you're missing the other one " + c.Players[c.playerTurn].Name)
+			// c.info.SetMessage("Ok nice but you're missing the other one " + c.Players[c.playerTurn].Name)
 		}
 	}
 }
@@ -538,9 +542,9 @@ func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 }
 
 func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
-	c.info.Render()
-	c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
-	c.info.SSprite.Display(dst)
+	// c.info.Render()
+	// c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
+	// c.info.SSprite.Display(dst)
 
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
@@ -594,4 +598,9 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	}
 
 	c.cursor.Display(dst)
+
+	c.char.Render(dst, width/2, height*8/10 + 65)
+	// c.char.SSprite.SetCenter(centerX, centerY, 0)
+	// c.char.SSprite.Display(dst)
+	// dst.DrawImage(c.char.GetImg(), nil)
 }

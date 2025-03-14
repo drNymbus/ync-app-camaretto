@@ -158,6 +158,9 @@ func (tb *TextBox) Render() {
 	tb.SSprite.SetImage(tb.actualImg)
 }
 
+// @desc: Has text finished scrolling
+func (tb *TextBox) Finished() bool { return tb.length == len(tb.message) }
+
 func (tb *TextBox) SetMessage(msg string) {
 	tb.message = wrapText(msg, int(tb.width))
 	tb.length = 0

@@ -49,7 +49,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.White)
+	screen.Fill(color.Black)
 
 	g.application.Display(screen)
 }

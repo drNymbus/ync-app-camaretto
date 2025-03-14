@@ -18,8 +18,6 @@ type Player struct {
 	NameSprite *view.Sprite
 	Dead bool
 	DeadSprite *view.Sprite
-	Speech *TextBox
-	PlayerSprite *view.Sprite
 
 	HealthCard [2]*Card
 	JokerHealth *Card
@@ -38,7 +36,7 @@ func NewPlayer(name string) *Player {
 
 	var deathSprite *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
 
-	return &Player{name, nameSprite, false, deathSprite, nil, nil, [2]*Card{nil, nil}, nil, nil, nil, nil}
+	return &Player{name, nameSprite, false, deathSprite, [2]*Card{nil, nil}, nil, nil, nil, nil}
 }
 
 // @desc: Swap charge slot's card with the health card at index at then returns the old health card
