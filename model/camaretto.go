@@ -55,8 +55,6 @@ type Camaretto struct {
 	chargeButton *Button
 	healButton *Button
 
-	info *TextBox
-
 	cursor *view.Sprite
 
 	count int
@@ -90,9 +88,14 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
 
+	var tb *TextBox = NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	// var char *Character = NewCharacter(tb)
+
 	var names []string = []string{"Alfred", "Robin", "Parker", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
-		c.Players[i] = NewPlayer(names[i%len(names)])
+		var name string = names[i%len(names)]
+		var char *Character = NewCharacter(tb, name)
+		c.Players[i] = NewPlayer(name, char)
 	}
 
 	for i, _ := range make([]int, n*2) { // Init Health
@@ -128,9 +131,10 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
-	c.info = NewTextBox(width - 50, height*1/5 + 30, "Choisit une action:", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
-
 	c.cursor = view.NewSprite(view.CursorImage, false, color.RGBA{0, 0, 0, 0}, nil)
+	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
+	c.cursor.SetOffset(0, 0, 0)
+
 
 	c.count = 0
 }
@@ -158,8 +162,6 @@ func (c *Camaretto) endTurn() {
 
 	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
 	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
-
-	c.info.SetMessage(c.Players[c.playerTurn].Name + ", your turn !")
 }
 
 func (c *Camaretto) attackPlayer(dst *Player, amount int) {
@@ -350,8 +352,7 @@ func (c *Camaretto) onPlayer(x, y float64) int {
 }
 
 func (c *Camaretto) mouseHover(x, y float64) {
-	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
-	c.cursor.SetOffset(0, 0, 0)
+	var speed float64 = 15
 
 	var s *view.Sprite = nil
 	if c.state == SET {
@@ -367,8 +368,10 @@ func (c *Camaretto) mouseHover(x, y float64) {
 
 		if s != nil {
 			var x, y, _ float64 = s.GetCenter()
-			c.cursor.SetCenter(x - (s.Width/2), y, math.Pi/2)
-			c.cursor.SetOffset(0, 0, 0)
+			c.cursor.Move(x - (s.Width/2), y, speed)
+			c.cursor.Rotate(math.Pi/2, speed)
+			c.cursor.MoveOffset(0, 0, speed)
+			c.cursor.RotateOffset(0, speed)
 		}
 	} else {
 		if c.focus == PLAYER {
@@ -376,18 +379,22 @@ func (c *Camaretto) mouseHover(x, y float64) {
 			if i != -1 {
 				s = c.Players[i].NameSprite
 				var x, y, r float64 = s.GetCenter()
-				c.cursor.SetCenter(x, y, math.Pi)
+				c.cursor.Move(x, y, speed)
+				c.cursor.Rotate(math.Pi, speed)
 				x, y, r = s.GetOffset()
-				c.cursor.SetOffset(x, y - float64(view.TileHeight*5/2), r)
+				c.cursor.MoveOffset(x, y - float64(view.TileHeight*5/2), speed)
+				c.cursor.RotateOffset(r, speed)
 			}
 		} else if c.focus == CARD {
 			var i int = c.onHealth(x, y)
 			if i != -1 {
 				s = c.Players[c.playerFocus].HealthCard[i].SSprite
 				var x, y, r float64 = s.GetCenter()
-				c.cursor.SetCenter(x, y, math.Pi)
+				c.cursor.Move(x, y, speed)
+				c.cursor.Rotate(math.Pi, speed)
 				x, y, r = s.GetOffset()
-				c.cursor.SetOffset(x, y - float64(view.TileHeight/2), r)
+				c.cursor.MoveOffset(x, y - float64(view.TileHeight/2), speed)
+				c.cursor.RotateOffset(r, speed)
 			}
 		} else if c.focus == REVEAL {
 			for _, card := range c.toReveal {
@@ -396,8 +403,10 @@ func (c *Camaretto) mouseHover(x, y float64) {
 
 			if s != nil {
 				var x, y, r float64 = s.GetCenter()
-				c.cursor.SetCenter(x, y + (s.Height/2), r)
-				c.cursor.SetOffset(0, 0, 0)
+				c.cursor.Move(x, y + (s.Height/2), speed)
+				c.cursor.Rotate(r, speed)
+				c.cursor.MoveOffset(0, 0, speed)
+				c.cursor.RotateOffset(0, speed)
 			}
 		}
 	}
@@ -414,14 +423,13 @@ func (c *Camaretto) mousePress(e *event.MouseEvent) {
 		} else if c.healButton.SSprite.In(e.X, e.Y) {
 			c.healButton.Pressed()
 		}
-	} else if c.state == ATTACK {
-	} else if c.state == SHIELD {
-	} else if c.state == CHARGE {
-	} else if c.state == HEAL {
 	}
 }
 
 func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
+	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
+	c.cursor.SetOffset(0, 0, 0)
+
 	c.attackButton.Released()
 	c.shieldButton.Released()
 	c.chargeButton.Released()
@@ -431,21 +439,17 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 		if c.attackButton.SSprite.In(e.X, e.Y) {
 			c.state = ATTACK
 			c.focus = PLAYER
-			c.info.SetMessage("Oooh ! Look at him, he's launching an attack !")
 		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
 			c.state = SHIELD
 			c.focus = PLAYER
-			c.info.SetMessage("Ahahah XD This looser too afraid he's switching shield !")
 		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
 			c.state = CHARGE
 			c.playerFocus = c.playerTurn
 			c.focus = COMPLETE
-			c.info.SetMessage("Wise decision my guy, the turtle always win at the end")
 		} else if c.healButton.SSprite.In(e.X, e.Y) {
 			c.state = HEAL
 			c.playerFocus = c.playerTurn
 			c.focus = CARD
-			c.info.SetMessage("Meditation is a way of thinking, not just a phase")
 		}
 	} else {
 		if c.focus == PLAYER {
@@ -454,12 +458,11 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				if c.state == ATTACK {
 					c.playerFocus = i
 					c.focus = CARD
-					c.info.SetMessage(c.Players[c.playerFocus].Name + " is about to get an ass kicking worth remembering until the end of his life...")
 				} else if c.state == SHIELD {
 					c.playerFocus = i
 					c.reveal()
 					c.focus = REVEAL
-					c.info.SetMessage(c.Players[c.playerFocus].Name + " really just chose the worst card ! And he had only two choices ... you little turd")
+					c.Players[c.playerTurn].Persona.Talk(c.state)
 				}
 			}
 		} else if c.focus == CARD {
@@ -468,12 +471,11 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				c.cardFocus = i
 				c.reveal()
 				c.focus = REVEAL
-				c.info.SetMessage("*drum roll*")
+				c.Players[c.playerTurn].Persona.Talk(c.state)
 			}
 		} else if c.focus == REVEAL {
 			var i int = c.onReveal(e.X, e.Y)
 			if i != -1 { c.toReveal[i].Reveal() }
-			c.info.SetMessage("Ok nice but you're missing the other one " + c.Players[c.playerTurn].Name)
 		}
 	}
 }
@@ -504,18 +506,18 @@ func (c *Camaretto) Update() {
 			}
 		}
 	} else if c.focus == COMPLETE {
-		if c.state == ATTACK {
-			c.attack()
+		if c.state != SET {
+			if c.state == ATTACK {
+				c.attack()
+			} else if c.state == SHIELD {
+				c.shield()
+			} else if c.state == CHARGE {
+				c.charge()
+			} else if c.state == HEAL {
+				c.heal()
+			}
 			c.endTurn()
-		} else if c.state == SHIELD {
-			c.shield()
-			c.endTurn()
-		} else if c.state == CHARGE {
-			c.charge()
-			c.endTurn()
-		} else if c.state == HEAL {
-			c.heal()
-			c.endTurn()
+			c.Players[c.playerTurn].Persona.Talk(c.state)
 		}
 	}
 }
@@ -523,7 +525,6 @@ func (c *Camaretto) Update() {
 /************ *************************************************************************** ************/
 /************ ********************************** RENDER ********************************* ************/
 /************ *************************************************************************** ************/
-
 
 func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 	var nbPlayers int = len(c.Players)
@@ -538,9 +539,10 @@ func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 }
 
 func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
-	c.info.Render()
-	c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
-	c.info.SSprite.Display(dst)
+	// c.info.Render()
+	// c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
+	// c.info.SSprite.Display(dst)
+	c.Players[c.playerTurn].Persona.Render(dst, width/2, height*8/10 + 65)
 
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
@@ -576,7 +578,7 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 
 	for i, player := range c.Players {
 		var x, y, theta float64 = c.getPlayerGeoM(i)
-		player.Render(dst, centerX + x, centerY + y, theta)
+		player.RenderCards(dst, centerX + x, centerY + y, theta)
 	}
 
 	if len(c.toReveal) > 0 {

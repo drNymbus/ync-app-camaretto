@@ -44,16 +44,17 @@ func NewTextBox(w, h float64, msg string, tClr color.RGBA, bgClr color.RGBA) *Te
 	tb.width, tb.height = w, h
 	tb.message = wrapText(msg, int(w))
 	tb.textColor = tClr
+
 	tb.length = 0
 	tb.count = 0
 	tb.speed = 5
 
 	tb.barWidth, tb.barHeight = float64(view.BarWidth), float64(view.BarHeight)
-	tb.barScale = 1
+	tb.barScale = 0.5
 	tb.barHeight = tb.barHeight * tb.barScale
 
 	tb.topMargin, tb.bottomMargin = tb.barHeight + 25, tb.barHeight + 25
-	tb.leftMargin, tb.rightMargin = tb.barHeight + 15, tb.barHeight + 15
+	tb.leftMargin, tb.rightMargin = tb.barHeight + 30, tb.barHeight + 30
 
 	tb.backgroundColor = bgClr
 	tb.SSprite = nil
@@ -63,8 +64,8 @@ func NewTextBox(w, h float64, msg string, tClr color.RGBA, bgClr color.RGBA) *Te
 }
 
 func (tb *TextBox) RenderBackground() {
-	var scaleWidth float64 = (tb.width - (tb.leftMargin+tb.rightMargin)) / tb.barWidth
-	var scaleHeight float64 = (tb.height - (tb.topMargin+tb.bottomMargin)) / tb.barWidth
+	var scaleWidth float64 = (tb.width - (tb.leftMargin+tb.rightMargin) - 50) / tb.barWidth
+	var scaleHeight float64 = (tb.height - (tb.topMargin+tb.bottomMargin) - 50) / tb.barWidth
 
 	// Init background
 	tb.background = ebiten.NewImage(int(tb.width), int(tb.height))
@@ -73,19 +74,21 @@ func (tb *TextBox) RenderBackground() {
 	// Top border
 	var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(scaleWidth, tb.barScale)
-	op.GeoM.Translate((tb.width/2) - (tb.barWidth*scaleWidth/2), (tb.topMargin/2) - (tb.barHeight/2))
+	op.GeoM.Translate(-(tb.barWidth*scaleWidth)/2, -tb.barHeight/2)
+	op.GeoM.Translate(tb.width/2, tb.topMargin/2)
 	tb.background.DrawImage(view.BarImage, op)
 	// Bottom border
 	op.GeoM.Reset()
 	op.GeoM.Scale(scaleWidth, tb.barScale)
-	op.GeoM.Translate((tb.width/2) - (tb.barWidth*scaleWidth/2), tb.height - (tb.bottomMargin/2) - (tb.barHeight/2))
+	op.GeoM.Translate(-(tb.barWidth*scaleWidth)/2, -tb.barHeight/2)
+	op.GeoM.Translate(tb.width/2, tb.height - (tb.bottomMargin/2))
 	tb.background.DrawImage(view.BarImage, op)
 	// Left border
 	op.GeoM.Reset()
 	op.GeoM.Scale(scaleHeight, tb.barScale)
 	op.GeoM.Translate(-(tb.barWidth*scaleHeight)/2, -tb.barHeight/2)
 	op.GeoM.Rotate(math.Pi/2)
-	op.GeoM.Translate((tb.leftMargin/2), tb.height/2)
+	op.GeoM.Translate(tb.leftMargin/2, tb.height/2)
 	tb.background.DrawImage(view.BarImage, op)
 	// Right border
 	op.GeoM.Reset()
@@ -95,27 +98,35 @@ func (tb *TextBox) RenderBackground() {
 	op.GeoM.Translate(tb.width - (tb.rightMargin/2), tb.height/2)
 	tb.background.DrawImage(view.BarImage, op)
 
-	var iconScale float64 = 0.2
+	var iconScale float64 = 0.1
+	var w, h float64 = 0, 0
 
+	w, h = float64(view.CoffeeWidth)*iconScale, float64(view.CoffeeHeight)*iconScale
 	// Top left coffee icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
-	op.GeoM.Translate(5, 5)
+	op.GeoM.Translate(-w/2, -h/2)
+	op.GeoM.Translate(tb.leftMargin/2, tb.topMargin/2)
 	tb.background.DrawImage(view.CoffeeImage, op)
 	// Bottom right coffee icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
-	op.GeoM.Translate(tb.width - float64(view.CoffeeWidth)*iconScale - 5, tb.height - float64(view.CoffeeHeight)*iconScale - 5)
+	op.GeoM.Translate(-w/2, -h/2)
+	op.GeoM.Translate(tb.width - tb.rightMargin/2, tb.height - tb.bottomMargin/2)
 	tb.background.DrawImage(view.CoffeeImage, op)
+
+	w, h = float64(view.AmarettoWidth)*iconScale, float64(view.AmarettoHeight)*iconScale
 	// Top right amaretto icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
-	op.GeoM.Translate(tb.width - float64(view.AmarettoWidth)*iconScale - 5, 5)
+	op.GeoM.Translate(-w/2, -h/2)
+	op.GeoM.Translate(tb.width - tb.rightMargin/2, tb.topMargin/2)
 	tb.background.DrawImage(view.AmarettoImage, op)
 	// Bottom left amaretto icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
-	op.GeoM.Translate(5, tb.height - float64(view.AmarettoHeight)*iconScale - 5)
+	op.GeoM.Translate(-w/2, -h/2)
+	op.GeoM.Translate(tb.leftMargin/2, tb.height - tb.bottomMargin/2)
 	tb.background.DrawImage(view.AmarettoImage, op)
 
 	if tb.SSprite == nil {
@@ -141,11 +152,14 @@ func (tb *TextBox) Render() {
 	op.ColorScale.ScaleWithColor(tb.textColor)
 	op.LayoutOptions.LineSpacing = view.FontSize + 3
 	op.GeoM.Reset()
-	op.GeoM.Translate(tb.leftMargin, tb.topMargin)
+	op.GeoM.Translate(tb.leftMargin*3/2, tb.topMargin)
 	text.Draw(tb.actualImg, tb.message[:tb.length], &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 
 	tb.SSprite.SetImage(tb.actualImg)
 }
+
+// @desc: Has text finished scrolling
+func (tb *TextBox) Finished() bool { return tb.length == len(tb.message) }
 
 func (tb *TextBox) SetMessage(msg string) {
 	tb.message = wrapText(msg, int(tb.width))
