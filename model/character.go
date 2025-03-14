@@ -4,53 +4,89 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"camaretto/view"
 )
 
 type Character struct {
+	bodyWidth, bodyHeight float64
 	body *ebiten.Image
 	isMouthOpen bool
 	count int
+
+	mouthWidth, mouthHeight float64
 	openMouth, closedMouth *ebiten.Image
-	img *ebiten.Image
 
 	speech *TextBox
 
 	SSprite *view.Sprite
 }
 
-func NewCharacter(tb *TextBox) *Character {
+func NewCharacter(tb *TextBox, name string) *Character {
 	var c *Character = &Character{}
 
-	c.body = view.GetImage("assets/characters/char.png")
+	var scale float64 = 0.25
+	var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(scale, scale)
+
+	var charBody *ebiten.Image = view.GetImage("assets/characters/char.png")
+	c.bodyWidth, c.bodyHeight = float64(view.CharacterWidth)*scale, float64(view.CharacterHeight)*scale
+	c.body = ebiten.NewImage(int(c.bodyWidth), int(c.bodyHeight))
+	c.body.DrawImage(charBody, op)
+
+	var tOp *text.DrawOptions = &text.DrawOptions{}
+	tOp.ColorScale.ScaleWithColor(color.Black)
+	text.Draw(c.body, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, tOp)
+
 	c.isMouthOpen = false
-	c.openMouth = view.GetImage("assets/characters/mouth_open.png")
-	c.closedMouth = view.GetImage("assets/characters/mouth_closed.png")
+
+	c.mouthWidth, c.mouthHeight = float64(view.MouthWidth)*scale, float64(view.MouthHeight)*scale
+
+	var charOpenMouth *ebiten.Image = view.GetImage("assets/characters/mouth_open.png")
+	c.openMouth = ebiten.NewImage(int(c.mouthWidth), int(c.mouthHeight))
+	c.openMouth.DrawImage(charOpenMouth, op)
+
+	var charClosedMouth *ebiten.Image = view.GetImage("assets/characters/mouth_closed.png")
+	c.closedMouth = ebiten.NewImage(int(c.mouthWidth), int(c.mouthHeight))
+	c.closedMouth.DrawImage(charClosedMouth, op)
 
 	c.speech = tb
 
 	c.SSprite = view.NewSprite(c.body, false, color.RGBA{0,0,0,0}, nil)
-	c.SSprite.Scale(0.25, 0.25)
 
 	return c
 }
 
-func (c *Character) GetImg() *ebiten.Image { return c.img }
+func (c *Character) Talk(state GameState) {
+	var msg string = ""
+	if state == SET {
+		msg = "Choisis une action, ego player que tu es ! Tu crois j'tai pas vu ? va jouer à la dinette plutot"
+	} else if state == ATTACK {
+		msg = "Je vais attaquer de toute ma puissance !"
+	} else if state == SHIELD {
+		msg = "Changement ! Zinedine rentre sur le terrain afin de donner du sang neuf, on voyait bien que Zidane commençait à fatiguer."
+	} else if state == CHARGE {
+		msg = "Meditation mode"
+	} else if state == HEAL {
+		msg = "Regenaration de mes pouvoirs"
+	}
+
+	c.speech.SetMessage(msg)
+}
 
 // @desc: Set new image to sprite depending on character's state
 func (c *Character) RenderBody() {
 	// var scale float64 = 0.25
 	// var bodyW, bodyH float64 = float64(view.CharacterWidth)*scale, float64(view.CharacterHeight)*scale
 
-	var img *ebiten.Image = ebiten.NewImage(view.CharacterWidth, view.CharacterHeight)
+	var img *ebiten.Image = ebiten.NewImage(int(c.bodyWidth), int(c.bodyHeight))
 	img.DrawImage(c.body, nil)
 	
-	// var mouthW, mouthH = float64(view.MouthWidth)*scale, float64(view.MouthHeight)*scale
 	var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-float64(view.MouthWidth)/2, -float64(view.MouthHeight)/2)
-	op.GeoM.Translate(float64(view.CharacterWidth)/2, float64(view.CharacterHeight)*2/5)
+	// var mouthW, mouthH = float64(view.MouthWidth)*scale, float64(view.MouthHeight)*scale
+	op.GeoM.Translate(-float64(c.mouthWidth)/2, -float64(c.mouthHeight)/2)
+	op.GeoM.Translate(float64(c.bodyWidth)/2, float64(c.bodyHeight)*2/5)
 
 	if c.isMouthOpen {
 		img.DrawImage(c.openMouth, op)

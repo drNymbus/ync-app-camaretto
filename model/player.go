@@ -19,6 +19,8 @@ type Player struct {
 	Dead bool
 	DeadSprite *view.Sprite
 
+	Persona *Character
+
 	HealthCard [2]*Card
 	JokerHealth *Card
 	ShieldCard *Card
@@ -26,17 +28,26 @@ type Player struct {
 	ChargeCard *Card
 }
 
-func NewPlayer(name string) *Player {
+func NewPlayer(name string, char *Character) *Player {
+	var p *Player = &Player{}
+	p.Name = name
+
 	var tWidth, tHeight float64 = text.Measure(name, view.TextFace, 0.0)
 	var img *ebiten.Image = ebiten.NewImage(int(tWidth), int(tHeight))
 
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 	var nameSprite *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
+	p.NameSprite = nameSprite
 
 	var deathSprite *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
+	p.DeadSprite = deathSprite
+	p.Dead = false
 
-	return &Player{name, nameSprite, false, deathSprite, [2]*Card{nil, nil}, nil, nil, nil, nil}
+	p.Persona = char
+
+	// return &Player{name, nameSprite, false, deathSprite, char, [2]*Card{nil, nil}, nil, nil, nil, nil}
+	return p
 }
 
 // @desc: Swap charge slot's card with the health card at index at then returns the old health card
@@ -83,7 +94,7 @@ func (p *Player) getChargeOffset() (float64, float64, float64) {
 	return float64(view.TileWidth) + float64(view.TileWidth)/2, float64(view.TileHeight)/2, 0
 }
 
-func (p *Player) Render(dst *ebiten.Image, x, y, theta float64) {
+func (p *Player) RenderCards(dst *ebiten.Image, x, y, theta float64) {
 	var speed, rSpeed float64 = 0.5, 0.2
 	var xOff, yOff, rotate float64
 	var s *view.Sprite
