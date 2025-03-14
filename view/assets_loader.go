@@ -7,6 +7,7 @@ import (
 	"io"
 	"bytes"
 	"image"
+	"image/color"
 
 	"golang.org/x/text/language"
 
@@ -46,12 +47,12 @@ var (
 	BarHeight int = 16
 
 	CoffeeImage *ebiten.Image
-	CoffeeWidth int = 1640
-	CoffeeHeight int = 2360
+	CoffeeWidth int = 325
+	CoffeeHeight int = 297
 
 	AmarettoImage *ebiten.Image
-	AmarettoWidth int = 1640
-	AmarettoHeight int = 2360
+	AmarettoWidth int = 325
+	AmarettoHeight int = 297
 
 	FaceSource *text.GoTextFaceSource
 	TextFace *text.GoTextFace
@@ -147,9 +148,14 @@ func InitAssets() {
 	//Bar
 	BarImage = GetImage("assets/black_bar.png")
 	//Coffee
+	// CoffeeImage = ebiten.NewImage(CoffeeWidth, CoffeeHeight)
+	// CoffeeImage.Fill(color.RGBA{255,255,255,255})
+	// CoffeeImage.DrawImage(GetImage("assets/cafe.png"), nil)
 	CoffeeImage = GetImage("assets/cafe.png")
 	//Amaretto
-	AmarettoImage = GetImage("assets/amaretto.png")
+	AmarettoImage = ebiten.NewImage(AmarettoWidth, AmarettoHeight)
+	AmarettoImage.Fill(color.RGBA{255,255,255,255})
+	AmarettoImage.DrawImage(GetImage("assets/amaretto.png"), nil)
 
 	// Load font file
 	var fontByte []byte = getFileByte("assets/fonts/NaturalMono_Regular.ttf")
