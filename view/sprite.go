@@ -10,7 +10,7 @@ import (
 )
 
 type Sprite struct {
-	width, height float64
+	Width, Height float64
 	xCenter, yCenter float64
 	rCenter float64
 	targetXCenter, targetYCenter float64
@@ -40,7 +40,7 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 
 	var s *Sprite = &Sprite{}
 	s.image = img
-	s.width, s.height = float64(w), float64(h)
+	s.Width, s.Height = float64(w), float64(h)
 	s.bg, s.bgColor = bgEnabled, c
 	s.options = op
 
@@ -58,7 +58,7 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 
 // @desc: Create an image the same size as the sprite then fills it with the registered color
 func (s *Sprite) RenderBackground() {
-	s.background = ebiten.NewImage(int(s.width), int(s.height))
+	s.background = ebiten.NewImage(int(s.Width), int(s.Height))
 	s.background.Fill(s.bgColor)
 }
 
@@ -99,8 +99,8 @@ func (s *Sprite) In(x, y float64) bool {
 	inv.Invert()
 	x, y = inv.Apply(x, y)
 
-	if x < 0 || x > s.width { return false }
-	if y < 0 || y > s.height { return false }
+	if x < 0 || x > s.Width { return false }
+	if y < 0 || y > s.Height { return false }
 	return true
 }
 
@@ -178,7 +178,7 @@ func (s *Sprite) Display(dst *ebiten.Image) {
 	s.tick()
 
 	s.options.GeoM.Reset()
-	s.options.GeoM.Translate(-s.width/2, -s.height/2) // Center img
+	s.options.GeoM.Translate(-s.Width/2, -s.Height/2) // Center img
 	s.options.GeoM.Rotate(s.rCenter) // Rotate in place
 	s.options.GeoM.Translate(s.xOffset, s.yOffset) // Offset img
 	s.options.GeoM.Rotate(s.rOffset) // Apply offset rotation

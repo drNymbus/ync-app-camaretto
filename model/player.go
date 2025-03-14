@@ -16,9 +16,11 @@ import (
 type Player struct {
 	Name string
 	NameSprite *view.Sprite
-	DeadSprite *view.Sprite
-
 	Dead bool
+	DeadSprite *view.Sprite
+	Speech *TextBox
+	PlayerSprite *view.Sprite
+
 	HealthCard [2]*Card
 	JokerHealth *Card
 	ShieldCard *Card
@@ -32,11 +34,11 @@ func NewPlayer(name string) *Player {
 
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
-	var s *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
+	var nameSprite *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
 
-	var ds *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
+	var deathSprite *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
 
-	return &Player{name, s, ds, false, [2]*Card{nil, nil}, nil, nil, nil, nil}
+	return &Player{name, nameSprite, false, deathSprite, nil, nil, [2]*Card{nil, nil}, nil, nil, nil, nil}
 }
 
 // @desc: Swap charge slot's card with the health card at index at then returns the old health card

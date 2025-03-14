@@ -46,7 +46,7 @@ func NewTextBox(w, h float64, msg string, tClr color.RGBA, bgClr color.RGBA) *Te
 	tb.textColor = tClr
 	tb.length = 0
 	tb.count = 0
-	tb.speed = 10
+	tb.speed = 5
 
 	tb.barWidth, tb.barHeight = float64(view.BarWidth), float64(view.BarHeight)
 	tb.barScale = 1
@@ -155,8 +155,10 @@ func (tb *TextBox) SetMessage(msg string) {
 
 func (tb *TextBox) SetTextColor(clr color.RGBA) {
 	tb.textColor = clr
+	tb.Render()
 }
 
 func (tb *TextBox) SetBackgroundColor(clr color.RGBA) {
-
+	tb.backgroundColor = clr
+	tb.RenderBackground()
 }

@@ -48,7 +48,12 @@ func (app *Application) GetState() AppState { return app.state }
 /************ ********************************* UPDATE ********************************** ************/
 /************ *************************************************************************** ************/
 
-func (app *Application) Hover(x, y float64) {}
+func (app *Application) Hover(x, y float64) {
+	if app.state == MENU {
+	} else if app.state == GAME {
+		app.Camaretto.mouseHover(x, y)
+	}
+}
 
 func (app *Application) EventUpdate(e *event.MouseEvent) {
 	if app.state == MENU {
