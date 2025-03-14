@@ -57,6 +57,8 @@ type Camaretto struct {
 
 	info *TextBox
 
+	cursor *view.Sprite
+
 	count int
 }
 
@@ -126,7 +128,10 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
-	c.info = NewTextBox(width - 50, height*1/5 + 30, "Choisit une action: zmljldfhqsmklfjbqsfmqsljhfmsqfjhqsdmfljsqhfmqdslkjfhqsdlfkjhqsdflkqsdjhfldsqkjfhsqdlkfjhsqdflkdsqjhflqskjfhqdslkfjhqdsflkqdsjhflqsdkjfhqsdlkfjhqsdflkqsjh", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	c.info = NewTextBox(width - 50, height*1/5 + 30, "Choisit une action:", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+
+	c.cursor = view.NewSprite(view.CursorImage, false, color.RGBA{0, 0, 0, 0}, nil)
+
 	c.count = 0
 }
 
@@ -153,6 +158,8 @@ func (c *Camaretto) endTurn() {
 
 	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
 	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
+
+	c.info.SetMessage(c.Players[c.playerTurn].Name + ", your turn !")
 }
 
 func (c *Camaretto) attackPlayer(dst *Player, amount int) {
@@ -342,6 +349,60 @@ func (c *Camaretto) onPlayer(x, y float64) int {
 	return -1
 }
 
+func (c *Camaretto) mouseHover(x, y float64) {
+	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
+	c.cursor.SetOffset(0, 0, 0)
+
+	var s *view.Sprite = nil
+	if c.state == SET {
+		if c.attackButton.SSprite.In(x, y) {
+			s = c.attackButton.SSprite
+		} else if c.shieldButton.SSprite.In(x, y) {
+			s = c.shieldButton.SSprite
+		} else if c.chargeButton.SSprite.In(x, y) {
+			s = c.chargeButton.SSprite
+		} else if c.healButton.SSprite.In(x, y) {
+			s = c.healButton.SSprite
+		}
+
+		if s != nil {
+			var x, y, _ float64 = s.GetCenter()
+			c.cursor.SetCenter(x - (s.Width/2), y, math.Pi/2)
+			c.cursor.SetOffset(0, 0, 0)
+		}
+	} else {
+		if c.focus == PLAYER {
+			var i int = c.onPlayer(x, y)
+			if i != -1 {
+				s = c.Players[i].NameSprite
+				var x, y, r float64 = s.GetCenter()
+				c.cursor.SetCenter(x, y, math.Pi)
+				x, y, r = s.GetOffset()
+				c.cursor.SetOffset(x, y - float64(view.TileHeight*5/2), r)
+			}
+		} else if c.focus == CARD {
+			var i int = c.onHealth(x, y)
+			if i != -1 {
+				s = c.Players[c.playerFocus].HealthCard[i].SSprite
+				var x, y, r float64 = s.GetCenter()
+				c.cursor.SetCenter(x, y, math.Pi)
+				x, y, r = s.GetOffset()
+				c.cursor.SetOffset(x, y - float64(view.TileHeight/2), r)
+			}
+		} else if c.focus == REVEAL {
+			for _, card := range c.toReveal {
+				if card.SSprite.In(x, y) { s = card.SSprite }
+			}
+
+			if s != nil {
+				var x, y, r float64 = s.GetCenter()
+				c.cursor.SetCenter(x, y + (s.Height/2), r)
+				c.cursor.SetOffset(0, 0, 0)
+			}
+		}
+	}
+}
+
 func (c *Camaretto) mousePress(e *event.MouseEvent) {
 	if c.state == SET {
 		if c.attackButton.SSprite.In(e.X, e.Y) {
@@ -370,17 +431,21 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 		if c.attackButton.SSprite.In(e.X, e.Y) {
 			c.state = ATTACK
 			c.focus = PLAYER
+			c.info.SetMessage("Oooh ! Look at him, he's launching an attack !")
 		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
 			c.state = SHIELD
 			c.focus = PLAYER
+			c.info.SetMessage("Ahahah XD This looser too afraid he's switching shield !")
 		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
 			c.state = CHARGE
 			c.playerFocus = c.playerTurn
 			c.focus = COMPLETE
+			c.info.SetMessage("Wise decision my guy, the turtle always win at the end")
 		} else if c.healButton.SSprite.In(e.X, e.Y) {
 			c.state = HEAL
 			c.playerFocus = c.playerTurn
 			c.focus = CARD
+			c.info.SetMessage("Meditation is a way of thinking, not just a phase")
 		}
 	} else {
 		if c.focus == PLAYER {
@@ -389,10 +454,12 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				if c.state == ATTACK {
 					c.playerFocus = i
 					c.focus = CARD
+					c.info.SetMessage(c.Players[c.playerFocus].Name + " is about to get an ass kicking worth remembering until the end of his life...")
 				} else if c.state == SHIELD {
 					c.playerFocus = i
 					c.reveal()
 					c.focus = REVEAL
+					c.info.SetMessage(c.Players[c.playerFocus].Name + " really just chose the worst card ! And he had only two choices ... you little turd")
 				}
 			}
 		} else if c.focus == CARD {
@@ -401,10 +468,12 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				c.cardFocus = i
 				c.reveal()
 				c.focus = REVEAL
+				c.info.SetMessage("*drum roll*")
 			}
 		} else if c.focus == REVEAL {
 			var i int = c.onReveal(e.X, e.Y)
 			if i != -1 { c.toReveal[i].Reveal() }
+			c.info.SetMessage("Ok nice but you're missing the other one " + c.Players[c.playerTurn].Name)
 		}
 	}
 }
@@ -523,4 +592,6 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	} else {
 		c.DeckPile.Render(dst, centerX, centerY)
 	}
+
+	c.cursor.Display(dst)
 }
