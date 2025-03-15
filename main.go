@@ -26,7 +26,7 @@ func NewGame(nbPlayers int) *Game {
 	var g *Game = &Game{}
 
 	g.application = &model.Application{}
-	g.application.Init(nbPlayers)
+	g.application.Init(3)
 	g.events = event.NewEventQueue(20)
 
 	return g
@@ -40,7 +40,7 @@ func (g *Game) Update() error {
 	var e *event.MouseEvent = nil
 	for ;!g.events.IsEmpty(); {
 		e = g.events.ReadMouseEvent()
-		g.application.EventUpdate(e)
+		g.application.MouseEventUpdate(e)
 	}
 
 	g.application.Update()
@@ -60,7 +60,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func main() {
 	// Loading assets
-	view.InitAssets()
+	view.LoadFont()
+	// view.InitAssets()
 
 	// Init Game
 	var g *Game = NewGame(5)

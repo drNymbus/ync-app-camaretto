@@ -4,7 +4,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	// "github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"camaretto/view"
 )
@@ -18,7 +18,7 @@ type Character struct {
 	mouthWidth, mouthHeight float64
 	openMouth, closedMouth *ebiten.Image
 
-	speech *TextBox
+	Speech *TextBox
 
 	SSprite *view.Sprite
 }
@@ -26,34 +26,43 @@ type Character struct {
 func NewCharacter(tb *TextBox, name string) *Character {
 	var c *Character = &Character{}
 
-	var scale float64 = 0.25
-	var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(scale, scale)
+	var pi *view.PersonaImage = view.LoadPersonaImage("")
+	// var scale float64 = 0.25
+	// var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
+	// op.GeoM.Scale(scale, scale)
 
-	var charBody *ebiten.Image = view.GetImage("assets/characters/char.png")
-	c.bodyWidth, c.bodyHeight = float64(view.CharacterWidth)*scale, float64(view.CharacterHeight)*scale
-	c.body = ebiten.NewImage(int(c.bodyWidth), int(c.bodyHeight))
-	c.body.DrawImage(charBody, op)
+	// var charBody *ebiten.Image = view.GetImage("assets/characters/char.png")
+	// c.bodyWidth, c.bodyHeight = float64(view.CharacterWidth)*scale, float64(view.CharacterHeight)*scale
+	c.bodyWidth, c.bodyHeight = float64(view.PersonaBodyWidth), float64(view.PersonaBodyHeight)
+	// c.body = ebiten.NewImage(int(c.bodyWidth), int(c.bodyHeight))
+	// c.body.DrawImage(charBody, op)
+	c.body = pi.Body
 
-	var tOp *text.DrawOptions = &text.DrawOptions{}
-	tOp.ColorScale.ScaleWithColor(color.Black)
-	text.Draw(c.body, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, tOp)
+	// var tOp *text.DrawOptions = &text.DrawOptions{}
+	// tOp.ColorScale.ScaleWithColor(color.Black)
+	// text.Draw(c.body, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, tOp)
 
 	c.isMouthOpen = false
 
-	c.mouthWidth, c.mouthHeight = float64(view.MouthWidth)*scale, float64(view.MouthHeight)*scale
+	// c.mouthWidth, c.mouthHeight = float64(view.MouthWidth)*scale, float64(view.MouthHeight)*scale
+	c.mouthWidth, c.mouthHeight = float64(view.PersonaMouthWidth), float64(view.PersonaMouthHeight)
 
-	var charOpenMouth *ebiten.Image = view.GetImage("assets/characters/mouth_open.png")
-	c.openMouth = ebiten.NewImage(int(c.mouthWidth), int(c.mouthHeight))
-	c.openMouth.DrawImage(charOpenMouth, op)
+	// var charOpenMouth *ebiten.Image = view.GetImage("assets/characters/mouth_open.png")
+	// c.openMouth = ebiten.NewImage(int(c.mouthWidth), int(c.mouthHeight))
+	// c.openMouth.DrawImage(charOpenMouth, op)
+	c.openMouth = pi.OpenMouth
 
-	var charClosedMouth *ebiten.Image = view.GetImage("assets/characters/mouth_closed.png")
-	c.closedMouth = ebiten.NewImage(int(c.mouthWidth), int(c.mouthHeight))
-	c.closedMouth.DrawImage(charClosedMouth, op)
+	// var charClosedMouth *ebiten.Image = view.GetImage("assets/characters/mouth_closed.png")
+	// c.closedMouth = ebiten.NewImage(int(c.mouthWidth), int(c.mouthHeight))
+	// c.closedMouth.DrawImage(charClosedMouth, op)
+	c.closedMouth = pi.ClosedMouth
 
-	c.speech = tb
+	c.Speech = tb
+	// c.Speech.SSprite.SetCenter(-c.bodyWidth, -c.bodyHeight, 0)
+
 
 	c.SSprite = view.NewSprite(c.body, false, color.RGBA{0,0,0,0}, nil)
+	// c.SSprite.SetCenter(-c.bodyWidth, -c.bodyHeight, 0)
 
 	return c
 }
@@ -72,7 +81,7 @@ func (c *Character) Talk(state GameState) {
 		msg = "Regenaration de mes pouvoirs"
 	}
 
-	c.speech.SetMessage(msg)
+	c.Speech.SetMessage(msg)
 }
 
 // @desc: Set new image to sprite depending on character's state
@@ -98,10 +107,10 @@ func (c *Character) RenderBody() {
 }
 
 // @desc: Render body and textbox
-func (c *Character) Render(dst *ebiten.Image, x, y float64) {
-	c.speech.Render()
+func (c *Character) Render(x, y float64) {
+	c.Speech.Render()
 
-	if c.speech.Finished() {
+	if c.Speech.Finished() {
 		c.isMouthOpen = false
 		c.count = 0
 	} else {
@@ -113,11 +122,8 @@ func (c *Character) Render(dst *ebiten.Image, x, y float64) {
 	}
 	c.RenderBody()
 
-	c.speech.SSprite.SetCenter(x, y, 0)
-	var bodyX float64 = (x - c.speech.SSprite.Width/2) + c.SSprite.Width/2
-	var bodyY float64 = (y + c.speech.SSprite.Height/2) - c.SSprite.Height/2
+	c.Speech.SSprite.SetCenter(x, y, 0)
+	var bodyX float64 = (x - c.Speech.SSprite.Width/2) + c.SSprite.Width/2
+	var bodyY float64 = (y + c.Speech.SSprite.Height/2) - c.SSprite.Height/2
 	c.SSprite.SetCenter(bodyX, bodyY, 0)
-
-	c.SSprite.Display(dst)
-	c.speech.SSprite.Display(dst)
 }

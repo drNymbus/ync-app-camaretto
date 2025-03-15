@@ -71,32 +71,38 @@ func (tb *TextBox) RenderBackground() {
 	tb.background = ebiten.NewImage(int(tb.width), int(tb.height))
 	tb.background.Fill(tb.backgroundColor)
 
+	var ii *view.IconImage = view.LoadIconImage()
+
 	// Top border
 	var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(scaleWidth, tb.barScale)
 	op.GeoM.Translate(-(tb.barWidth*scaleWidth)/2, -tb.barHeight/2)
 	op.GeoM.Translate(tb.width/2, tb.topMargin/2)
-	tb.background.DrawImage(view.BarImage, op)
+	// tb.background.DrawImage(view.BarImage, op)
+	tb.background.DrawImage(ii.Bar, op)
 	// Bottom border
 	op.GeoM.Reset()
 	op.GeoM.Scale(scaleWidth, tb.barScale)
 	op.GeoM.Translate(-(tb.barWidth*scaleWidth)/2, -tb.barHeight/2)
 	op.GeoM.Translate(tb.width/2, tb.height - (tb.bottomMargin/2))
-	tb.background.DrawImage(view.BarImage, op)
+	// tb.background.DrawImage(view.BarImage, op)
+	tb.background.DrawImage(ii.Bar, op)
 	// Left border
 	op.GeoM.Reset()
 	op.GeoM.Scale(scaleHeight, tb.barScale)
 	op.GeoM.Translate(-(tb.barWidth*scaleHeight)/2, -tb.barHeight/2)
 	op.GeoM.Rotate(math.Pi/2)
 	op.GeoM.Translate(tb.leftMargin/2, tb.height/2)
-	tb.background.DrawImage(view.BarImage, op)
+	// tb.background.DrawImage(view.BarImage, op)
+	tb.background.DrawImage(ii.Bar, op)
 	// Right border
 	op.GeoM.Reset()
 	op.GeoM.Scale(scaleHeight, tb.barScale)
 	op.GeoM.Translate(-(tb.barWidth*scaleHeight)/2, -tb.barHeight/2)
 	op.GeoM.Rotate(math.Pi/2)
 	op.GeoM.Translate(tb.width - (tb.rightMargin/2), tb.height/2)
-	tb.background.DrawImage(view.BarImage, op)
+	// tb.background.DrawImage(view.BarImage, op)
+	tb.background.DrawImage(ii.Bar, op)
 
 	var iconScale float64 = 0.1
 	var w, h float64 = 0, 0
@@ -107,13 +113,15 @@ func (tb *TextBox) RenderBackground() {
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(tb.leftMargin/2, tb.topMargin/2)
-	tb.background.DrawImage(view.CoffeeImage, op)
+	// tb.background.DrawImage(view.CoffeeImage, op)
+	tb.background.DrawImage(ii.Coffee, op)
 	// Bottom right coffee icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(tb.width - tb.rightMargin/2, tb.height - tb.bottomMargin/2)
-	tb.background.DrawImage(view.CoffeeImage, op)
+	// tb.background.DrawImage(view.CoffeeImage, op)
+	tb.background.DrawImage(ii.Coffee, op)
 
 	w, h = float64(view.AmarettoWidth)*iconScale, float64(view.AmarettoHeight)*iconScale
 	// Top right amaretto icon
@@ -121,13 +129,15 @@ func (tb *TextBox) RenderBackground() {
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(tb.width - tb.rightMargin/2, tb.topMargin/2)
-	tb.background.DrawImage(view.AmarettoImage, op)
+	// tb.background.DrawImage(view.AmarettoImage, op)
+	tb.background.DrawImage(ii.Amaretto, op)
 	// Bottom left amaretto icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(tb.leftMargin/2, tb.height - tb.bottomMargin/2)
-	tb.background.DrawImage(view.AmarettoImage, op)
+	// tb.background.DrawImage(view.AmarettoImage, op)
+	tb.background.DrawImage(ii.Amaretto, op)
 
 	if tb.SSprite == nil {
 		tb.SSprite = view.NewSprite(tb.background, true, tb.backgroundColor, nil)

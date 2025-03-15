@@ -40,10 +40,12 @@ func NewPlayer(name string, char *Character) *Player {
 	var nameSprite *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
 	p.NameSprite = nameSprite
 
-	var deathSprite *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
-	p.DeadSprite = deathSprite
+	// var deathSprite *view.Sprite = view.NewSprite(view.GraveImage, false, color.RGBA{0,0,0,0}, nil)
+	// p.DeadSprite = deathSprite
+	p.DeadSprite = view.NewSprite(view.LoadDeathImage(), false, color.RGBA{0,0,0,0}, nil)
 	p.Dead = false
 
+	// p.Persona = nil
 	p.Persona = char
 
 	// return &Player{name, nameSprite, false, deathSprite, char, [2]*Card{nil, nil}, nil, nil, nil, nil}
@@ -74,24 +76,24 @@ func (p *Player) Uncharge() *Card {
 }
 
 func (p *Player) getShieldOffset() (float64, float64, float64) {
-	return 0, -float64(view.TileWidth)/2, math.Pi/2
+	return 0, -float64(view.CardWidth)/2, math.Pi/2
 }
 
 func (p *Player) getJokerShieldOffset() (float64, float64, float64) {
-	return 0, -float64(view.TileWidth)/2 - 15, math.Pi/2
+	return 0, -float64(view.CardWidth)/2 - 15, math.Pi/2
 }
 
 func (p *Player) getJokerHealthOffset() (float64, float64, float64) {
-	return - float64(view.TileWidth) - float64(view.TileWidth)/2, float64(view.TileHeight)/2, 0
+	return - float64(view.CardWidth) - float64(view.CardWidth)/2, float64(view.CardHeight)/2, 0
 }
 
 func (p *Player) getHealthOffset(i int) (float64, float64, float64) {
-	var x float64 = float64((i-1) * view.TileWidth) + float64(view.TileWidth)/2
-	return x, float64(view.TileHeight)/2, 0
+	var x float64 = float64((i-1) * view.CardWidth) + float64(view.CardWidth)/2
+	return x, float64(view.CardHeight)/2, 0
 }
 
 func (p *Player) getChargeOffset() (float64, float64, float64) {
-	return float64(view.TileWidth) + float64(view.TileWidth)/2, float64(view.TileHeight)/2, 0
+	return float64(view.CardWidth) + float64(view.CardWidth)/2, float64(view.CardHeight)/2, 0
 }
 
 func (p *Player) RenderCards(dst *ebiten.Image, x, y, theta float64) {
@@ -167,7 +169,7 @@ func (p *Player) RenderCards(dst *ebiten.Image, x, y, theta float64) {
 	}
 
 	s = p.NameSprite
-	s.MoveOffset(0, float64(view.TileHeight) * 3/2, speed)
+	s.MoveOffset(0, float64(view.CardHeight) * 3/2, speed)
 	s.RotateOffset(theta, rSpeed)
 	s.Move(x, y, speed)
 	s.Display(dst)

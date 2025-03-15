@@ -91,7 +91,7 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	var tb *TextBox = NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
 	// var char *Character = NewCharacter(tb)
 
-	var names []string = []string{"Alfred", "Robin", "Parker", "Bruce", "Loïs", "Logan"}
+	var names []string = []string{"Alexis", "Regale", "Victor", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
 		var name string = names[i%len(names)]
 		var char *Character = NewCharacter(tb, name)
@@ -131,7 +131,8 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
-	c.cursor = view.NewSprite(view.CursorImage, false, color.RGBA{0, 0, 0, 0}, nil)
+	// c.cursor = view.NewSprite(view.CursorImage, false, color.RGBA{0, 0, 0, 0}, nil)
+	c.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
 	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
 	c.cursor.SetOffset(0, 0, 0)
 
@@ -382,7 +383,7 @@ func (c *Camaretto) mouseHover(x, y float64) {
 				c.cursor.Move(x, y, speed)
 				c.cursor.Rotate(math.Pi, speed)
 				x, y, r = s.GetOffset()
-				c.cursor.MoveOffset(x, y - float64(view.TileHeight*5/2), speed)
+				c.cursor.MoveOffset(x, y - float64(view.CardHeight*5/2), speed)
 				c.cursor.RotateOffset(r, speed)
 			}
 		} else if c.focus == CARD {
@@ -393,7 +394,7 @@ func (c *Camaretto) mouseHover(x, y float64) {
 				c.cursor.Move(x, y, speed)
 				c.cursor.Rotate(math.Pi, speed)
 				x, y, r = s.GetOffset()
-				c.cursor.MoveOffset(x, y - float64(view.TileHeight/2), speed)
+				c.cursor.MoveOffset(x, y - float64(view.CardHeight/2), speed)
 				c.cursor.RotateOffset(r, speed)
 			}
 		} else if c.focus == REVEAL {
@@ -542,7 +543,18 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	// c.info.Render()
 	// c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
 	// c.info.SSprite.Display(dst)
-	c.Players[c.playerTurn].Persona.Render(dst, width/2, height*8/10 + 65)
+	var persona *Character = c.Players[c.playerTurn].Persona
+	if !persona.Speech.Finished() {
+		persona.Render(width/2, height*8/10 + 65)
+	} else {
+		var x, y float64 = width/2, height*8/10 + 65
+		persona.Speech.SSprite.SetCenter(x, y, 0)
+		var bodyX float64 = (x - persona.Speech.SSprite.Width/2) + persona.SSprite.Width/2
+		var bodyY float64 = (y + persona.Speech.SSprite.Height/2) - persona.SSprite.Height/2
+		persona.SSprite.SetCenter(bodyX, bodyY, 0)
+	}
+	persona.SSprite.Display(dst)
+	persona.Speech.SSprite.Display(dst)
 
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
@@ -584,7 +596,7 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	if len(c.toReveal) > 0 {
 		for i, card := range c.toReveal {
 			var s *view.Sprite = card.SSprite
-			var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.TileWidth)
+			var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.CardWidth)
 			s.Move(centerX + x, centerY, 0.5)
 			card.SSprite.Rotate(0, 0.2)
 			s.MoveOffset(0, 0, 0.2)

@@ -4,7 +4,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	// "github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"camaretto/view"
 )
@@ -31,19 +31,22 @@ func NewButton(msg string, textClr color.RGBA, buttonColor string) *Button {
 
 	b.pushed = false
 
-	if buttonColor == "BLUE" {
-		b.sourcePressedImg = view.BlueButtonFlatImage
-		b.sourceReleasedImg = view.BlueButtonDepthImage
-	} else if buttonColor == "RED" {
-		b.sourcePressedImg = view.RedButtonFlatImage
-		b.sourceReleasedImg = view.RedButtonDepthImage
-	} else if buttonColor == "GREEN" {
-		b.sourcePressedImg = view.GreenButtonFlatImage
-		b.sourceReleasedImg = view.GreenButtonDepthImage
-	} else if buttonColor == "YELLOW" {
-		b.sourcePressedImg = view.YellowButtonFlatImage
-		b.sourceReleasedImg = view.YellowButtonDepthImage
-	}
+	// if buttonColor == "BLUE" {
+	// 	b.sourcePressedImg = view.BlueButtonFlatImage
+	// 	b.sourceReleasedImg = view.BlueButtonDepthImage
+	// } else if buttonColor == "RED" {
+	// 	b.sourcePressedImg = view.RedButtonFlatImage
+	// 	b.sourceReleasedImg = view.RedButtonDepthImage
+	// } else if buttonColor == "GREEN" {
+	// 	b.sourcePressedImg = view.GreenButtonFlatImage
+	// 	b.sourceReleasedImg = view.GreenButtonDepthImage
+	// } else if buttonColor == "YELLOW" {
+	// 	b.sourcePressedImg = view.YellowButtonFlatImage
+	// 	b.sourceReleasedImg = view.YellowButtonDepthImage
+	// }
+	var bi *view.ButtonImage = view.LoadButtonImage(buttonColor)
+	b.sourcePressedImg = bi.Pressed
+	b.sourceReleasedImg = bi.Released
 
 	b.Render()
 	if b.pushed {
@@ -56,22 +59,26 @@ func NewButton(msg string, textClr color.RGBA, buttonColor string) *Button {
 }
 
 func (b *Button) Render() {
-	var tw, th float64 = text.Measure(b.message, view.TextFace, 0.0)
-	var op *text.DrawOptions = &text.DrawOptions{}
-	op.ColorScale.ScaleWithColor(b.textColor)
+	// var tw, th float64 = text.Measure(b.message, view.TextFace, 0.0)
+	// var op *text.DrawOptions = &text.DrawOptions{}
+	var op *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
+	// op.ColorScale.ScaleWithColor(b.textColor)
+	var textImage, tw, th = view.TextToImage(b.message, b.textColor)
 
 	var w, h int = b.sourcePressedImg.Size()
 	b.pressedImg = ebiten.NewImage(w, h)
 	b.pressedImg.DrawImage(b.sourcePressedImg, nil)
 	op.GeoM.Translate(float64(w)/2 - (tw/2), float64(h)/2 - (th/2))
-	text.Draw(b.pressedImg, b.message, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
+	// text.Draw(b.pressedImg, b.message, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
+	b.pressedImg.DrawImage(textImage, op)
 
 	w, h = b.sourceReleasedImg.Size()
 	b.releasedImg = ebiten.NewImage(w, h)
 	b.releasedImg.DrawImage(b.sourceReleasedImg, nil)
 	op.GeoM.Reset()
 	op.GeoM.Translate(float64(w)/2 - (tw/2), float64(h)/2 - (th/2))
-	text.Draw(b.releasedImg, b.message, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
+	// text.Draw(b.releasedImg, b.message, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
+	b.releasedImg.DrawImage(textImage, op)
 }
 
 func (b *Button) SetMessage(msg string) {
@@ -87,6 +94,11 @@ func (b *Button) SetMessage(msg string) {
 func (b *Button) SetTextColor(c color.RGBA) {
 	b.textColor = c
 	b.Render()
+	if b.pushed {
+		b.SSprite.SetImage(b.pressedImg)
+	} else {
+		b.SSprite.SetImage(b.releasedImg)
+	}
 }
 
 func (b *Button) Pressed() {

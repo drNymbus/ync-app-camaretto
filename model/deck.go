@@ -19,27 +19,28 @@ type Card struct {
 	Value int
 	Hidden bool
 
-	img *ebiten.Image
+	revealedImg *ebiten.Image
+	hiddenImg *ebiten.Image
 	SSprite *view.Sprite
 }
 
 // @desc: Init a new Card struct then returns it
-func NewCard(name string, value int, img *ebiten.Image) *Card {
-	var s *view.Sprite = view.NewSprite(img, false, color.RGBA{127, 0, 100, 100}, nil)
+func NewCard(name string, value int, revealedImg *ebiten.Image, hiddenImg *ebiten.Image) *Card {
+	var s *view.Sprite = view.NewSprite(revealedImg, false, color.RGBA{127, 0, 100, 100}, nil)
 	// var a *view.Animation = view.NewAnimation(s)
-	return &Card{name, value, false, img, s}
+	return &Card{name, value, false, revealedImg, hiddenImg, s}
 }
 
 // @desc: Replace original sprite image to the back of a card
 func (c *Card) Hide() {
 	c.Hidden = true
-	c.SSprite.SetImage(view.HiddenCardImage)
+	c.SSprite.SetImage(c.hiddenImg)
 }
 
 // @desc: Put back the img field of the card to the SSprite.Img
 func (c *Card) Reveal() {
 	c.Hidden = false
-	c.SSprite.SetImage(c.img)
+	c.SSprite.SetImage(c.revealedImg)
 }
 
 type Deck struct {
@@ -56,20 +57,26 @@ func (d *Deck) Init() {
 	d.DrawPile = make([]*Card, 55); d.LenDrawPile = 53
 	d.DiscardPile = make([]*Card, 55); d.LenDiscardPile = 0
 
+	var ci *view.CardImage = view.LoadCardImage()
+
 	for i := 0; i < 52; i++ { // Insert all cards of a Deck
 		var val int = i%13
-		d.DrawPile[i] = NewCard("_" + strconv.Itoa(val+1), val+1, view.CardImage[val])
+		// d.DrawPile[i] = NewCard("_" + strconv.Itoa(val+1), val+1, view.CardImage[val])
+		d.DrawPile[i] = NewCard("_" + strconv.Itoa(val+1), val+1, ci.Card[val], ci.Hidden)
 		d.DrawPile[i].Hide()
 	}
 
 	// Add a non-value card
-	d.DrawPile[52] = NewCard("Zero", 0, view.EmptyCardImage)
+	// d.DrawPile[52] = NewCard("Zero", 0, view.EmptyCardImage)
+	d.DrawPile[52] = NewCard("Zero", 0, ci.Empty, ci.Hidden)
 	d.DrawPile[52].Hide()
 	// Add a Joker
-	d.DrawPile[53] = NewCard("Joker", 14, view.JokerImage)
+	// d.DrawPile[53] = NewCard("Joker", 14, view.JokerImage)
+	d.DrawPile[53] = NewCard("Joker", 14, ci.Joker, ci.Hidden)
 	d.DrawPile[53].Hide()
 	// Add a Joker
-	d.DrawPile[54] = NewCard("Joker", 14, view.JokerImage)
+	// d.DrawPile[54] = NewCard("Joker", 14, view.JokerImage)
+	d.DrawPile[54] = NewCard("Joker", 14, ci.Joker, ci.Hidden)
 	d.DrawPile[54].Hide()
 }
 
@@ -143,7 +150,7 @@ func (d *Deck) FindInDiscardPile(val int) *Card {
 
 func (d *Deck) Render(dst *ebiten.Image, x, y float64) {
 	var speed, rSpeed float64 = 0.5, 0.2
-	d.DrawPileX, d.DrawPileY = x - float64(view.TileWidth)/2, y
+	d.DrawPileX, d.DrawPileY = x - float64(view.CardWidth)/2, y
 	var posX, posY float64
 	for i, card := range d.DrawPile[:d.LenDrawPile] {
 		posX, posY = d.DrawPileX, d.DrawPileY - float64(i)*0.4
@@ -154,7 +161,7 @@ func (d *Deck) Render(dst *ebiten.Image, x, y float64) {
 		card.SSprite.Display(dst)
 	}
 
-	d.DiscardPileX, d.DiscardPileY = x + float64(view.TileWidth)/2, y
+	d.DiscardPileX, d.DiscardPileY = x + float64(view.CardWidth)/2, y
 	for i, card := range d.DiscardPile[:d.LenDiscardPile] {
 		posX, posY = d.DiscardPileX, d.DiscardPileY - float64(i)*0.4
 		card.SSprite.Move(posX, posY, speed)
