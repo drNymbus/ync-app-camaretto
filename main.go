@@ -50,8 +50,8 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
-
-	g.application.Display(screen)
+	var img *ebiten.Image = g.application.Display()
+	screen.DrawImage(img, nil)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

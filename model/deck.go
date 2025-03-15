@@ -61,21 +61,17 @@ func (d *Deck) Init() {
 
 	for i := 0; i < 52; i++ { // Insert all cards of a Deck
 		var val int = i%13
-		// d.DrawPile[i] = NewCard("_" + strconv.Itoa(val+1), val+1, view.CardImage[val])
 		d.DrawPile[i] = NewCard("_" + strconv.Itoa(val+1), val+1, ci.Card[val], ci.Hidden)
 		d.DrawPile[i].Hide()
 	}
 
 	// Add a non-value card
-	// d.DrawPile[52] = NewCard("Zero", 0, view.EmptyCardImage)
 	d.DrawPile[52] = NewCard("Zero", 0, ci.Empty, ci.Hidden)
 	d.DrawPile[52].Hide()
 	// Add a Joker
-	// d.DrawPile[53] = NewCard("Joker", 14, view.JokerImage)
 	d.DrawPile[53] = NewCard("Joker", 14, ci.Joker, ci.Hidden)
 	d.DrawPile[53].Hide()
 	// Add a Joker
-	// d.DrawPile[54] = NewCard("Joker", 14, view.JokerImage)
 	d.DrawPile[54] = NewCard("Joker", 14, ci.Joker, ci.Hidden)
 	d.DrawPile[54].Hide()
 }
@@ -150,24 +146,35 @@ func (d *Deck) FindInDiscardPile(val int) *Card {
 
 func (d *Deck) Render(dst *ebiten.Image, x, y float64) {
 	var speed, rSpeed float64 = 0.5, 0.2
+	var cOff float64 = 0.2
+
 	d.DrawPileX, d.DrawPileY = x - float64(view.CardWidth)/2, y
+
 	var posX, posY float64
+	var cx, cy, cr float64
+
 	for i, card := range d.DrawPile[:d.LenDrawPile] {
-		posX, posY = d.DrawPileX, d.DrawPileY - float64(i)*0.4
-		card.SSprite.Move(posX, posY, speed)
-		card.SSprite.Rotate(0, rSpeed)
-		card.SSprite.MoveOffset(0, 0, speed)
-		card.SSprite.RotateOffset(0, rSpeed)
+		posX, posY = d.DrawPileX, d.DrawPileY - float64(i)*cOff
+		cx, cy, cr = card.SSprite.GetCenter()
+		if cx != posX || cy != posY || cr != 0 {
+			card.SSprite.Move(posX, posY, speed)
+			card.SSprite.Rotate(0, rSpeed)
+			card.SSprite.MoveOffset(0, 0, speed)
+			card.SSprite.RotateOffset(0, rSpeed)
+		}
 		card.SSprite.Display(dst)
 	}
 
 	d.DiscardPileX, d.DiscardPileY = x + float64(view.CardWidth)/2, y
 	for i, card := range d.DiscardPile[:d.LenDiscardPile] {
-		posX, posY = d.DiscardPileX, d.DiscardPileY - float64(i)*0.4
-		card.SSprite.Move(posX, posY, speed)
-		card.SSprite.Rotate(0, rSpeed)
-		card.SSprite.MoveOffset(0, 0, speed)
-		card.SSprite.RotateOffset(0, rSpeed)
+		posX, posY = d.DiscardPileX, d.DiscardPileY - float64(i)*cOff
+		cx, cy, cr = card.SSprite.GetCenter()
+		if cx != posX || cy != posY || cr != 0 {
+			card.SSprite.Move(posX, posY, speed)
+			card.SSprite.Rotate(0, rSpeed)
+			card.SSprite.MoveOffset(0, 0, speed)
+			card.SSprite.RotateOffset(0, rSpeed)
+		}
 		card.SSprite.Display(dst)
 	}
 }

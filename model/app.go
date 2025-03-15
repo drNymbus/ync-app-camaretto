@@ -36,6 +36,8 @@ type Application struct{
 	minusButton, plusButton *Button
 
 	Camaretto *Camaretto
+
+	imgBuffer *ebiten.Image
 }
 
 func (app *Application) Init(nbPlayers int) {
@@ -48,6 +50,8 @@ func (app *Application) Init(nbPlayers int) {
 	app.plusButton.SSprite.SetCenter(x + 100, y, 0)
 
 	app.Camaretto = NewCamaretto(nbPlayers, float64(WinWidth), float64(WinHeight))
+
+	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
 }
 
 /************ ***************************************************************************** ************/
@@ -110,11 +114,16 @@ func (app *Application) Update() {
 /************ ********************************** RENDER ********************************* ************/
 /************ *************************************************************************** ************/
 
-func (app *Application) Display(dst *ebiten.Image) {
+func (app *Application) Display() *ebiten.Image {
+	app.imgBuffer.Clear()
+	app.imgBuffer.Fill(color.White)
+
 	if app.state == MENU {
-		app.minusButton.SSprite.Display(dst)
-		app.plusButton.SSprite.Display(dst)
+		app.minusButton.SSprite.Display(app.imgBuffer)
+		app.plusButton.SSprite.Display(app.imgBuffer)
 	} else if app.state == GAME {
-		app.Camaretto.Render(dst, float64(WinWidth), float64(WinHeight))
+		app.Camaretto.Render(app.imgBuffer, float64(WinWidth), float64(WinHeight))
 	}
+
+	return app.imgBuffer
 }

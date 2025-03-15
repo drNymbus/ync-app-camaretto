@@ -147,25 +147,29 @@ func (tb *TextBox) RenderBackground() {
 }
 
 func (tb *TextBox) Render() {
+	var modify bool = false
 	if tb.length < len(tb.message) {
 		tb.count++
 		if tb.count == tb.speed {
 			tb.length++
 			tb.count = 0
+			modify = true
 		}
 	}
 
-	tb.actualImg = ebiten.NewImage(int(tb.width), int(tb.height))
-	tb.actualImg.DrawImage(tb.background, nil)
-
-	var op *text.DrawOptions = &text.DrawOptions{}
-	op.ColorScale.ScaleWithColor(tb.textColor)
-	op.LayoutOptions.LineSpacing = view.FontSize + 3
-	op.GeoM.Reset()
-	op.GeoM.Translate(tb.leftMargin*3/2, tb.topMargin)
-	text.Draw(tb.actualImg, tb.message[:tb.length], &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
-
-	tb.SSprite.SetImage(tb.actualImg)
+	if modify {
+		tb.actualImg = ebiten.NewImage(int(tb.width), int(tb.height))
+		tb.actualImg.DrawImage(tb.background, nil)
+	
+		var op *text.DrawOptions = &text.DrawOptions{}
+		op.ColorScale.ScaleWithColor(tb.textColor)
+		op.LayoutOptions.LineSpacing = view.FontSize + 3
+		op.GeoM.Reset()
+		op.GeoM.Translate(tb.leftMargin*3/2, tb.topMargin)
+		text.Draw(tb.actualImg, tb.message[:tb.length], &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
+	
+		tb.SSprite.SetImage(tb.actualImg)
+	}
 }
 
 // @desc: Has text finished scrolling
