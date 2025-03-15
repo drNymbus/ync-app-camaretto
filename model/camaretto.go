@@ -57,6 +57,8 @@ type Camaretto struct {
 
 	cursor *view.Sprite
 
+	info *TextBox
+
 	count int
 }
 
@@ -64,7 +66,6 @@ type Camaretto struct {
 // func NewCamaretto(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) *Camaretto {
 func NewCamaretto(n int, width, height float64) *Camaretto {
 	var c *Camaretto = &Camaretto{}
-	// c.Init(n, sheet, tileWidth, tileHeight)
 	c.Init(n, width, height)
 	return c
 }
@@ -88,13 +89,18 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
 
-	var tb *TextBox = NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
-	// var char *Character = NewCharacter(tb)
+	c.info = NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	var x, y float64 = width/2, height*8/10 + 65
+	c.info.SSprite.SetCenter(x, y, 0)
 
-	var names []string = []string{"Alfred", "Robin", "Parker", "Bruce", "Loïs", "Logan"}
+	var names []string = []string{"Alexis", "Regale", "Victor", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
 		var name string = names[i%len(names)]
-		var char *Character = NewCharacter(tb, name)
+		var char *Character = NewCharacter(name)
+		var bodyX float64 = (x - c.info.SSprite.Width/2) + char.SSprite.Width/2
+		var bodyY float64 = (y + c.info.SSprite.Height/2) - char.SSprite.Height/2
+		char.SSprite.SetCenter(bodyX, bodyY, 0)
+	
 		c.Players[i] = NewPlayer(name, char)
 	}
 
@@ -131,10 +137,9 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
-	c.cursor = view.NewSprite(view.CursorImage, false, color.RGBA{0, 0, 0, 0}, nil)
+	c.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
 	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
 	c.cursor.SetOffset(0, 0, 0)
-
 
 	c.count = 0
 }
@@ -312,6 +317,10 @@ func (c *Camaretto) reveal() {
 	} else if c.state == SHIELD {
 		c.toReveal = append(c.toReveal, c.DeckPile.DrawCard())
 	}
+
+	// var pers *Character = c.Players[c.playerTurn].Persona
+	// var msg string = pers.Talk(c.state)
+	c.info.SetMessage("Display this message please, it could be good for testing purposes")
 }
 
 /************ *************************************************************************** ************/
@@ -382,7 +391,7 @@ func (c *Camaretto) mouseHover(x, y float64) {
 				c.cursor.Move(x, y, speed)
 				c.cursor.Rotate(math.Pi, speed)
 				x, y, r = s.GetOffset()
-				c.cursor.MoveOffset(x, y - float64(view.TileHeight*5/2), speed)
+				c.cursor.MoveOffset(x, y - float64(view.CardHeight*5/2), speed)
 				c.cursor.RotateOffset(r, speed)
 			}
 		} else if c.focus == CARD {
@@ -393,7 +402,7 @@ func (c *Camaretto) mouseHover(x, y float64) {
 				c.cursor.Move(x, y, speed)
 				c.cursor.Rotate(math.Pi, speed)
 				x, y, r = s.GetOffset()
-				c.cursor.MoveOffset(x, y - float64(view.TileHeight/2), speed)
+				c.cursor.MoveOffset(x, y - float64(view.CardHeight/2), speed)
 				c.cursor.RotateOffset(r, speed)
 			}
 		} else if c.focus == REVEAL {
@@ -462,7 +471,6 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 					c.playerFocus = i
 					c.reveal()
 					c.focus = REVEAL
-					c.Players[c.playerTurn].Persona.Talk(c.state)
 				}
 			}
 		} else if c.focus == CARD {
@@ -471,7 +479,6 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 				c.cardFocus = i
 				c.reveal()
 				c.focus = REVEAL
-				c.Players[c.playerTurn].Persona.Talk(c.state)
 			}
 		} else if c.focus == REVEAL {
 			var i int = c.onReveal(e.X, e.Y)
@@ -517,7 +524,6 @@ func (c *Camaretto) Update() {
 				c.heal()
 			}
 			c.endTurn()
-			c.Players[c.playerTurn].Persona.Talk(c.state)
 		}
 	}
 }
@@ -539,10 +545,17 @@ func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 }
 
 func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
-	// c.info.Render()
-	// c.info.SSprite.SetCenter(width/2, height*8/10 + 65, 0)
-	// c.info.SSprite.Display(dst)
-	c.Players[c.playerTurn].Persona.Render(dst, width/2, height*8/10 + 65)
+	var persona *Character = c.Players[c.playerTurn].Persona
+	if c.info.Finished() {
+		persona.Talking = false
+	} else {
+		persona.Talking = true
+		c.info.Render()
+	}
+	persona.Render()
+
+	persona.SSprite.Display(dst)
+	c.info.SSprite.Display(dst)
 
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = float64(WinHeight)*9/10
@@ -584,7 +597,7 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	if len(c.toReveal) > 0 {
 		for i, card := range c.toReveal {
 			var s *view.Sprite = card.SSprite
-			var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.TileWidth)
+			var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.CardWidth)
 			s.Move(centerX + x, centerY, 0.5)
 			card.SSprite.Rotate(0, 0.2)
 			s.MoveOffset(0, 0, 0.2)
