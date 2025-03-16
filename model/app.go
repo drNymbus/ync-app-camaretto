@@ -8,6 +8,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"camaretto/model/component"
+	"camaretto/model/game"
 	"camaretto/view"
 	"camaretto/event"
 )
@@ -32,18 +34,18 @@ type Application struct{
 
 	nbPlayers, maxNbPlayers int
 	textCaptureWidth, textCaptureHeight int
-	names []*TextCapture
+	names []*component.TextCapture
 
 	focus int
 	cursor *view.Sprite
 
 	xNb, yNb float64
-	minusButton, plusButton *Button
+	minusButton, plusButton *component.Button
 
-	start *Button
-	local, join, host *Button
+	start *component.Button
+	local, join, host *component.Button
 
-	Camaretto *Camaretto
+	Camaretto *game.Camaretto
 
 	imgBuffer *ebiten.Image
 }
@@ -53,11 +55,11 @@ func (app *Application) Init(nbPlayers int) {
 
 	app.maxNbPlayers = 6
 	app.nbPlayers = 1
-	app.names = make([]*TextCapture, 6)
+	app.names = make([]*component.TextCapture, 6)
 
 	app.textCaptureWidth, app.textCaptureHeight = WinWidth*3/4, WinHeight/10
 	for i := 0; i < 6; i++ {
-		app.names[i] = NewTextCapture(55, app.textCaptureWidth, app.textCaptureHeight, 2)
+		app.names[i] = component.NewTextCapture(55, app.textCaptureWidth, app.textCaptureHeight, 2)
 		var diffY float64 = float64((i - app.maxNbPlayers/2)*app.textCaptureHeight) + float64(i*10)
 		app.names[i].SSprite.SetCenter(float64(WinWidth/2), float64(WinHeight/2) + 50 + diffY, 0)
 	}
@@ -66,22 +68,22 @@ func (app *Application) Init(nbPlayers int) {
 	app.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
 
 	app.xNb, app.yNb = float64(WinWidth)/2, float64(WinHeight)/8
-	app.minusButton = NewButton("-", color.RGBA{0, 0, 0, 255}, "RED")
+	app.minusButton = component.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED")
 	app.minusButton.SSprite.SetCenter(app.xNb - float64(view.ButtonWidth)/2 - 5, app.yNb, 0)
-	app.plusButton = NewButton("+", color.RGBA{0, 0, 0, 255}, "RED")
+	app.plusButton = component.NewButton("+", color.RGBA{0, 0, 0, 255}, "RED")
 	app.plusButton.SSprite.SetCenter(app.xNb + float64(view.ButtonWidth)/2 + 5, app.yNb, 0)
 
-	app.start = NewButton("START", color.RGBA{0, 0, 0, 255}, "GREEN")
+	app.start = component.NewButton("START", color.RGBA{0, 0, 0, 255}, "GREEN")
 	app.start.SSprite.SetCenter(app.xNb, float64(WinHeight) - float64(view.ButtonHeight), 0)
 
-	app.local = NewButton("Local", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	app.local = component.NewButton("Local", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	app.local.SSprite.SetCenter(app.xNb, float64(WinHeight/2) - float64(view.ButtonHeight) - 5, 0)
-	app.host = NewButton("Host", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	app.host = component.NewButton("Host", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	app.host.SSprite.SetCenter(app.xNb, float64(WinHeight/2), 0)
-	app.join = NewButton("Join", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	app.join = component.NewButton("Join", color.RGBA{0, 0, 0, 255}, "YELLOW")
 	app.join.SSprite.SetCenter(app.xNb, float64(WinHeight/2) + float64(view.ButtonHeight) + 5, 0)
 
-	app.Camaretto = &Camaretto{}
+	app.Camaretto = &game.Camaretto{}
 	// app.Camaretto.Init(nbPlayers, float64(WinWidth), float64(WinHeight))
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
@@ -101,7 +103,7 @@ func (app *Application) GetState() AppState { return app.state }
 func (app *Application) Hover(x, y float64) {
 	if app.state == MENU {
 	} else if app.state == GAME {
-		app.Camaretto.mouseHover(x, y)
+		app.Camaretto.Hover(x, y)
 	}
 }
 

@@ -4,7 +4,7 @@ A fun little card game implemented in Golang. This project is part of the YNC pr
 
 __To build this project:__
 
-    go build 
+    go build
 
 __To run:__
 

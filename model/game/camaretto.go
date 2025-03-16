@@ -1,4 +1,4 @@
-package model
+package game
 
 import (
 	"log"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"camaretto/model/component"
 	"camaretto/view"
 	"camaretto/event"
 )
@@ -49,14 +50,14 @@ type Camaretto struct {
 
 	toReveal []*Card
 
-	attackButton *Button
-	shieldButton *Button
-	chargeButton *Button
-	healButton *Button
+	attackButton *component.Button
+	shieldButton *component.Button
+	chargeButton *component.Button
+	healButton *component.Button
 
 	cursor *view.Sprite
 
-	info *TextBox
+	info *component.TextBox
 
 	count int
 }
@@ -82,7 +83,7 @@ func (c *Camaretto) Init(n int, names []string, width, height float64) {
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
 
-	c.info = NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	c.info = component.NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
 	var x, y float64 = width/2, height*8/10 + 65
 	c.info.SSprite.SetCenter(x, y, 0)
 
@@ -125,10 +126,10 @@ func (c *Camaretto) Init(n int, names []string, width, height float64) {
 		}
 	}
 
-	c.attackButton = NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED")
-	c.shieldButton = NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE")
-	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
-	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
+	c.attackButton = component.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED")
+	c.shieldButton = component.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE")
+	c.chargeButton = component.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	c.healButton = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
 	c.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
 	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
@@ -353,7 +354,7 @@ func (c *Camaretto) onPlayer(x, y float64) int {
 	return -1
 }
 
-func (c *Camaretto) mouseHover(x, y float64) {
+func (c *Camaretto) Hover(x, y float64) {
 	var speed float64 = 15
 
 	var s *view.Sprite = nil
@@ -551,18 +552,18 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	c.info.SSprite.Display(dst)
 
 	var buttonXPos float64 = 0
-	var buttonYPos float64 = float64(WinHeight)*9/10
+	var buttonYPos float64 = float64(height)*9/10
 
 	if c.state == SET {
-		buttonXPos = (float64(WinWidth) * 1/4) + (float64(ButtonWidth)/2)
+		buttonXPos = (float64(width) * 1/4) + (float64(view.ButtonWidth)/2)
 		c.attackButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		c.attackButton.SSprite.Display(dst)
 
-		buttonXPos = (float64(WinWidth) * 2/4) + (float64(ButtonWidth)/2)
+		buttonXPos = (float64(width) * 2/4) + (float64(view.ButtonWidth)/2)
 		c.shieldButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		c.shieldButton.SSprite.Display(dst)
 
-		buttonXPos = (float64(WinWidth) * 3/4) + (float64(ButtonWidth)/2)
+		buttonXPos = (float64(width) * 3/4) + (float64(view.ButtonWidth)/2)
 
 		if c.Players[c.playerTurn].ChargeCard == nil {
 			c.healButton.SSprite.SetCenter(0, 0, 0)
