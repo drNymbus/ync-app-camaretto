@@ -1,19 +1,7 @@
 package view
 
 import (
-	// "log"
-
-	// "os"
-	// "io"
-	// "bytes"
-	// "image"
-	// "image/color"
-
-	// "golang.org/x/text/language"
-
 	"github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	// "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const (
@@ -45,13 +33,8 @@ func LoadPersonaImage(name string) *PersonaImage {
 	op.GeoM.Scale(scale, scale)
 
 	var tmp *ebiten.Image = GetImage("assets/characters/char.png")
-	// PersonaBodyWidth = int(float64(OriginalPersonaBodyWidth)*scale)
-	// PersonaBodyHeight = int(float64(OriginalPersonaBodyHeight)*scale)
 	pi.Body = ebiten.NewImage(PersonaBodyWidth, PersonaBodyHeight)
 	pi.Body.DrawImage(tmp, op)
-
-	// PersonaMouthWidth = int(float64(PersonaMouthWidth)*scale)
-	// PersonaMouthHeight = int(float64(PersonaMouthHeight)*scale)
 
 	tmp = GetImage("assets/characters/mouth_open.png")
 	pi.OpenMouth = ebiten.NewImage(PersonaMouthWidth, PersonaBodyHeight)
@@ -65,7 +48,6 @@ func LoadPersonaImage(name string) *PersonaImage {
 }
 
 func LoadDeathImage() *ebiten.Image {
-	// Death Sprite
 	var tmp *ebiten.Image = GetImage("assets/characters/jesus.jpg")
 
 	var width, height int = tmp.Size()

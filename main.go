@@ -37,10 +37,13 @@ func (g *Game) Update() error {
 
 	g.application.Hover(g.events.X, g.events.Y)
 
-	var e *event.MouseEvent = nil
+	var me *event.MouseEvent = nil
+	var ke *event.KeyEvent = nil
 	for ;!g.events.IsEmpty(); {
-		e = g.events.ReadMouseEvent()
-		g.application.MouseEventUpdate(e)
+		me = g.events.ReadMouseEvent()
+		if me != nil { g.application.MouseEventUpdate(me) }
+		ke = g.events.ReadKeyEvent()
+		if ke != nil { g.application.KeyEventUpdate(ke) }
 	}
 
 	g.application.Update()

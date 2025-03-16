@@ -25,11 +25,11 @@ type Sprite struct {
 
 	scaleX, scaleY float64
 
-	bg bool
-	bgColor color.RGBA
+	// bg bool
+	// bgColor color.RGBA
 
 	options *ebiten.DrawImageOptions
-	background *ebiten.Image
+	// background *ebiten.Image
 	image *ebiten.Image
 }
 
@@ -42,7 +42,7 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 	s.image.DrawImage(img, nil)
 
 	s.Width, s.Height = float64(w), float64(h)
-	s.bg, s.bgColor = bgEnabled, c
+	// s.bg, s.bgColor = bgEnabled, c
 
 	if op == nil { op = &ebiten.DrawImageOptions{} }
 	s.options = op
@@ -57,30 +57,8 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 
 	s.scaleX, s.scaleY = 1, 1
 
-	// if bgEnabled { s.RenderBackground() }
 	return s
 }
-
-// // @desc: Create an image the same size as the sprite then fills it with the registered color
-// func (s *Sprite) RenderBackground() {
-// 	s.background = ebiten.NewImage(int(s.Width), int(s.Height))
-// 	s.background.Fill(s.bgColor)
-// }
-
-// // @desc: Switch the flag to true indicating wether the background should be displayed or not
-// func (s *Sprite) EnableBackground() {
-// 	s.bg = true
-// 	s.RenderBackground()
-// }
-// // @desc: Switch the flag to false indicating wether the background should be displayed or not
-// func (s *Sprite) DisableBackground() { s.bg = false }
-
-// // @desc: Change the background color of the background image
-// func (s *Sprite) SetBackgroundColor(c color.RGBA) {
-// 	s.bgColor = c
-// 	s.RenderBackground()
-// }
-// func (s *Sprite) GetBackgroundColor() color.RGBA { return s.bgColor }
 
 func (s *Sprite) SetImage(img *ebiten.Image) {
 	s.image.Clear()
@@ -197,7 +175,6 @@ func (s *Sprite) Display(dst *ebiten.Image) {
 	s.options.GeoM.Rotate(s.rOffset) // Apply offset rotation
 	s.options.GeoM.Translate(s.xCenter, s.yCenter) // Put img in place
 
-	// if s.bg { dst.DrawImage(s.background, s.options) }
 	dst.DrawImage(s.image, s.options)
 }
 

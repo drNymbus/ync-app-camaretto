@@ -1,10 +1,10 @@
 package event
 
 import (
+	// "log"
+	// "reflect"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-
-	// "camaretto/model"
 )
 
 type EventType int
@@ -20,7 +20,8 @@ type MouseEvent struct {
 }
 
 type KeyEvent struct {
-// 	Click ebiten.Key
+	Key ebiten.Key
+	Event EventType
 }
 
 type EventQueue struct {
@@ -39,12 +40,23 @@ func (q *EventQueue) Update() {
 	q.X, q.Y = float64(xi), float64(yi)
 
 	if len(q.mouse) < q.capacity {
+		// Mouse
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			q.mouse = append(q.mouse, &MouseEvent{q.X, q.Y, ebiten.MouseButtonLeft, PRESSED})
 		}
-	
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 			q.mouse = append(q.mouse, &MouseEvent{q.X, q.Y, ebiten.MouseButtonLeft, RELEASED})
+		}
+
+		// Keyboard
+		var keys []ebiten.Key = make([]ebiten.Key, q.capacity)
+		keys = inpututil.AppendJustPressedKeys(keys[:0])
+		for _, p := range keys {
+			q.keyboard = append(q.keyboard, &KeyEvent{p, PRESSED})
+		}
+		keys = inpututil.AppendJustReleasedKeys(keys[:0])
+		for _, p := range keys {
+			q.keyboard = append(q.keyboard, &KeyEvent{p, RELEASED})
 		}
 	}
 }

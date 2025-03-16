@@ -19,7 +19,6 @@ const (
 	SHIELD GameState = 2
 	CHARGE GameState = 3
 	HEAL GameState = 4
-	END GameState = 5
 )
 
 type FocusState int
@@ -62,17 +61,11 @@ type Camaretto struct {
 	count int
 }
 
-// @desc: Initialize a new Camaretto instance of the game, then returns a reference to the Camaretto object
-// func NewCamaretto(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) *Camaretto {
-func NewCamaretto(n int, width, height float64) *Camaretto {
-	var c *Camaretto = &Camaretto{}
-	c.Init(n, width, height)
-	return c
-}
-
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 // func (c *Camaretto) Init(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) {
-func (c *Camaretto) Init(n int, width, height float64) {
+func (c *Camaretto) Init(n int, names []string, width, height float64) {
+	if len(names) != n { log.Fatal("[camaretto.Init] You finna start a game like that ?!") }
+
 	c.state = SET
 	c.focus = NONE
 
@@ -93,7 +86,7 @@ func (c *Camaretto) Init(n int, width, height float64) {
 	var x, y float64 = width/2, height*8/10 + 65
 	c.info.SSprite.SetCenter(x, y, 0)
 
-	var names []string = []string{"Alexis", "Regale", "Victor", "Bruce", "Loïs", "Logan"}
+	// var names []string = []string{"Alexis", "Regale", "Victor", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
 		var name string = names[i%len(names)]
 		var char *Character = NewCharacter(name)
@@ -150,13 +143,13 @@ func (c *Camaretto) Init(n int, width, height float64) {
 
 // @desc: Returns true if one player is left, false otherwise
 func (c *Camaretto) IsGameOver() bool {
-	var count int = 0
+	var count int = c.nbPlayers
 	for _, p := range c.Players {
-		if p.Dead { count++ }
+		if p.Dead { count-- }
 	}
 
-	if count > 1 { return true }
-	return false
+	if count > 1 { return false }
+	return true
 }
 
 func (c *Camaretto) endTurn() {

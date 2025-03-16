@@ -5,15 +5,11 @@ import (
 
 	"os"
 	"io"
-	// "bytes"
-	"image"
-	// "image/color"
 
-	// "golang.org/x/text/language"
+	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	// "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 // @desc: Given a file path returns the content of the file as a byte slice
