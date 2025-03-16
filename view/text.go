@@ -2,17 +2,13 @@ package view
 
 import (
 	"log"
-
-	// "os"
-	// "io"
 	"bytes"
-	// "image"
+
 	"image/color"
 
 	"golang.org/x/text/language"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
@@ -24,9 +20,7 @@ var (
 
 func LoadFont() {
 	var err error
-	// Load font file
 	var fontByte []byte = GetFileByte("assets/fonts/NaturalMono_Regular.ttf")
-	// var fontByte []byte = getFileByte("assets/fonts/Kenney_Future_Narrow.ttf")
 	FaceSource, err = text.NewGoTextFaceSource(bytes.NewReader(fontByte))
 	if err != nil { log.Fatal("[parametersInitAssets] Set FaceSource:", err) }
 

@@ -1,19 +1,11 @@
 package view
 
 import (
-	// "log"
+	"log"
 
-	// "os"
-	// "io"
-	// "bytes"
-	// "image"
 	"image/color"
 
-	// "golang.org/x/text/language"
-
 	"github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	// "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const (
@@ -51,7 +43,7 @@ func LoadButtonImage(c string) *ButtonImage {
 	} else if c == "YELLOW" {
 		bi.Pressed = GetImage("assets/buttons/yellow_button_pressed_gloss.png")
 		bi.Released = GetImage("assets/buttons/yellow_button.png")
-	}
+	} else { log.Fatal("[view.LoadButtonImage] Cannot load unknown button color:", c) }
 
 	return bi
 }

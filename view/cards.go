@@ -1,24 +1,14 @@
 package view
 
 import (
-	// "log"
-
-	// "os"
-	// "io"
-	// "bytes"
 	"image"
-	// "image/color"
-
-	// "golang.org/x/text/language"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	// "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const (
-	CardWidth int = 64//32
-	CardHeight int = 64//32
+	CardWidth int = 64
+	CardHeight int = 64
 )
 
 type CardImage struct {
@@ -41,9 +31,9 @@ func LoadCardImage() *CardImage {
 
 	// var Sheet *ebiten.Image = ebiten.NewImage(width, height)
 	var Sheet *ebiten.Image = ebiten.NewImage(width, height)
-	// op := &ebiten.DrawImageOptions{}; op.GeoM.Scale(xScale, yScale)
-	// Sheet.DrawImage(ogSheet, op)
-	Sheet.DrawImage(ogSheet, nil)
+	op := &ebiten.DrawImageOptions{};
+	// op.GeoM.Scale(xScale, yScale)
+	Sheet.DrawImage(ogSheet, op)
 
 	for i := 0; i < 13; i++ { // Init all cards image from Ace to King
 		var sx int = i * CardWidth
