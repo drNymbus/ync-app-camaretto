@@ -46,7 +46,6 @@ type Camaretto struct {
 	nbPlayers int
 	Players []*Player
 	DeckPile *Deck
-	DrawnCard *Card
 
 	toReveal []*Card
 
@@ -64,7 +63,7 @@ type Camaretto struct {
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 // func (c *Camaretto) Init(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) {
-func (c *Camaretto) Init(n int, names []string, width, height float64) {
+func (c *Camaretto) Init(n int, names []string, seed int64, width, height float64) {
 	if len(names) != n { log.Fatal("[camaretto.Init] You finna start a game like that ?!") }
 
 	c.state = SET
@@ -75,10 +74,7 @@ func (c *Camaretto) Init(n int, names []string, width, height float64) {
 	c.cardFocus = -1
 
 	c.DeckPile = &Deck{}
-	c.DeckPile.Init()
-	c.DeckPile.ShuffleDrawPile()
-
-	c.DrawnCard = nil
+	c.DeckPile.Init(seed)
 
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
@@ -87,14 +83,13 @@ func (c *Camaretto) Init(n int, names []string, width, height float64) {
 	var x, y float64 = width/2, height*8/10 + 65
 	c.info.SSprite.SetCenter(x, y, 0)
 
-	// var names []string = []string{"Alexis", "Regale", "Victor", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
 		var name string = names[i%len(names)]
 		var char *Character = NewCharacter(name)
 		var bodyX float64 = (x - c.info.SSprite.Width/2) + char.SSprite.Width/2
 		var bodyY float64 = (y + c.info.SSprite.Height/2) - char.SSprite.Height/2
 		char.SSprite.SetCenter(bodyX, bodyY, 0)
-	
+
 		c.Players[i] = NewPlayer(name, char)
 	}
 
@@ -610,7 +605,13 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 /************ ********************************************************************************** ************/
 
 // @desc: Convert game data into a byte slice ready for transmission
-func (c *Camaretto) Serialize() []byte {}
+func (c *Camaretto) Serialize() []byte {
+	var data []byte
+	return data
+}
 
 // @desc: Build game state from byte slice received
-func (c *Camaretto) Deserialize(data []byte) error {}
+func (c *Camaretto) Deserialize(data []byte) error {
+	var err error
+	return err
+}

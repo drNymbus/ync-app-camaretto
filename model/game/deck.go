@@ -2,7 +2,6 @@ package game
 
 import (
 	"log"
-	"time"
 	"math/rand"
 
 	"strconv"
@@ -44,6 +43,7 @@ func (c *Card) Reveal() {
 }
 
 type Deck struct {
+	Seed int64
 	DrawPile []*Card
 	LenDrawPile int
 	DrawPileX, DrawPileY float64
@@ -53,7 +53,7 @@ type Deck struct {
 }
 
 // @desc: Initialize the deck object with 52 cards, 2 Jokers and 1 Non-value card (a.k.a "the rule card")
-func (d *Deck) Init() {
+func (d *Deck) Init(s int64) {
 	d.DrawPile = make([]*Card, 55); d.LenDrawPile = 53
 	d.DiscardPile = make([]*Card, 55); d.LenDiscardPile = 0
 
@@ -74,6 +74,17 @@ func (d *Deck) Init() {
 	// Add a Joker
 	d.DrawPile[54] = NewCard("Joker", 14, ci.Joker, ci.Hidden)
 	d.DrawPile[54].Hide()
+
+	d.Seed = s
+	d.shuffleDrawPile()
+}
+
+// @desc: Randomize order of cards in the draw pile
+func (d *Deck) shuffleDrawPile() {
+	rand.Seed(d.Seed)
+	rand.Shuffle(d.LenDrawPile, func(i, j int) {
+		d.DrawPile[i], d.DrawPile[j] = d.DrawPile[j], d.DrawPile[i]
+	})
 }
 
 // @desc: Puts all cards in the discard pile on top of the draw pile
@@ -106,18 +117,6 @@ func (d *Deck) DiscardCard(c *Card) {
 	}
 	d.DiscardPile[d.LenDiscardPile] = c
 	d.LenDiscardPile++
-}
-
-// @desc: Randomize order of cards in the draw pile
-func (d *Deck) ShuffleDrawPile() {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(d.LenDrawPile, func(i, j int) { d.DrawPile[i], d.DrawPile[j] = d.DrawPile[j], d.DrawPile[i] })
-}
-
-// @desc: Randomize order of cards in the discard pile
-func (d *Deck) ShuffleDiscardPile() {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(d.LenDiscardPile, func(i, j int) { d.DiscardPile[i], d.DiscardPile[j] = d.DiscardPile[j], d.DiscardPile[i] })
 }
 
 func (d *Deck) FindInDrawPile(val int) *Card {

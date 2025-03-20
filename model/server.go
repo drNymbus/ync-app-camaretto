@@ -9,7 +9,7 @@ import (
 type CamarettoServer struct {
 	listener net.Listener
 	clients map[string]net.Conn
-	game *Camaretto
+	game *game.Camaretto
 }
 
 // @desc: Create new instance of CamarettoServer then returns it
@@ -19,21 +19,24 @@ func NewCamarettoServer() *CamarettoServer {
 }
 
 // @desc: Start listening on specified port
-func (s *Server) Start() error {
+func (s *CamarettoServer) Start() error {
+	return nil
 }
 
 // @desc: Accept incoming connections
-func (s *Server) AcceptConnections() {
+func (s *CamarettoServer) AcceptConnections() {
 }
 
 // @desc: Handle connected client
-func (s *Server) HandleClient(conn net.Conn) {
+func (s *CamarettoServer) HandleClient(conn net.Conn) {
 }
 
 // @desc: Send game state to every connected client
-func (s *Server) BroadcastGameState() error {
+func (s *CamarettoServer) BroadcastGameState() error {
+	return nil
 }
 
 // @desc: Stop the server and close all connections with current clients
-func (s *Server) Stop() error {
+func (s *CamarettoServer) Stop() error {
+	return nil
 }

@@ -2,6 +2,7 @@ package model
 
 import (
 	"math"
+	"time"
 	"strconv"
 
 	"image/color"
@@ -84,7 +85,6 @@ func (app *Application) Init(nbPlayers int) {
 	app.join.SSprite.SetCenter(app.xNb, float64(WinHeight/2) + float64(view.ButtonHeight) + 5, 0)
 
 	app.Camaretto = &game.Camaretto{}
-	// app.Camaretto.Init(nbPlayers, float64(WinWidth), float64(WinHeight))
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
 }
@@ -96,9 +96,9 @@ func (app *Application) Init(nbPlayers int) {
 func (app *Application) SetState(s AppState) { app.state = s }
 func (app *Application) GetState() AppState { return app.state }
 
-/************ *************************************************************************** ************/
-/************ ********************************* UPDATE ********************************** ************/
-/************ *************************************************************************** ************/
+/************ ***************************************************************************** ************/
+/************ ********************************** UPDATE *********************************** ************/
+/************ ***************************************************************************** ************/
 
 func (app *Application) Hover(x, y float64) {
 	if app.state == MENU {
@@ -155,7 +155,7 @@ func (app *Application) mouseRelease(x, y float64) {
 			for i := 0; i < app.nbPlayers; i++ {
 				playerNames = append(playerNames, app.names[i].GetText())
 			}
-			app.Camaretto.Init(app.nbPlayers, playerNames, float64(WinWidth), float64(WinHeight))
+			app.Camaretto.Init(app.nbPlayers, playerNames, time.Now().UnixNano(), float64(WinWidth), float64(WinHeight))
 		}
 	}
 }

@@ -3,7 +3,7 @@ package model
 import (
 	"net"
 
-	"camaretto/model/game"
+	// "camaretto/model/game"
 )
 
 
@@ -19,17 +19,20 @@ func NewCamarettoClient() *CamarettoClient {
 }
 
 // @desc: Connect to server
-func (c *Client) Connect(address string) error {
+func (cc *CamarettoClient) Connect(address string) error {
+	return nil
 }
 
 // @desc: Send an action to the server
-func (c *Client) SendAction(action []byte) error {
+func (cc *CamarettoClient) SendAction(action []byte) error {
+	return nil
 }
 
 // @desc: Update game state from server's data received
-func (c *Client) ReceiveGameState() {
+func (cc *CamarettoClient) ReceiveGameState() {
 }
 
 // @desc: Disconnect from server
-func (c *Client) Disconnect() error {
+func (cc *CamarettoClient) Disconnect() error {
+	return nil
 }

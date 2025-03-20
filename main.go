@@ -19,7 +19,6 @@ var (
 type Game struct{
 	application *model.Application
 	events *event.EventQueue
-	// mouse *event.Mouse
 }
 
 func NewGame(nbPlayers int) *Game {
