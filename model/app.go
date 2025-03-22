@@ -1,8 +1,13 @@
 package model
 
 import (
+	"log"
+
 	"math"
 	"time"
+
+	"net"
+
 	"strconv"
 
 	"image/color"
@@ -20,6 +25,7 @@ const (
 	WinHeight int = 900
 	ButtonWidth int = WinWidth / 5
 	ButtonHeight int = WinHeight / 6
+	MaxNbPlayers int = 6
 )
 
 type AppState int
@@ -48,6 +54,15 @@ type Application struct{
 
 	Camaretto *game.Camaretto
 
+	online bool
+	hosting bool
+
+	input chan Message
+	output chan Message
+
+	server *CamarettoServer
+	client *CamarettoClient
+
 	imgBuffer *ebiten.Image
 }
 
@@ -56,10 +71,10 @@ func (app *Application) Init(nbPlayers int) {
 
 	app.maxNbPlayers = 6
 	app.nbPlayers = 1
-	app.names = make([]*component.TextCapture, 6)
+	app.names = make([]*component.TextCapture, MaxNbPlayers)
 
 	app.textCaptureWidth, app.textCaptureHeight = WinWidth*3/4, WinHeight/10
-	for i := 0; i < 6; i++ {
+	for i := 0; i < MaxNbPlayers; i++ {
 		app.names[i] = component.NewTextCapture(55, app.textCaptureWidth, app.textCaptureHeight, 2)
 		var diffY float64 = float64((i - app.maxNbPlayers/2)*app.textCaptureHeight) + float64(i*10)
 		app.names[i].SSprite.SetCenter(float64(WinWidth/2), float64(WinHeight/2) + 50 + diffY, 0)
@@ -86,6 +101,9 @@ func (app *Application) Init(nbPlayers int) {
 
 	app.Camaretto = &game.Camaretto{}
 
+	app.online = false
+	app.hosting = false
+
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
 }
 
@@ -102,8 +120,10 @@ func (app *Application) GetState() AppState { return app.state }
 
 func (app *Application) Hover(x, y float64) {
 	if app.state == MENU {
+	} else if app.state == LOBBY {
 	} else if app.state == GAME {
 		app.Camaretto.Hover(x, y)
+	} else if app.state == END {
 	}
 }
 
@@ -128,6 +148,7 @@ func (app *Application) mousePress(x, y float64) {
 				if textInput.SSprite.In(x, y) { app.focus = i }
 			}
 		}
+	} else if app.state == GAME {
 	} else if app.state == END {
 		app.state = MENU
 	}
@@ -139,6 +160,31 @@ func (app *Application) mouseRelease(x, y float64) {
 		app.host.Released()
 		app.join.Released()
 		if app.local.SSprite.In(x, y) {
+			app.state = LOBBY
+			app.online = false
+
+		} else if app.host.SSprite.In(x, y) {
+			app.online = true
+			app.hosting = true
+
+			app.input = make(chan Message, 10)
+			app.output = make(chan Message, 10)
+
+			app.server = NewCamarettoServer()
+			go app.server.Run(input, output)
+
+			app.state = LOBBY
+
+		} else if app.join.SSprite.In(x, y) {
+			app.online = true
+			app.hosting = false
+
+			app.input = make(chan Message, 10)
+			app.output = make(chan Message, 10)
+
+			app.client = NewCamarettoClient()
+			go app.client.Run(input, output)
+
 			app.state = LOBBY
 		}
 	} else if app.state == LOBBY {
@@ -157,32 +203,41 @@ func (app *Application) mouseRelease(x, y float64) {
 			}
 			app.Camaretto.Init(app.nbPlayers, playerNames, time.Now().UnixNano(), float64(WinWidth), float64(WinHeight))
 		}
+	} else if app.state == GAME {
+	} else if app.state == END {
 	}
 }
 
 func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
-	if app.state == GAME {
-		app.Camaretto.EventUpdate(e)
-	} else {
+	if app.state == MENU {
 		if e.Event == event.PRESSED {
 			app.mousePress(e.X, e.Y)
 		} else if e.Event == event.RELEASED {
 			app.mouseRelease(e.X, e.Y)
 		}
+	} else if app.state == LOBBY {
+	} else if app.state == GAME {
+		app.Camaretto.EventUpdate(e)
+	} else if app.state == END {
 	}
 }
 
 func (app *Application) KeyEventUpdate(e *event.KeyEvent) {
-	if app.state == LOBBY {
+	if app.state == MENU {
+	} else if app.state == LOBBY {
 		if e.Event == event.PRESSED { app.names[app.focus].HandleEvent(e, nil) }
+	} else if app.state == GAME {
+	} else if app.state == END {
 	}
 }
 
 func (app *Application) Update() {
 	if app.state == MENU {
+	} else if app.state == LOBBY {
 	} else if app.state == GAME {
 		app.Camaretto.Update()
 		if app.Camaretto.IsGameOver() { app.state = END }
+	} else if app.state == END {
 	}
 }
 

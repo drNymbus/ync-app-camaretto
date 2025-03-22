@@ -1,15 +1,18 @@
 package model
 
 import (
+	"log"
+
 	"net"
+	"encoding/gob"
 
 	// "camaretto/model/game"
 )
 
-
 type CamarettoClient struct {
 	conn net.Conn
-	updates chan []byte
+	decoder *gob.Decoder
+	encoder *gob.Encoder
 }
 
 // @desc: Create new instance of CamarettoClient then returns it
@@ -18,9 +21,20 @@ func NewCamarettoClient() *CamarettoClient {
 	return cc
 }
 
-// @desc: Connect to server
-func (cc *CamarettoClient) Connect(address string) error {
+func (cc *CamarettoClient) Run(input, output chan Message) {
+}
+
+// @desc: Retrieves every address open to connection
+func (cc *CamarettoClient) Scan() []*net.TCPAddr {
 	return nil
+}
+
+// @desc: Connect to server
+func (cc *CamarettoClient) Connect(addr *net.TCPAddr) error {
+	var err error
+	cc.conn, err = net.DialTCP("tcp", nil, addr)
+	if err != nil { log.Println("[Connect] Unable to dial: ", err) }
+	return err
 }
 
 // @desc: Send an action to the server

@@ -599,19 +599,3 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 
 	c.cursor.Display(dst)
 }
-
-/************ ********************************************************************************** ************/
-/************ ********************************** (DE)SERIALIZE ********************************* ************/
-/************ ********************************************************************************** ************/
-
-// @desc: Convert game data into a byte slice ready for transmission
-func (c *Camaretto) Serialize() []byte {
-	var data []byte
-	return data
-}
-
-// @desc: Build game state from byte slice received
-func (c *Camaretto) Deserialize(data []byte) error {
-	var err error
-	return err
-}
