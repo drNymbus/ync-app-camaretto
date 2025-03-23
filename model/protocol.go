@@ -5,23 +5,23 @@ import (
 )
 
 type PlayerInfo struct {
-	index int
-	name string
+	Index int
+	Name string
 }
 
 type CamarettoState struct {
-	game game.GameState // Camaretto.state
-	focus game.FocusState // Camaretto.focus
-	turn int // Camaretto.playerTurn
-	player int // Camaretto.playerFocus
-	card int // Camaretto.cardFocus
-	reveal []bool // Camaretto.toReveal
+	Game game.GameState // Camaretto.state
+	Focus game.FocusState // Camaretto.focus
+	Turn int // Camaretto.playerTurn
+	Player int // Camaretto.playerFocus
+	Card int // Camaretto.cardFocus
+	Reveal []bool // Camaretto.toReveal
 }
 
 type CamarettoInit struct {
-	seed int64
-	nbPlayers int
-	names []string
+	Seed int64
+	NbPlayers int
+	Names []string
 }
 
 type MessageType int
@@ -32,8 +32,8 @@ const (
 )
 
 type Message struct {
-	type MessageType
-	info PlayerInfo
-	state CamarettoState
-	init CamarettoInit
+	Typ MessageType
+	Info *PlayerInfo
+	State *CamarettoState
+	Init *CamarettoInit
 }

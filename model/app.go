@@ -3,10 +3,10 @@ package model
 import (
 	"log"
 
+	"net"
+
 	"math"
 	"time"
-
-	"net"
 
 	"strconv"
 
@@ -31,9 +31,10 @@ const (
 type AppState int
 const (
 	MENU AppState = 0
-	LOBBY AppState = 1
-	GAME AppState = 2
-	END AppState = 3
+	SCAN AppState = 1
+	LOBBY AppState = 2
+	GAME AppState = 3
+	END AppState = 4
 )
 
 type Application struct{
@@ -57,8 +58,8 @@ type Application struct{
 	online bool
 	hosting bool
 
-	input chan Message
-	output chan Message
+	input chan *Message
+	output chan *Message
 
 	server *CamarettoServer
 	client *CamarettoClient
@@ -155,6 +156,8 @@ func (app *Application) mousePress(x, y float64) {
 }
 
 func (app *Application) mouseRelease(x, y float64) {
+	var err error
+
 	if app.state == MENU {
 		app.local.Released()
 		app.host.Released()
@@ -167,11 +170,12 @@ func (app *Application) mouseRelease(x, y float64) {
 			app.online = true
 			app.hosting = true
 
-			app.input = make(chan Message, 10)
-			app.output = make(chan Message, 10)
+			app.input = make(chan *Message, 10)
+			app.output = make(chan *Message, 10)
 
 			app.server = NewCamarettoServer()
-			go app.server.Run(input, output)
+			go app.server.Run(app.input, app.output)
+			log.Println("HOST ROUTINE LAUNCHED")
 
 			app.state = LOBBY
 
@@ -179,11 +183,17 @@ func (app *Application) mouseRelease(x, y float64) {
 			app.online = true
 			app.hosting = false
 
-			app.input = make(chan Message, 10)
-			app.output = make(chan Message, 10)
+			// app.input = make(chan Message, 10)
+			// app.output = make(chan Message, 10)
 
 			app.client = NewCamarettoClient()
-			go app.client.Run(input, output)
+			var addr *net.TCPAddr
+			addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
+			if err != nil {
+				log.Println("[Application.mouseRelease] Unable to resolve host:", err)
+			}
+			app.client.Connect(addr)
+			// go app.client.Run(app.input, app.output)
 
 			app.state = LOBBY
 		}
@@ -209,13 +219,12 @@ func (app *Application) mouseRelease(x, y float64) {
 }
 
 func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
-	if app.state == MENU {
+	if app.state == MENU || app.state == LOBBY {
 		if e.Event == event.PRESSED {
 			app.mousePress(e.X, e.Y)
 		} else if e.Event == event.RELEASED {
 			app.mouseRelease(e.X, e.Y)
 		}
-	} else if app.state == LOBBY {
 	} else if app.state == GAME {
 		app.Camaretto.EventUpdate(e)
 	} else if app.state == END {

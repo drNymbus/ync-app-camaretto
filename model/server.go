@@ -4,31 +4,13 @@ import (
 	"log"
 
 	"net"
-	"encoding/gob"
-)
-
-type ClientState int
-const (
-	SEND ClientState = 0
-	RECEIVE ClientState = 1
-)
-
-type CamarettoClient struct {
-	conn *net.TCPConn
-	encoder *gob.Encoder
-	decoder *gob.Decoder
-}
-
-type ServerState int
-const (
-	LISTENING ServerState = 0
-	RUNNING ServerState = 1
+	// "encoding/gob"
 )
 
 type CamarettoServer struct {
-	state ServerState
+	state AppState
 	listener *net.TCPListener
-	clients []*CamarettoClient
+	clients []*ClientConnection
 }
 
 // @desc: Create new instance of CamarettoServer then returns it
@@ -36,7 +18,7 @@ func NewCamarettoServer() *CamarettoServer {
 	var err error
 
 	var cs *CamarettoServer = &CamarettoServer{}
-	cs.state = LISTENING
+	cs.state = LOBBY
 
 	var addr *net.TCPAddr
 	addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
@@ -49,57 +31,50 @@ func NewCamarettoServer() *CamarettoServer {
 	return cs
 }
 
-func (s *CamarettoServer) Run(in, out chan Message) {}
-
-// @desc: Accept incoming connection, adding any new connection to the player pool
-func (s *CamarettoServer) AcceptConnection() (*net.TCPConn, error) {
+func (s *CamarettoServer) Run(input, output chan *Message) {
 	var err error
-	var c *net.TCPConn
+	if s.state == LOBBY {
+		for {
+			var c *net.TCPConn
+			c, err = s.listener.AcceptTCP()
+			if err != nil {
+				log.Println("[CamarettoServer.Run - LOBBY] AcceptTCP failed:", err)
+			}
 
-	c, err = s.listener.AcceptTCP()
-
-	return c, err
+			go s.ClientHandshake(c, output)
+		}
+	} else if s.state == GAME {
+	}
 }
 
-// @desc: Handle first client connection, receiving player name then sending index position
-func (s *CamarettoServer) HandleFirstConnection(conn *net.TCPConn) string {
+// @desc: Handle first client connection, receiving player name then sending back player's index position
+func (s *CamarettoServer) ClientHandshake(conn *net.TCPConn, output chan *Message) {
 	var err error
+	var msg *Message
 
-	s.clients = append(s.clients, conn)
+	var client *ClientConnection = NewClientConnection(conn)
+	s.clients = append(s.clients, client)
 
 	// Read player name
-	var name string
-	s.decoder = gob.NewDecoder(conn)
-	err = s.decoder.Decode(name)
-	if err != nil {
+	// var name string
+	// s.decoder = gob.NewDecoder(conn)
+	err = client.Decoder.Decode(msg)
+	if err == nil {
+		output <- msg
+	} else {
 		log.Println("[HandleFirstConnection] Receive player name failed:", err)
 	}
 
 	// Send game index position to new player
-	var index int = len(s.clients)
-	s.encoder = gob.NewEncoder(conn)
-	err = s.encoder.Encode(index)
+	// var index int = len(s.clients)
+	msg = &Message{HANDSHAKE, &PlayerInfo{len(s.clients), ""}, nil, nil}
+	// s.encoder = gob.NewEncoder(conn)
+	err = client.Encoder.Encode(msg)
 	if err != nil {
 		log.Println("[HandleFirstConnection] Send player index failed:", err)
 	}
-
-	return name
 }
 
 // @desc: Send player names and index position to every connection
-func (s *CamarettoServer) BroadcastPlayerPool(names []string) {
-	var err error
-
-	var playerPool []PlayerInfo = []PlayerInfo{}
-	for i, name := range names {
-		playerPool = append(playerPool, PlayerInfo{i, name})
-	}
-
-	for _, conn := range s.clients {
-		s.encoder = gob.NewEncoder(conn)
-		err = s.encoder.Encode(playerPool)
-		if err != nil {
-			log.Println("[BroadcastPlayerPool] Sending player pool failed:", err)
-		}
-	}
+func (s *CamarettoServer) BroadcastPlayerPool() {
 }
