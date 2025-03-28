@@ -4,12 +4,9 @@ import (
 	"log"
 
 	"net"
-	// "encoding/gob"
 )
 
 type CamarettoServer struct {
-	state AppState
-
 	listener *net.TCPListener
 	clients []*ClientConnection
 
@@ -22,9 +19,6 @@ func NewCamarettoServer() *CamarettoServer {
 
 	var server *CamarettoServer = &CamarettoServer{}
 
-	server.state = LOBBY
-	server.camaretto = NewCamarettoState()
-
 	var addr *net.TCPAddr
 	addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create ResolveTCPAddr:", err) }
@@ -33,6 +27,9 @@ func NewCamarettoServer() *CamarettoServer {
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create TCPListener:", err) }
 
 	server.clients = []*ClientConnection{}
+
+	server.camaretto = NewCamarettoState()
+
 	return server
 }
 
@@ -43,13 +40,7 @@ func (server *CamarettoServer) handleError(e error, from string, action string) 
 }
 
 func (server *CamarettoServer) Run() {
-	var messagePipe chan *Message = make(chan *Message)
-
-	go server.broadcastRoutine(messagePipe)
-
-	// server.lobbyRoutine()
-	server.acceptConnections(messagePipe)
-
+	server.lobbyRoutine()
 	server.gameRoutine()
 }
 
@@ -123,6 +114,27 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message) {
 
 // @desc:
 func (server *CamarettoServer) lobbyRoutine() {
+	var pipe chan *Message = make(chan *Message)
+	go server.broadcastRoutine(pipe)
+	go server.acceptConnections(pipe)
+
+	// Wait for first connection
+	for ;len(server.clients) < 1; {}
+
+	var err error
+	for {
+		var msg *Message = &Message{}
+		err = server.clients[0].Decoder.Decode(msg)
+		if err != nil {
+			server.handleError(err, "lobbyRoutine", "Receive message from host failed")
+		} else if msg.Typ == START {
+			server.broadcastMessage(&Message{PLAYERS, server.camaretto.Players, nil})
+			server.broadcastMessage(&Message{STATE, nil, server.camaretto})
+			return
+		} else {
+			server.handleError(nil, "lobbyRoutine", "Received a message that should not have been sent")
+		}
+	}
 }
 
 // @desc:
