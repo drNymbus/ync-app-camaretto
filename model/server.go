@@ -9,72 +9,122 @@ import (
 
 type CamarettoServer struct {
 	state AppState
+
 	listener *net.TCPListener
 	clients []*ClientConnection
+
+	camaretto *CamarettoState
 }
 
 // @desc: Create new instance of CamarettoServer then returns it
 func NewCamarettoServer() *CamarettoServer {
 	var err error
 
-	var cs *CamarettoServer = &CamarettoServer{}
-	cs.state = LOBBY
+	var server *CamarettoServer = &CamarettoServer{}
+
+	server.state = LOBBY
+	server.camaretto = NewCamarettoState()
 
 	var addr *net.TCPAddr
 	addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create ResolveTCPAddr:", err) }
 
-	cs.listener, err = net.ListenTCP("tcp", addr)
+	server.listener, err = net.ListenTCP("tcp", addr)
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create TCPListener:", err) }
 
-	cs.clients = make([]*ClientConnection, MaxNbPlayers)
-	return cs
+	server.clients = []*ClientConnection{}
+	return server
 }
 
-func (s *CamarettoServer) Run(input, output chan *Message) {
-	var err error
-	if s.state == LOBBY {
-		for {
-			var c *net.TCPConn
-			c, err = s.listener.AcceptTCP()
-			if err != nil {
-				log.Println("[CamarettoServer.Run - LOBBY] AcceptTCP failed:", err)
-			}
+// @desc:
+func (server *CamarettoServer) handleError(e error, from string, action string) {
+	var msg string = "[CamarettoServer." + from + "] " + action + ":"
+	log.Println(msg, e)
+}
 
-			go s.ClientHandshake(c, output)
+func (server *CamarettoServer) Run() {
+	var messagePipe chan *Message = make(chan *Message)
+
+	go server.broadcastRoutine(messagePipe)
+
+	// server.lobbyRoutine()
+	server.acceptConnections(messagePipe)
+
+	server.gameRoutine()
+}
+
+// @desc: Send a given message to every current server's connection
+func (server *CamarettoServer) broadcastMessage(m *Message) {
+	var err error
+	for _, conn := range server.clients {
+		err = conn.Encoder.Encode(m)
+		if err != nil {
+			server.handleError(err, "broadcastMessage", "Broadcasting message failed")
 		}
-	} else if s.state == GAME {
+	}
+}
+
+// @desc:
+func (server *CamarettoServer) broadcastRoutine(pipe chan *Message) {
+	for {
+		var message *Message = nil
+		select {
+			case message = <-pipe:
+				server.broadcastMessage(message)
+			default:
+		}
 	}
 }
 
 // @desc: Handle first client connection, receiving player name then sending back player's index position
-func (s *CamarettoServer) ClientHandshake(conn *net.TCPConn, output chan *Message) {
+func (server *CamarettoServer) clientHandshake(conn *net.TCPConn) {
 	var err error
-	var msg *Message
 
 	var client *ClientConnection = NewClientConnection(conn)
-	s.clients = append(s.clients, client)
+	server.clients = append(server.clients, client)
 
+	var playerInfo *PlayerInfo = &PlayerInfo{}
 	// Read player name
-	// var name string
-	// s.decoder = gob.NewDecoder(conn)
-	err = client.Decoder.Decode(msg)
-	if err == nil {
-		output <- msg
-	} else {
-		log.Println("[HandleFirstConnection] Receive player name failed:", err)
+	err = client.Decoder.Decode(playerInfo)
+	if err != nil {
+		server.handleError(err, "clientHandshake", "Receive player name failed")
 	}
 
 	// Send game index position to new player
-	// var index int = len(s.clients)
-	msg = &Message{HANDSHAKE, &PlayerInfo{len(s.clients), ""}, nil, nil}
-	// s.encoder = gob.NewEncoder(conn)
-	err = client.Encoder.Encode(msg)
+	log.Println(len(server.camaretto.Players))
+	playerInfo.Index = len(server.camaretto.Players)
+	server.camaretto.Players = append(server.camaretto.Players, playerInfo)
+
+	err = client.Encoder.Encode(playerInfo)
 	if err != nil {
-		log.Println("[HandleFirstConnection] Send player index failed:", err)
+		server.handleError(err, "clientHandshake", "Send player index failed")
+	}
+
+	log.Println("[CamarettoServer.clientHandshake] Completed: {", playerInfo.Index, ",", playerInfo.Name, "}")
+}
+
+// @desc:
+func (server *CamarettoServer) acceptConnections(pipe chan *Message) {
+	var err error
+	var c *net.TCPConn
+
+	for {
+		c, err = server.listener.AcceptTCP()
+		if err != nil {
+			server.handleError(err, "acceptConnections", "AcceptTCP failed")
+		}
+
+		server.clientHandshake(c)
+		if len(server.clients) == MaxNbPlayers { return }
+		log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
+		pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
 	}
 }
 
-// @desc: Send player names and index position to every connection
-func (s *CamarettoServer) BroadcastPlayerPool() {
+// @desc:
+func (server *CamarettoServer) lobbyRoutine() {
+}
+
+// @desc:
+func (server *CamarettoServer) gameRoutine() {
 }

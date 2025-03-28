@@ -42,7 +42,10 @@ func NewTextCapture(limit, w, h, margin int) *TextCapture {
 	return tc
 }
 
-func (tc *TextCapture) SetText(s string) { tc.textInput = s }
+func (tc *TextCapture) SetText(s string) {
+	tc.textInput = s
+	tc.render()
+}
 func (tc *TextCapture) GetText() string { return tc.textInput }
 
 func (tc *TextCapture) render() {

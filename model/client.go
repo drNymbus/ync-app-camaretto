@@ -5,8 +5,6 @@ import (
 
 	"net"
 	"encoding/gob"
-
-	// "camaretto/model/game"
 )
 
 type ClientConnection struct {
@@ -25,45 +23,81 @@ func NewClientConnection(c *net.TCPConn) *ClientConnection {
 
 type CamarettoClient struct {
 	Connection *ClientConnection
-	msg *Message
 }
 
 // @desc: Create new instance of CamarettoClient then returns it
 func NewCamarettoClient() *CamarettoClient {
-	var cc *CamarettoClient = &CamarettoClient{}
-	return cc
+	var client *CamarettoClient = &CamarettoClient{}
+	return client
 }
 
-// @desc: Connect to server
-func (cc *CamarettoClient) Connect(addr *net.TCPAddr) {
-	var err error
-	var c *net.TCPConn
-	c, err = net.DialTCP("tcp", nil, addr)
-	if err == nil {
-		cc.Connection = NewClientConnection(c)
-		cc.msg = &Message{}
-	} else { log.Println("[Connect] Unable to dial: ", err) }
-
-	err = cc.Connection.Encoder.Encode(&Message{HANDSHAKE, &PlayerInfo{-1, "MARIO"}, nil, nil})
-	if err != nil {
-		log.Println("[CamarettoClient.Connect] Unable to send player info:", err)
-	}
-
-	err = cc.Connection.Decoder.Decode(cc.msg)
-	if err != nil {
-		log.Println("[CamarettoClient.Connect] Unable to receive player info:", err)
-	}
-}
-
-func (cc *CamarettoClient) Run(input, output chan Message) {
+// @desc:
+func (client *CamarettoClient) handleError(e error, from string, action string) {
+	var msg string = "[CamarettoClient." + from + "] " + action + ":"
+	log.Println(msg, e)
 }
 
 // @desc: Retrieves every address open to connection
-func (cc *CamarettoClient) Scan() []*net.TCPAddr {
+func (client *CamarettoClient) Scan() []*net.TCPAddr {
 	return nil
 }
 
+// @desc: Connect to server
+func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*PlayerInfo, error) {
+	var err error
+
+	var c *net.TCPConn
+	c, err = net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		client.handleError(err, "Connect", "Unable to dial")
+		return nil, err
+	}
+
+	client.Connection = NewClientConnection(c)
+	err = client.Connection.Encoder.Encode(info)
+	if err != nil {
+		client.handleError(err, "Connect", "Encode player info failed")
+		return nil, err
+	}
+
+	info = &PlayerInfo{}
+	err = client.Connection.Decoder.Decode(info)
+	if err != nil {
+		client.handleError(err, "Connect", "Decode player info failed")
+		return nil, err
+	}
+
+	log.Println("[CamarettoClient.Connect] Completed: {", info.Index, ",", info.Name, "}")
+	return info, nil
+}
+
 // @desc: Disconnect from server
-func (cc *CamarettoClient) Disconnect() error {
+func (client *CamarettoClient) Disconnect() error {
 	return nil
+}
+
+func (client *CamarettoClient) SendMessage(msg *Message) error {
+	var err error
+
+	err = client.Connection.Encoder.Encode(msg)
+	if err != nil {
+		client.handleError(err, "SendMessage", "Encode message failed")
+		return err
+	}
+
+	return nil
+}
+
+// @desc:
+func (client *CamarettoClient) ReceiveMessage(io chan *Message, e chan error) {
+	var err error
+	var msg *Message = &Message{}
+
+	err = client.Connection.Decoder.Decode(msg)
+	if err != nil {
+		client.handleError(err, "ReceiveUpdate", "Decode message failed")
+		e <- err
+	} else {
+		io <- msg
+	}
 }

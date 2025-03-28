@@ -1,6 +1,10 @@
 package model
 
 import (
+	"time"
+
+	"strconv"
+
 	"camaretto/model/game"
 )
 
@@ -10,6 +14,8 @@ type PlayerInfo struct {
 }
 
 type CamarettoState struct {
+	Seed int64
+	Players []*PlayerInfo
 	Game game.GameState // Camaretto.state
 	Focus game.FocusState // Camaretto.focus
 	Turn int // Camaretto.playerTurn
@@ -18,22 +24,44 @@ type CamarettoState struct {
 	Reveal []bool // Camaretto.toReveal
 }
 
-type CamarettoInit struct {
-	Seed int64
-	NbPlayers int
-	Names []string
+func NewCamarettoState() *CamarettoState {
+	var state *CamarettoState = &CamarettoState{}
+
+	state.Seed = time.Now().UnixNano()
+	state.Players = []*PlayerInfo{}
+	
+	state.Game = game.SET
+	state.Focus = game.NONE
+
+	state.Turn = -1
+	state.Player = -1
+	state.Card = -1
+
+	state.Reveal = []bool{}
+
+	return state
+}
+
+func (state *CamarettoState) toString() string {
+	var s string = "STATE:\n"
+	s = s + "\tPLAYERS:\n"
+
+	for _, info := range state.Players {
+		s = s + "\t\t" + strconv.Itoa(info.Index) + "," + info.Name + "\n"
+	}
+
+	return s
 }
 
 type MessageType int
 const (
-	HANDSHAKE MessageType = 0
-	STATE MessageType = 1
-	INIT MessageType = 2
+	PLAYERS MessageType = iota
+	STATE
+	START
 )
 
 type Message struct {
 	Typ MessageType
-	Info *PlayerInfo
-	State *CamarettoState
-	Init *CamarettoInit
+	Players []*PlayerInfo
+	Game *CamarettoState
 }

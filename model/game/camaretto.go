@@ -15,20 +15,20 @@ import (
 
 type GameState int
 const (
-	SET GameState = 0
-	ATTACK GameState = 1
-	SHIELD GameState = 2
-	CHARGE GameState = 3
-	HEAL GameState = 4
+	SET GameState = iota
+	ATTACK
+	SHIELD
+	CHARGE
+	HEAL
 )
 
 type FocusState int
 const (
-	NONE FocusState = 0
-	PLAYER FocusState = 1
-	CARD FocusState = 2
-	REVEAL FocusState = 3
-	COMPLETE FocusState = 4
+	NONE FocusState = iota
+	PLAYER
+	CARD
+	REVEAL
+	COMPLETE
 )
 
 /************ *************************************************************************** ************/
@@ -64,7 +64,7 @@ type Camaretto struct {
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 // func (c *Camaretto) Init(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) {
 func (c *Camaretto) Init(n int, names []string, seed int64, width, height float64) {
-	if len(names) != n { log.Fatal("[camaretto.Init] You finna start a game like that ?!") }
+	if len(names) != n { log.Fatal("[Camaretto.Init] You finna start a game like that ?!") }
 
 	c.state = SET
 	c.focus = NONE

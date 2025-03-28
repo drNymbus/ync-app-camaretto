@@ -83,4 +83,6 @@ func main() {
 	if err = ebiten.RunGame(g); err != nil {
 		log.Fatal("[MAIN]", err)
 	}
+
+	// Free resources
 }
