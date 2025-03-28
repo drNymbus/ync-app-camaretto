@@ -43,12 +43,30 @@ func NewCamarettoState() *CamarettoState {
 }
 
 func (state *CamarettoState) toString() string {
-	var s string = "STATE:\n"
+	var s string = "\n"
 	s = s + "\tPLAYERS:\n"
-
 	for _, info := range state.Players {
 		s = s + "\t\t" + strconv.Itoa(info.Index) + "," + info.Name + "\n"
 	}
+
+	s = s + "\tSTATE:\n"
+	s = s + "\t\tGame=" + state.Game.String() + "\n"
+	s = s + "\t\tFocus=" + state.Focus.String() + "\n"
+	s = s + "\t\tTurn=" + strconv.Itoa(state.Turn) + "\n"
+	s = s + "\t\tPlayer=" + strconv.Itoa(state.Player) + "\n"
+	s = s + "\t\tCard=" + strconv.Itoa(state.Card) + "\n"
+	s = s + "\t\tReveal=["
+	for i, v := range state.Reveal {
+		s = s + "(" + strconv.Itoa(i) + ","
+		if v {
+			s = s + "true"
+		} else {
+			s = s + "false"
+		}
+		s = s + ")"
+		if i != len(state.Reveal)-1 { s = s + ")," }
+	}
+	s = s + "]\n"
 
 	return s
 }
@@ -59,6 +77,11 @@ const (
 	STATE
 	START
 )
+
+func (m MessageType) String() string {
+	var name []string = []string {"PLAYERS", "STATE", "START"}
+	return name[int(m)]
+}
 
 type Message struct {
 	Typ MessageType

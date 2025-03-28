@@ -38,6 +38,11 @@ const (
 	END
 )
 
+func (a AppState) String() string {
+	var name []string = []string{"MENU", "SCAN", "JOIN", "LOBBY", "GAME", "END"}
+	return name[int(a)]
+}
+
 type Application struct{
 	state AppState
 

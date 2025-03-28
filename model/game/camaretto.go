@@ -22,6 +22,11 @@ const (
 	HEAL
 )
 
+func (g GameState) String() string {
+	var name []string = []string{"SET", "ATTACK", "SHIELD", "CHARGE", "HEAL"}
+	return name[int(g)]
+}
+
 type FocusState int
 const (
 	NONE FocusState = iota
@@ -30,6 +35,11 @@ const (
 	REVEAL
 	COMPLETE
 )
+
+func (f FocusState) String() string {
+	var name []string = []string{"NONE", "PLAYER", "CARD", "REVEAL", "COMPLETE"}
+	return name[int(f)]
+}
 
 /************ *************************************************************************** ************/
 /************ ******************************** CAMARETTO ******************************** ************/
