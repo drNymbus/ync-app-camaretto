@@ -1,4 +1,4 @@
-package model
+package game
 
 import (
 	"log"
@@ -8,27 +8,38 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"camaretto/model/component"
 	"camaretto/view"
 	"camaretto/event"
 )
 
 type GameState int
 const (
-	SET GameState = 0
-	ATTACK GameState = 1
-	SHIELD GameState = 2
-	CHARGE GameState = 3
-	HEAL GameState = 4
+	SET GameState = iota
+	ATTACK
+	SHIELD
+	CHARGE
+	HEAL
 )
+
+func (g GameState) String() string {
+	var name []string = []string{"SET", "ATTACK", "SHIELD", "CHARGE", "HEAL"}
+	return name[int(g)]
+}
 
 type FocusState int
 const (
-	NONE FocusState = 0
-	PLAYER FocusState = 1
-	CARD FocusState = 2
-	REVEAL FocusState = 3
-	COMPLETE FocusState = 4
+	NONE FocusState = iota
+	PLAYER
+	CARD
+	REVEAL
+	COMPLETE
 )
+
+func (f FocusState) String() string {
+	var name []string = []string{"NONE", "PLAYER", "CARD", "REVEAL", "COMPLETE"}
+	return name[int(f)]
+}
 
 /************ *************************************************************************** ************/
 /************ ******************************** CAMARETTO ******************************** ************/
@@ -45,26 +56,25 @@ type Camaretto struct {
 	nbPlayers int
 	Players []*Player
 	DeckPile *Deck
-	DrawnCard *Card
 
 	toReveal []*Card
 
-	attackButton *Button
-	shieldButton *Button
-	chargeButton *Button
-	healButton *Button
+	attackButton *component.Button
+	shieldButton *component.Button
+	chargeButton *component.Button
+	healButton *component.Button
 
 	cursor *view.Sprite
 
-	info *TextBox
+	info *component.TextBox
 
 	count int
 }
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 // func (c *Camaretto) Init(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) {
-func (c *Camaretto) Init(n int, names []string, width, height float64) {
-	if len(names) != n { log.Fatal("[camaretto.Init] You finna start a game like that ?!") }
+func (c *Camaretto) Init(n int, names []string, seed int64, width, height float64) {
+	if len(names) != n { log.Fatal("[Camaretto.Init] You finna start a game like that ?!") }
 
 	c.state = SET
 	c.focus = NONE
@@ -74,26 +84,22 @@ func (c *Camaretto) Init(n int, names []string, width, height float64) {
 	c.cardFocus = -1
 
 	c.DeckPile = &Deck{}
-	c.DeckPile.Init()
-	c.DeckPile.ShuffleDrawPile()
-
-	c.DrawnCard = nil
+	c.DeckPile.Init(seed)
 
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
 
-	c.info = NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	c.info = component.NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
 	var x, y float64 = width/2, height*8/10 + 65
 	c.info.SSprite.SetCenter(x, y, 0)
 
-	// var names []string = []string{"Alexis", "Regale", "Victor", "Bruce", "Loïs", "Logan"}
 	for i, _ := range make([]int, n) { // Init players
 		var name string = names[i%len(names)]
 		var char *Character = NewCharacter(name)
 		var bodyX float64 = (x - c.info.SSprite.Width/2) + char.SSprite.Width/2
 		var bodyY float64 = (y + c.info.SSprite.Height/2) - char.SSprite.Height/2
 		char.SSprite.SetCenter(bodyX, bodyY, 0)
-	
+
 		c.Players[i] = NewPlayer(name, char)
 	}
 
@@ -125,10 +131,10 @@ func (c *Camaretto) Init(n int, names []string, width, height float64) {
 		}
 	}
 
-	c.attackButton = NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED")
-	c.shieldButton = NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE")
-	c.chargeButton = NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
-	c.healButton = NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
+	c.attackButton = component.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED")
+	c.shieldButton = component.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE")
+	c.chargeButton = component.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	c.healButton = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
 
 	c.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
 	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
@@ -353,7 +359,7 @@ func (c *Camaretto) onPlayer(x, y float64) int {
 	return -1
 }
 
-func (c *Camaretto) mouseHover(x, y float64) {
+func (c *Camaretto) Hover(x, y float64) {
 	var speed float64 = 15
 
 	var s *view.Sprite = nil
@@ -551,18 +557,18 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 	c.info.SSprite.Display(dst)
 
 	var buttonXPos float64 = 0
-	var buttonYPos float64 = float64(WinHeight)*9/10
+	var buttonYPos float64 = float64(height)*9/10
 
 	if c.state == SET {
-		buttonXPos = (float64(WinWidth) * 1/4) + (float64(ButtonWidth)/2)
+		buttonXPos = (float64(width) * 1/4) + (float64(view.ButtonWidth)/2)
 		c.attackButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		c.attackButton.SSprite.Display(dst)
 
-		buttonXPos = (float64(WinWidth) * 2/4) + (float64(ButtonWidth)/2)
+		buttonXPos = (float64(width) * 2/4) + (float64(view.ButtonWidth)/2)
 		c.shieldButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		c.shieldButton.SSprite.Display(dst)
 
-		buttonXPos = (float64(WinWidth) * 3/4) + (float64(ButtonWidth)/2)
+		buttonXPos = (float64(width) * 3/4) + (float64(view.ButtonWidth)/2)
 
 		if c.Players[c.playerTurn].ChargeCard == nil {
 			c.healButton.SSprite.SetCenter(0, 0, 0)

@@ -19,7 +19,6 @@ var (
 type Game struct{
 	application *model.Application
 	events *event.EventQueue
-	// mouse *event.Mouse
 }
 
 func NewGame(nbPlayers int) *Game {
@@ -84,4 +83,6 @@ func main() {
 	if err = ebiten.RunGame(g); err != nil {
 		log.Fatal("[MAIN]", err)
 	}
+
+	// Free resources
 }
