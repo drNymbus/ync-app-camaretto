@@ -50,8 +50,8 @@ func (state *CamarettoState) toString() string {
 	}
 
 	s = s + "\tSTATE:\n"
-	s = s + "\t\tGame=" + state.Game.String() + "\n"
-	s = s + "\t\tFocus=" + state.Focus.String() + "\n"
+	s = s + "\t\tGame=" + strconv.Itoa(int(state.Game)) + "\n"
+	s = s + "\t\tFocus=" + strconv.Itoa(int(state.Focus)) + "\n"
 	s = s + "\t\tTurn=" + strconv.Itoa(state.Turn) + "\n"
 	s = s + "\t\tPlayer=" + strconv.Itoa(state.Player) + "\n"
 	s = s + "\t\tCard=" + strconv.Itoa(state.Card) + "\n"
