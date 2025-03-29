@@ -4,6 +4,8 @@ import (
 	"log"
 
 	"net"
+
+	"camaretto/model/game"
 )
 
 type CamarettoServer struct {
@@ -106,7 +108,7 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message) {
 		}
 
 		server.clientHandshake(c)
-		if len(server.clients) == MaxNbPlayers { return }
+		if len(server.clients) == game.MaxNbPlayers { return }
 		log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
 		pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
 	}
