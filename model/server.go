@@ -8,6 +8,14 @@ import (
 	"camaretto/model/game"
 )
 
+type PageSignal int
+const (
+	PREVIOUS PageSignal = iota
+	NEXT
+	SETTING // This is to open the settings menu (thoughful future implementation that might be deleted later)
+	UPDATE // This is basically a NONE statement, nothing has happened and nothing should be done.
+)
+
 type CamarettoServer struct {
 	listener *net.TCPListener
 	clients []*ClientConnection
@@ -122,12 +130,14 @@ func (server *CamarettoServer) lobbyRoutine() {
 
 	// Wait for first connection
 	for ;len(server.clients) < 1; {}
+	log.Println(len(server.clients), "CLIENTS")
 
 	var err error
 	for {
 		var msg *Message = &Message{}
 		err = server.clients[0].Decoder.Decode(msg)
 		if err != nil {
+			log.Println(msg.Typ, msg.Players, msg.Game)
 			server.handleError(err, "lobbyRoutine", "Receive message from host failed")
 		} else if msg.Typ == START {
 			server.broadcastMessage(&Message{PLAYERS, server.camaretto.Players, nil})

@@ -61,7 +61,7 @@ func (lobby *Lobby) Init(w, h int, online, host bool) {
 	lobby.start.SSprite.SetCenter(lobby.width/2, lobby.height - float64(view.ButtonHeight), 0)
 }
 
-func (lobby *Lobby) MousePress(x, y float64) {
+func (lobby *Lobby) MousePress(x, y float64) component.PageSignal {
 	if lobby.plusButton.SSprite.In(x, y) {
 		lobby.plusButton.Pressed()
 	} else if lobby.minusButton.SSprite.In(x, y) {
@@ -73,9 +73,10 @@ func (lobby *Lobby) MousePress(x, y float64) {
 			if textInput.SSprite.In(x, y) { lobby.Focus = i }
 		}
 	}
+	return component.UPDATE
 }
 
-func (lobby *Lobby) MouseRelease(x, y float64) {
+func (lobby *Lobby) MouseRelease(x, y float64) component.PageSignal {
 	lobby.plusButton.Released()
 	lobby.minusButton.Released()
 	lobby.start.Released()
@@ -85,18 +86,22 @@ func (lobby *Lobby) MouseRelease(x, y float64) {
 		} else if lobby.minusButton.SSprite.In(x, y) {
 			if lobby.NbPlayers > 2 { lobby.NbPlayers-- }
 		} else if lobby.start.SSprite.In(x, y) {
+			return component.NEXT
 		}
 	} else if lobby.hosting {
 		lobby.start.Released()
 		if lobby.start.SSprite.In(x, y) {
+			return component.NEXT
 		}
 	}
+	return component.UPDATE
 }
 
-func (lobby *Lobby) HandleKeyEvent(e *event.KeyEvent) {
+func (lobby *Lobby) HandleKeyEvent(e *event.KeyEvent) component.PageSignal {
 	if e.Event == event.PRESSED && !lobby.online {
 		lobby.Names[lobby.Focus].HandleEvent(e, nil)
 	}
+	return component.UPDATE
 }
 
 func (lobby *Lobby) Display(dst *ebiten.Image) {

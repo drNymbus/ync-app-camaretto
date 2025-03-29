@@ -22,11 +22,6 @@ const (
 	HEAL
 )
 
-func (g GameState) String() string {
-	var name []string = []string{"SET", "ATTACK", "SHIELD", "CHARGE", "HEAL"}
-	return name[int(g)]
-}
-
 type FocusState int
 const (
 	NONE FocusState = iota
@@ -36,16 +31,12 @@ const (
 	COMPLETE
 )
 
-func (f FocusState) String() string {
-	var name []string = []string{"NONE", "PLAYER", "CARD", "REVEAL", "COMPLETE"}
-	return name[int(f)]
-}
-
 /************ *************************************************************************** ************/
 /************ ******************************** CAMARETTO ******************************** ************/
 /************ *************************************************************************** ************/
 
 type Camaretto struct {
+	width, height float64
 	state GameState
 	focus FocusState
 
@@ -73,8 +64,10 @@ type Camaretto struct {
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 // func (c *Camaretto) Init(n int, sheet *ebiten.Image, tileWidth int, tileHeight int) {
-func (c *Camaretto) Init(n int, names []string, seed int64, width, height float64) {
+func (c *Camaretto) Init(n int, names []string, seed int64, w, h int) {
 	if len(names) != n { log.Fatal("[Camaretto.Init] You finna start a game like that ?!") }
+
+	c.width, c.height = float64(w), float64(h)
 
 	c.state = SET
 	c.focus = NONE
@@ -83,15 +76,12 @@ func (c *Camaretto) Init(n int, names []string, seed int64, width, height float6
 	c.playerFocus = -1
 	c.cardFocus = -1
 
-	c.DeckPile = &Deck{}
-	c.DeckPile.Init(seed)
+	c.info = component.NewTextBox(c.width - 50, c.height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
+	var x, y float64 = c.width/2, c.height*8/10 + 65
+	c.info.SSprite.SetCenter(x, y, 0)
 
 	c.nbPlayers = n
 	c.Players = make([]*Player, n)
-
-	c.info = component.NewTextBox(width - 50, height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
-	var x, y float64 = width/2, height*8/10 + 65
-	c.info.SSprite.SetCenter(x, y, 0)
 
 	for i, _ := range make([]int, n) { // Init players
 		var name string = names[i%len(names)]
@@ -102,6 +92,9 @@ func (c *Camaretto) Init(n int, names []string, seed int64, width, height float6
 
 		c.Players[i] = NewPlayer(name, char)
 	}
+
+	c.DeckPile = &Deck{}
+	c.DeckPile.Init(seed)
 
 	for i, _ := range make([]int, n*2) { // Init Health
 		var card *Card = c.DeckPile.DrawCard()
@@ -131,10 +124,24 @@ func (c *Camaretto) Init(n int, names []string, seed int64, width, height float6
 		}
 	}
 
+	var buttonXPos float64 = 0
+	var buttonYPos float64 = c.height * 9/10
+
 	c.attackButton = component.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED")
+	buttonXPos = (c.width * 1/4) + (float64(view.ButtonWidth)/2)
+	c.attackButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+
 	c.shieldButton = component.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE")
+	buttonXPos = (c.width * 2/4) + (float64(view.ButtonWidth)/2)
+	c.shieldButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+
+	buttonXPos = (c.width * 3/4) + (float64(view.ButtonWidth)/2)
+
 	c.chargeButton = component.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW")
+	c.chargeButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+
 	c.healButton = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN")
+	c.healButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	c.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
 	c.cursor.SetCenter(-c.cursor.Width, -c.cursor.Height, 0)
@@ -326,6 +333,19 @@ func (c *Camaretto) reveal() {
 /************ ********************************** UPDATE ********************************* ************/
 /************ *************************************************************************** ************/
 
+func (c *Camaretto) ApplyState(s *CamarettoState) {
+	c.state = s.Game
+	c.focus = s.Focus
+
+	c.playerTurn = s.Turn
+	c.playerFocus = s.Player
+	c.cardFocus = s.Card
+
+	for i, revealed := range s.Reveal {
+		if revealed { c.toReveal[i].Reveal() }
+	}
+}
+
 func (c *Camaretto) onReveal(x, y float64) int {
 	for i, card := range c.toReveal {
 		if card.SSprite.In(x, y) { return i }
@@ -426,10 +446,12 @@ func (c *Camaretto) mousePress(e *event.MouseEvent) {
 			c.attackButton.Pressed()
 		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
 			c.shieldButton.Pressed()
-		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
-			c.chargeButton.Pressed()
-		} else if c.healButton.SSprite.In(e.X, e.Y) {
-			c.healButton.Pressed()
+		} else {
+			if c.Players[c.playerTurn].ChargeCard == nil && c.chargeButton.SSprite.In(e.X, e.Y) {
+				c.chargeButton.Pressed()
+			} else if c.healButton.SSprite.In(e.X, e.Y) {
+				c.healButton.Pressed()
+			}
 		}
 	}
 }
@@ -450,14 +472,16 @@ func (c *Camaretto) mouseRelease(e *event.MouseEvent) {
 		} else if c.shieldButton.SSprite.In(e.X, e.Y) {
 			c.state = SHIELD
 			c.focus = PLAYER
-		} else if c.chargeButton.SSprite.In(e.X, e.Y) {
-			c.state = CHARGE
-			c.playerFocus = c.playerTurn
-			c.focus = COMPLETE
-		} else if c.healButton.SSprite.In(e.X, e.Y) {
-			c.state = HEAL
-			c.playerFocus = c.playerTurn
-			c.focus = CARD
+		} else {
+			if c.Players[c.playerTurn].ChargeCard == nil && c.chargeButton.SSprite.In(e.X, e.Y) {
+				c.state = CHARGE
+				c.playerFocus = c.playerTurn
+				c.focus = COMPLETE
+			} else if c.healButton.SSprite.In(e.X, e.Y) {
+				c.state = HEAL
+				c.playerFocus = c.playerTurn
+				c.focus = CARD
+			}
 		}
 	} else {
 		if c.focus == PLAYER {
@@ -543,7 +567,7 @@ func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 	return x, y, theta
 }
 
-func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
+func (c *Camaretto) Display(dst *ebiten.Image) {
 	var persona *Character = c.Players[c.playerTurn].Persona
 	if c.info.Finished() {
 		persona.Talking = false
@@ -552,41 +576,22 @@ func (c *Camaretto) Render(dst *ebiten.Image, width, height float64) {
 		c.info.Render()
 	}
 	persona.Render()
-
 	persona.SSprite.Display(dst)
 	c.info.SSprite.Display(dst)
 
-	var buttonXPos float64 = 0
-	var buttonYPos float64 = float64(height)*9/10
-
 	if c.state == SET {
-		buttonXPos = (float64(width) * 1/4) + (float64(view.ButtonWidth)/2)
-		c.attackButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		c.attackButton.SSprite.Display(dst)
-
-		buttonXPos = (float64(width) * 2/4) + (float64(view.ButtonWidth)/2)
-		c.shieldButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 		c.shieldButton.SSprite.Display(dst)
 
-		buttonXPos = (float64(width) * 3/4) + (float64(view.ButtonWidth)/2)
-
 		if c.Players[c.playerTurn].ChargeCard == nil {
-			c.healButton.SSprite.SetCenter(0, 0, 0)
-			c.healButton.SSprite.SetOffset(0, 0, 0)
-
-			c.chargeButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 			c.chargeButton.SSprite.Display(dst)
 		} else {
-			c.chargeButton.SSprite.SetCenter(0, 0, 0)
-			c.chargeButton.SSprite.SetOffset(0, 0, 0)
-
-			c.healButton.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 			c.healButton.SSprite.Display(dst)
 		}
 	}
 
-	var centerX float64 = width/2
-	var centerY float64 = (height * 6/8)/2
+	var centerX float64 = c.width/2
+	var centerY float64 = (c.height * 6/8)/2
 
 	for i, player := range c.Players {
 		var x, y, theta float64 = c.getPlayerGeoM(i)

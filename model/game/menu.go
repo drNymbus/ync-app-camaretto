@@ -64,7 +64,7 @@ func (menu *Menu) Init(w, h int) {
 	menu.Hosting = false
 }
 
-func (menu *Menu) MousePress(x, y float64) {
+func (menu *Menu) MousePress(x, y float64) component.PageSignal {
 	if menu.state == HOME {
 		if menu.local.SSprite.In(x, y) {
 			menu.local.Pressed()
@@ -81,9 +81,10 @@ func (menu *Menu) MousePress(x, y float64) {
 			menu.join.Pressed()
 		}
 	}
+	return component.UPDATE
 }
 
-func (menu *Menu) MouseRelease(x, y float64) {
+func (menu *Menu) MouseRelease(x, y float64) component.PageSignal {
 	if menu.state == HOME {
 		menu.local.Released()
 		menu.host.Released()
@@ -92,6 +93,7 @@ func (menu *Menu) MouseRelease(x, y float64) {
 		if menu.local.SSprite.In(x, y) {
 			menu.Online = false
 			// GO TO LOBBY
+			return component.NEXT
 
 		} else if menu.host.SSprite.In(x, y) {
 			menu.Online = true
@@ -118,18 +120,21 @@ func (menu *Menu) MouseRelease(x, y float64) {
 	} else if menu.state == JOIN {
 		if menu.Hosting {
 			menu.host.Released()
-			if menu.host.SSprite.In(x, y) {}
+			if menu.host.SSprite.In(x, y) { return component.NEXT }
 		} else {
 			menu.join.Released()
-			if menu.join.SSprite.In(x, y) {}
+			if menu.join.SSprite.In(x, y) { return component.NEXT }
 		}
 	}
+
+	return component.UPDATE
 }
 
-func (menu *Menu) HandleKeyEvent(e *event.KeyEvent) {
+func (menu *Menu) HandleKeyEvent(e *event.KeyEvent) component.PageSignal {
 	if e.Event == event.PRESSED && menu.state == JOIN {
 		menu.Name.HandleEvent(e, nil)
 	}
+	return component.UPDATE
 }
 
 func (menu *Menu) Display(dst *ebiten.Image) {

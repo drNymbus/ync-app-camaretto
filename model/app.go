@@ -3,6 +3,8 @@ package model
 import (
 	"log"
 
+	"time"
+
 	"net"
 
 	"image/color"
@@ -10,6 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"camaretto/model/game"
+	"camaretto/model/component"
 	"camaretto/view"
 	"camaretto/event"
 )
@@ -27,21 +30,15 @@ const (
 	END
 )
 
-func (a AppState) String() string {
-	var name []string = []string{"MENU", "SCAN", "JOIN", "LOBBY", "GAME", "END"}
-	return name[int(a)]
-}
-
 type Application struct{
 	state AppState
+	online, hosting bool
 
 	menu *game.Menu
 	lobby *game.Lobby
 
-	online, hosting bool
-
-	PlayerInfo *PlayerInfo
-	Camaretto *game.Camaretto
+	playerInfo *PlayerInfo
+	camaretto *game.Camaretto
 
 	ioMessage chan *Message
 	ioError chan error
@@ -54,14 +51,15 @@ type Application struct{
 
 func (app *Application) Init(nbPlayers int) {
 	app.state = MENU
+	app.online, app.hosting = false, false
 
 	app.menu = &game.Menu{}
 	app.menu.Init(WinWidth, WinHeight)
 
 	app.lobby = &game.Lobby{}
 
-	app.PlayerInfo = &PlayerInfo{}
-	app.Camaretto = &game.Camaretto{}
+	app.playerInfo = &PlayerInfo{-1, ""}
+	app.camaretto = &game.Camaretto{}
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
 }
@@ -90,15 +88,15 @@ func (app *Application) joinServer() {
 		return
 	}
 
-	app.PlayerInfo, err = app.client.Connect(addr, app.PlayerInfo)
+	app.playerInfo, err = app.client.Connect(addr, app.playerInfo)
 	if err != nil {
 		log.Println("[ApplicationjoinServer] Connection failed:", err)
 		return
 	}
 
-	if app.PlayerInfo != nil {
-		app.lobby.Focus = app.PlayerInfo.Index
-		app.lobby.Names[app.PlayerInfo.Index].SetText(app.PlayerInfo.Name)
+	if app.playerInfo != nil {
+		app.lobby.Focus = app.playerInfo.Index
+		app.lobby.Names[app.playerInfo.Index].SetText(app.playerInfo.Name)
 	}
 
 	app.ioMessage = make(chan *Message)
@@ -110,39 +108,66 @@ func (app *Application) joinServer() {
 func (app *Application) scanServers() {
 }
 
+func (app *Application) startCamaretto(seed int64) {
+	var playerNames []string = []string{}
+	for i := 0; i < app.lobby.NbPlayers; i++ {
+		playerNames = append(playerNames, app.lobby.Names[i].GetText())
+	}
+
+	app.camaretto.Init(app.lobby.NbPlayers, playerNames, seed, WinWidth, WinHeight)
+}
+
 /************ ***************************************************************************** ************/
 /************ ********************************** UPDATE *********************************** ************/
 /************ ***************************************************************************** ************/
 
 func (app *Application) Hover(x, y float64) {
-	if app.state == GAME { app.Camaretto.Hover(x, y) }
+	if app.state == GAME { app.camaretto.Hover(x, y) }
 }
 
 func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
+	var signal component.PageSignal = component.UPDATE
 	if app.state == MENU {
 		if e.Event == event.PRESSED {
-			app.menu.MousePress(e.X, e.Y)
+			signal = app.menu.MousePress(e.X, e.Y)
 		} else if e.Event == event.RELEASED {
-			app.menu.MouseRelease(e.X, e.Y)
+			signal = app.menu.MouseRelease(e.X, e.Y)
 		}
 
-		var playerName string = app.menu.Name.GetText()
-		if len(playerName) > 0 {
-			app.PlayerInfo.Name = playerName
-			if app.menu.Hosting {
-			} else {
+		if signal == component.NEXT {
+			app.online, app.hosting = app.menu.Online, app.menu.Hosting
+			app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting)
+
+			if app.online {
+				app.playerInfo.Name = app.menu.Name.GetText()
+				if app.hosting {
+					app.startServer()
+				} else if app.online {
+					app.joinServer()
+				}
 			}
+
+			app.menu = &game.Menu{}
+			app.state = LOBBY
 		}
 	} else if app.state == LOBBY {
 		if e.Event == event.PRESSED {
-			app.lobby.MousePress(e.X, e.Y)
+			signal = app.lobby.MousePress(e.X, e.Y)
 		} else if e.Event == event.RELEASED {
-			app.lobby.MouseRelease(e.X, e.Y)
+			signal = app.lobby.MouseRelease(e.X, e.Y)
+		}
+
+		if signal == component.NEXT {
+			app.startCamaretto(time.Now().UnixNano())
+			app.state = GAME
 		}
 	} else if app.state == GAME {
-		app.Camaretto.EventUpdate(e)
+		app.camaretto.EventUpdate(e)
 	} else if app.state == END {
-		app.state = MENU
+		if e.Event == event.RELEASED {
+			app.state = MENU
+			app.menu.Init(WinWidth, WinHeight)
+		}
 	}
 }
 
@@ -157,8 +182,7 @@ func (app *Application) KeyEventUpdate(e *event.KeyEvent) {
 }
 
 func (app *Application) Update() {
-	if app.state == MENU {
-	} else if app.state == LOBBY {
+	if app.state == LOBBY {
 		if app.online {
 			var message *Message
 			var err error
@@ -170,13 +194,7 @@ func (app *Application) Update() {
 							app.lobby.Names[info.Index].SetText(info.Name)
 						}
 					} else if message.Typ == STATE { // Game is starting
-						var playerNames []string = []string{}
-						for i := 0; i < app.lobby.NbPlayers; i++ {
-							playerNames = append(playerNames, app.lobby.Names[i].GetText())
-						}
-
-						app.Camaretto.Init(app.lobby.NbPlayers, playerNames, message.Game.Seed, float64(WinWidth), float64(WinHeight))
-						app.state = GAME
+						app.startCamaretto(message.Game.Seed)
 					}
 					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				case err = <- app.ioError:
@@ -185,8 +203,22 @@ func (app *Application) Update() {
 			}
 		}
 	} else if app.state == GAME {
-		app.Camaretto.Update()
-		if app.Camaretto.IsGameOver() { app.state = END }
+		if app.online {
+			var message *Message
+			var err error
+			select {
+				case message = <- app.ioMessage:
+					if message.Typ == STATE {
+						app.camaretto.ApplyState(message.Game)
+					}
+				case err = <- app.ioError:
+					log.Println("[Application.Update]", err)
+				default: // Escape to continue to run program
+			}
+		}
+
+		app.camaretto.Update()
+		if app.camaretto.IsGameOver() { app.state = END }
 	} else if app.state == END {
 	}
 }
@@ -204,7 +236,7 @@ func (app *Application) Display() *ebiten.Image {
 	} else if app.state == LOBBY {
 		app.lobby.Display(app.imgBuffer)
 	} else if app.state == GAME {
-		app.Camaretto.Render(app.imgBuffer, float64(WinWidth), float64(WinHeight))
+		app.camaretto.Display(app.imgBuffer)
 	} else if app.state == END {
 		img, tw, th := view.TextToImage("C'EST LA FIN!", color.RGBA{0, 0, 0, 255})
 		op := &ebiten.DrawImageOptions{}
