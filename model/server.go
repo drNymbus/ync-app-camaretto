@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"net"
+	"encoding/gob"
 
 	"camaretto/model/game"
 )
@@ -17,11 +18,11 @@ type ClientConnection struct {
 }
 
 func NewClientConnection(c *net.TCPConn) *ClientConnection {
-	var cc *ClientConnection = &ClientConnection{}
-	cc.Connection = c
-	cc.Encoder = gob.NewEncoder(cc.Conn)
-	cc.Decoder = gob.NewDecoder(cc.Conn)
-	return cc
+	var client *ClientConnection = &ClientConnection{}
+	client.Connection = c
+	client.Encoder = gob.NewEncoder(client.Connection)
+	client.Decoder = gob.NewDecoder(client.Connection)
+	return client
 }
 
 type CamarettoServer struct {
@@ -71,7 +72,7 @@ func (server *CamarettoServer) Run() {
 	}
 
 	err = server.listener.Close()
-	if err != nil { server.handleError(err, "Run", "Closing listener failed")
+	if err != nil { server.handleError(err, "Run", "Closing listener failed") }
 }
 
 // @desc: Send a given message to every current server's connection
@@ -94,8 +95,9 @@ func (server *CamarettoServer) broadcastRoutine(pipe chan *Message, stop chan bo
 		select {
 			case message = <-pipe:
 				server.broadcastMessage(message)
-			case <- stop:
+			case <-stop:
 				return
+			default:
 		}
 	}
 }
@@ -136,10 +138,10 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 
 	for {
 		select {
-			case <- stop:
+			case <-stop:
 				return
 			default:
-				if len(server.clients) == game.MaxNbPlayers {
+				if len(server.clients) < game.MaxNbPlayers {
 					c, err = server.listener.AcceptTCP()
 					if err != nil {
 						server.handleError(err, "acceptConnections", "AcceptTCP failed")
@@ -179,7 +181,7 @@ func (server *CamarettoServer) lobbyRoutine() {
 			server.broadcastMessage(&Message{PLAYERS, server.camaretto.Players, nil})
 			server.broadcastMessage(&Message{STATE, nil, server.camaretto})
 
-			return // Exit lobbyRoutine routine
+			return // Exit lobbyRoutine
 		} else {
 			server.handleError(nil, "lobbyRoutine", "Received a message that should not have been sent")
 		}
@@ -188,4 +190,6 @@ func (server *CamarettoServer) lobbyRoutine() {
 
 // @desc:
 func (server *CamarettoServer) gameRoutine() {
+	for {
+	}
 }

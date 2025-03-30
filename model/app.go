@@ -125,13 +125,13 @@ func (app *Application) startCamaretto(seed int64) {
 func (app *Application) isMyTurn() bool {
 	var flag bool = false
 
-	if app.camaretto.State == SET {
-		flag = (app.camaretto.PlayerTurn == app.PlayerInfo.Index)
+	if app.camaretto.State == game.SET {
+		flag = (app.camaretto.PlayerTurn == app.playerInfo.Index)
 	} else {
-		if app.camaretto.Focus == PLAYER || app.camaretto.Focus == REVEAL {
-			flag = (app.camaretto.PlayerTurn == app.PlayerInfo.Index)
-		} else if app.camaretto.Focus == CARD {
-			flag = (app.camaretto.PlayerFocus == app.PlayerInfo.Index)
+		if app.camaretto.Focus == game.PLAYER || app.camaretto.Focus == game.REVEAL {
+			flag = (app.camaretto.PlayerTurn == app.playerInfo.Index)
+		} else if app.camaretto.Focus == game.CARD {
+			flag = (app.camaretto.PlayerFocus == app.playerInfo.Index)
 		}
 	}
 

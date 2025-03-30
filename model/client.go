@@ -42,8 +42,8 @@ func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*Pl
 	}
 
 	client.Connection = c
-	client.Encoder = gob.NewEncoder(client.Conn)
-	client.Decoder = gob.NewDecoder(client.Conn)
+	client.Encoder = gob.NewEncoder(client.Connection)
+	client.Decoder = gob.NewDecoder(client.Connection)
 
 	err = client.Encoder.Encode(info)
 	if err != nil {
