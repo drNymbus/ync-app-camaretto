@@ -162,7 +162,11 @@ func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
 			app.state = GAME
 		}
 	} else if app.state == GAME {
-		app.camaretto.EventUpdate(e)
+		if e.Event == event.PRESSED {
+			app.camaretto.MousePress(e.X, e.Y)
+		} else if e.Event == event.RELEASED {
+			app.camaretto.MouseRelease(e.X, e.Y)
+		}
 	} else if app.state == END {
 		if e.Event == event.RELEASED {
 			app.state = MENU
