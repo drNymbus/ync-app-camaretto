@@ -158,8 +158,12 @@ func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
 		}
 
 		if signal == component.NEXT {
-			app.startCamaretto(time.Now().UnixNano())
-			app.state = GAME
+			if app.online {
+				app.client.SendMessage(&Message{START, nil, nil})
+			} else {
+				app.startCamaretto(time.Now().UnixNano())
+				app.state = GAME
+			}
 		}
 	} else if app.state == GAME {
 		if e.Event == event.PRESSED {
@@ -199,6 +203,7 @@ func (app *Application) Update() {
 						}
 					} else if message.Typ == STATE { // Game is starting
 						app.startCamaretto(message.Game.Seed)
+						app.state = GAME
 					}
 					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				case err = <- app.ioError:
@@ -213,7 +218,16 @@ func (app *Application) Update() {
 			select {
 				case message = <- app.ioMessage:
 					if message.Typ == STATE {
-						app.camaretto.ApplyState(message.Game)
+						var state *CamarettoState = message.Game
+						app.camaretto.State = state.Game
+						app.camaretto.Focus = state.Focus
+						app.camaretto.PlayerTurn = state.Turn
+						app.camaretto.PlayerFocus = state.Player
+						app.camaretto.CardFocus = state.Card
+						
+						for i, revealed := range state.Reveal {
+							if revealed { app.camaretto.ToReveal[i].Reveal() }
+						}
 					}
 				case err = <- app.ioError:
 					log.Println("[Application.Update]", err)

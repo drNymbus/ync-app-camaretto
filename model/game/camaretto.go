@@ -33,18 +33,18 @@ const (
 type Camaretto struct {
 	width, height float64
 
-	state GameState
-	focus FocusState
+	State GameState
+	Focus FocusState
 
-	playerTurn int
-	playerFocus int
-	cardFocus int
+	PlayerTurn int
+	PlayerFocus int
+	CardFocus int
 
 	nbPlayers int
 	Players []*Player
 	DeckPile *Deck
 
-	toReveal []*Card
+	ToReveal []*Card
 
 	attackButton *component.Button
 	shieldButton *component.Button
@@ -64,12 +64,12 @@ func (c *Camaretto) Init(n int, names []string, seed int64, w, h int) {
 
 	c.width, c.height = float64(w), float64(h)
 
-	c.state = SET
-	c.focus = NONE
+	c.State = SET
+	c.Focus = NONE
 
-	c.playerTurn = 0
-	c.playerFocus = -1
-	c.cardFocus = -1
+	c.PlayerTurn = 0
+	c.PlayerFocus = -1
+	c.CardFocus = -1
 
 	c.info = component.NewTextBox(c.width - 50, c.height*1/5 + 30, "", color.RGBA{0, 0, 0, 255}, color.RGBA{0, 51, 153, 127})
 	var x, y float64 = c.width/2, c.height*8/10 + 65
@@ -151,13 +151,13 @@ func (c *Camaretto) Init(n int, names []string, seed int64, w, h int) {
 
 // @desc: Finish turn reset game state and pass onto the next player's turn
 func (c *Camaretto) endTurn() {
-	c.state = SET
-	c.focus = NONE
-	c.playerFocus = -1
-	c.cardFocus = -1
+	c.State = SET
+	c.Focus = NONE
+	c.PlayerFocus = -1
+	c.CardFocus = -1
 
-	c.playerTurn = (c.playerTurn+1) % c.nbPlayers
-	for ;c.Players[c.playerTurn].Dead; { c.playerTurn = (c.playerTurn+1) % c.nbPlayers }
+	c.PlayerTurn = (c.PlayerTurn+1) % c.nbPlayers
+	for ;c.Players[c.PlayerTurn].Dead; { c.PlayerTurn = (c.PlayerTurn+1) % c.nbPlayers }
 }
 
 // @desc: Compute which cards are lost when a player (dst) is attacked by "amount" of points
@@ -183,18 +183,18 @@ func (c *Camaretto) attackPlayer(dst *Player, amount int) {
 	
 			// Is the attack still going ?
 			if amount > 0 {
-				amount = amount - dst.HealthCard[c.cardFocus].Value
-				c.DeckPile.DiscardCard(dst.HealthCard[c.cardFocus])
-				dst.HealthCard[c.cardFocus] = nil
+				amount = amount - dst.HealthCard[c.CardFocus].Value
+				c.DeckPile.DiscardCard(dst.HealthCard[c.CardFocus])
+				dst.HealthCard[c.CardFocus] = nil
 				// Joker's gone, we replace the health you focused
-				healthSlot = c.cardFocus
+				healthSlot = c.CardFocus
 			}
 	
 			// Wow that's a really big hit
-			if amount > 0 && dst.HealthCard[1-c.cardFocus] != nil {
-				amount = amount - dst.HealthCard[1-c.cardFocus].Value
-				c.DeckPile.DiscardCard(dst.HealthCard[1-c.cardFocus])
-				dst.HealthCard[1-c.cardFocus] = nil
+			if amount > 0 && dst.HealthCard[1-c.CardFocus] != nil {
+				amount = amount - dst.HealthCard[1-c.CardFocus].Value
+				c.DeckPile.DiscardCard(dst.HealthCard[1-c.CardFocus])
+				dst.HealthCard[1-c.CardFocus] = nil
 				// Both of your health cards took a hit ? Guess you don't have an option anymore
 				healthSlot = 0
 			}
@@ -250,33 +250,33 @@ func (c *Camaretto) attackPlayer(dst *Player, amount int) {
 
 // @desc: Player at index src attacks the player at index dst
 func (c *Camaretto) attack() {
-	var atkCard *Card = c.toReveal[0]
+	var atkCard *Card = c.ToReveal[0]
 	var chargeCard *Card = nil
-	if len(c.toReveal) == 2 { chargeCard = c.toReveal[1] }
+	if len(c.ToReveal) == 2 { chargeCard = c.ToReveal[1] }
 
 	var atkValue int = atkCard.Value
 	if chargeCard != nil { atkValue = atkValue + chargeCard.Value }
 
-	c.attackPlayer(c.Players[c.playerFocus], atkValue)
+	c.attackPlayer(c.Players[c.PlayerFocus], atkValue)
 
 	c.DeckPile.DiscardCard(atkCard)
 	if chargeCard != nil { c.DeckPile.DiscardCard(chargeCard) }
-	c.toReveal = []*Card{}
+	c.ToReveal = []*Card{}
 }
 
 // @desc: Player at index player gets assigned a new shield
 func (c *Camaretto) shield() {
-	var oldCard *Card = c.Players[c.playerFocus].ShieldCard
+	var oldCard *Card = c.Players[c.PlayerFocus].ShieldCard
 
-	c.Players[c.playerFocus].ShieldCard = c.toReveal[0]
+	c.Players[c.PlayerFocus].ShieldCard = c.ToReveal[0]
 	c.DeckPile.DiscardCard(oldCard)
 
-	c.toReveal = []*Card{}
+	c.ToReveal = []*Card{}
 }
 
 // @desc: Player at index player puts the next card into his charge slot
 func (c *Camaretto) charge() {
-	var p *Player = c.Players[c.playerFocus]
+	var p *Player = c.Players[c.PlayerFocus]
 	if p.ChargeCard == nil {
 		var card *Card = c.DeckPile.DrawCard()
 		p.Charge(card)
@@ -285,25 +285,25 @@ func (c *Camaretto) charge() {
 
 // @desc: Player at index player heals himself
 func (c *Camaretto) heal() {
-	var oldCard *Card = c.Players[c.playerFocus].Heal(c.cardFocus)
+	var oldCard *Card = c.Players[c.PlayerFocus].Heal(c.CardFocus)
 	c.DeckPile.DiscardCard(oldCard)
 }
 
 // @desc: Place cards to be revealed before the action takes place
 func (c *Camaretto) reveal() {
-	if c.state == ATTACK {
-		c.toReveal = append(c.toReveal, c.DeckPile.DrawCard())
-		var p *Player = c.Players[c.playerTurn]
+	if c.State == ATTACK {
+		c.ToReveal = append(c.ToReveal, c.DeckPile.DrawCard())
+		var p *Player = c.Players[c.PlayerTurn]
 		if p.ChargeCard != nil {
-			c.toReveal = append(c.toReveal, p.ChargeCard)
+			c.ToReveal = append(c.ToReveal, p.ChargeCard)
 			p.ChargeCard = nil
 		}
-	} else if c.state == SHIELD {
-		c.toReveal = append(c.toReveal, c.DeckPile.DrawCard())
+	} else if c.State == SHIELD {
+		c.ToReveal = append(c.ToReveal, c.DeckPile.DrawCard())
 	}
 
-	// var pers *Character = c.Players[c.playerTurn].Persona
-	// var msg string = pers.Talk(c.state)
+	// var pers *Character = c.Players[c.PlayerTurn].Persona
+	// var msg string = pers.Talk(c.State)
 	c.info.SetMessage("Display this message please, it could be good for testing purposes")
 }
 
@@ -322,23 +322,9 @@ func (c *Camaretto) IsGameOver() bool {
 	return true
 }
 
-// @desc: 
-func (c *Camaretto) ApplyState(s *CamarettoState) {
-	c.state = s.Game
-	c.focus = s.Focus
-
-	c.playerTurn = s.Turn
-	c.playerFocus = s.Player
-	c.cardFocus = s.Card
-
-	for i, revealed := range s.Reveal {
-		if revealed { c.toReveal[i].Reveal() }
-	}
-}
-
 // @desc: If the coordinates (x,y) are on any of the cards to be revealed returns the card's index, returns -1 otherwise
 func (c *Camaretto) onReveal(x, y float64) int {
-	for i, card := range c.toReveal {
+	for i, card := range c.ToReveal {
 		if card.SSprite.In(x, y) { return i }
 	}
 	return -1
@@ -346,7 +332,7 @@ func (c *Camaretto) onReveal(x, y float64) int {
 
 // @desc: If the coordinates (x,y) are on any of the focused player's health card return the card index, returns -1 otherwise
 func (c *Camaretto) onHealth(x, y float64) int {
-	var p *Player = c.Players[c.playerFocus]
+	var p *Player = c.Players[c.PlayerFocus]
 	if p.HealthCard[0] != nil && p.HealthCard[0].SSprite.In(x, y) {
 		return 0
 	} else if p.HealthCard[1] != nil && p.HealthCard[1].SSprite.In(x, y) {
@@ -377,7 +363,7 @@ func (c *Camaretto) Hover(x, y float64) {
 	var speed float64 = 15
 
 	var s *view.Sprite = nil
-	if c.state == SET {
+	if c.State == SET {
 		if c.attackButton.SSprite.In(x, y) {
 			s = c.attackButton.SSprite
 		} else if c.shieldButton.SSprite.In(x, y) {
@@ -396,7 +382,7 @@ func (c *Camaretto) Hover(x, y float64) {
 			c.cursor.RotateOffset(0, speed)
 		}
 	} else {
-		if c.focus == PLAYER {
+		if c.Focus == PLAYER {
 			var i int = c.onPlayer(x, y)
 			if i != -1 {
 				s = c.Players[i].NameSprite
@@ -407,10 +393,10 @@ func (c *Camaretto) Hover(x, y float64) {
 				c.cursor.MoveOffset(x, y - float64(view.CardHeight*5/2), speed)
 				c.cursor.RotateOffset(r, speed)
 			}
-		} else if c.focus == CARD {
+		} else if c.Focus == CARD {
 			var i int = c.onHealth(x, y)
 			if i != -1 {
-				s = c.Players[c.playerFocus].HealthCard[i].SSprite
+				s = c.Players[c.PlayerFocus].HealthCard[i].SSprite
 				var x, y, r float64 = s.GetCenter()
 				c.cursor.Move(x, y, speed)
 				c.cursor.Rotate(math.Pi, speed)
@@ -418,8 +404,8 @@ func (c *Camaretto) Hover(x, y float64) {
 				c.cursor.MoveOffset(x, y - float64(view.CardHeight/2), speed)
 				c.cursor.RotateOffset(r, speed)
 			}
-		} else if c.focus == REVEAL {
-			for _, card := range c.toReveal {
+		} else if c.Focus == REVEAL {
+			for _, card := range c.ToReveal {
 				if card.SSprite.In(x, y) { s = card.SSprite }
 			}
 
@@ -436,13 +422,13 @@ func (c *Camaretto) Hover(x, y float64) {
 
 // @desc: Update elements on mouse button press on coordinates (x,y)
 func (c *Camaretto) MousePress(x, y float64) {
-	if c.state == SET {
+	if c.State == SET {
 		if c.attackButton.SSprite.In(x, y) {
 			c.attackButton.Pressed()
 		} else if c.shieldButton.SSprite.In(x, y) {
 			c.shieldButton.Pressed()
 		} else {
-			if c.Players[c.playerTurn].ChargeCard == nil && c.chargeButton.SSprite.In(x, y) {
+			if c.Players[c.PlayerTurn].ChargeCard == nil && c.chargeButton.SSprite.In(x, y) {
 				c.chargeButton.Pressed()
 			} else if c.healButton.SSprite.In(x, y) {
 				c.healButton.Pressed()
@@ -461,75 +447,75 @@ func (c *Camaretto) MouseRelease(x, y float64) {
 	c.chargeButton.Released()
 	c.healButton.Released()
 
-	if c.state == SET {
+	if c.State == SET {
 		if c.attackButton.SSprite.In(x, y) {
-			c.state = ATTACK
-			c.focus = PLAYER
+			c.State = ATTACK
+			c.Focus = PLAYER
 		} else if c.shieldButton.SSprite.In(x, y) {
-			c.state = SHIELD
-			c.focus = PLAYER
+			c.State = SHIELD
+			c.Focus = PLAYER
 		} else {
-			if c.Players[c.playerTurn].ChargeCard == nil && c.chargeButton.SSprite.In(x, y) {
-				c.state = CHARGE
-				c.playerFocus = c.playerTurn
-				c.focus = COMPLETE
+			if c.Players[c.PlayerTurn].ChargeCard == nil && c.chargeButton.SSprite.In(x, y) {
+				c.State = CHARGE
+				c.PlayerFocus = c.PlayerTurn
+				c.Focus = COMPLETE
 			} else if c.healButton.SSprite.In(x, y) {
-				c.state = HEAL
-				c.playerFocus = c.playerTurn
-				c.focus = CARD
+				c.State = HEAL
+				c.PlayerFocus = c.PlayerTurn
+				c.Focus = CARD
 			}
 		}
 	} else {
-		if c.focus == PLAYER {
+		if c.Focus == PLAYER {
 			var i int = c.onPlayer(x, y)
 			if i != -1 {
-				if c.state == ATTACK {
-					c.playerFocus = i
-					c.focus = CARD
-				} else if c.state == SHIELD {
-					c.playerFocus = i
+				if c.State == ATTACK {
+					c.PlayerFocus = i
+					c.Focus = CARD
+				} else if c.State == SHIELD {
+					c.PlayerFocus = i
 					c.reveal()
-					c.focus = REVEAL
+					c.Focus = REVEAL
 				}
 			}
-		} else if c.focus == CARD {
+		} else if c.Focus == CARD {
 			var i int = c.onHealth(x, y)
 			if i != -1 {
-				c.cardFocus = i
+				c.CardFocus = i
 				c.reveal()
-				c.focus = REVEAL
+				c.Focus = REVEAL
 			}
-		} else if c.focus == REVEAL {
+		} else if c.Focus == REVEAL {
 			var i int = c.onReveal(x, y)
-			if i != -1 { c.toReveal[i].Reveal() }
+			if i != -1 { c.ToReveal[i].Reveal() }
 		}
 	}
 }
 
 // @desc: Complete actions that do not require user input
 func (c *Camaretto) Update() {
-	if c.focus == REVEAL {
-		if len(c.toReveal) == 0 {
-			c.focus = COMPLETE
+	if c.Focus == REVEAL {
+		if len(c.ToReveal) == 0 {
+			c.Focus = COMPLETE
 		} else {
 			var done bool = true
-			for _, card := range c.toReveal { done = done && (!card.Hidden) }
+			for _, card := range c.ToReveal { done = done && (!card.Hidden) }
 
 			if done { c.count++ }
 			if done && c.count > 33 {
-				c.focus = COMPLETE
+				c.Focus = COMPLETE
 				c.count = 0
 			}
 		}
-	} else if c.focus == COMPLETE {
-		if c.state != SET {
-			if c.state == ATTACK {
+	} else if c.Focus == COMPLETE {
+		if c.State != SET {
+			if c.State == ATTACK {
 				c.attack()
-			} else if c.state == SHIELD {
+			} else if c.State == SHIELD {
 				c.shield()
-			} else if c.state == CHARGE {
+			} else if c.State == CHARGE {
 				c.charge()
-			} else if c.state == HEAL {
+			} else if c.State == HEAL {
 				c.heal()
 			}
 			c.endTurn()
@@ -556,7 +542,7 @@ func (c *Camaretto) getPlayerGeoM(i int) (float64, float64, float64) {
 
 // @desc: Render all elements on a given image (dst)
 func (c *Camaretto) Display(dst *ebiten.Image) {
-	var persona *Character = c.Players[c.playerTurn].Persona
+	var persona *Character = c.Players[c.PlayerTurn].Persona
 	if c.info.Finished() {
 		persona.Talking = false
 	} else {
@@ -567,11 +553,11 @@ func (c *Camaretto) Display(dst *ebiten.Image) {
 	persona.SSprite.Display(dst)
 	c.info.SSprite.Display(dst)
 
-	if c.state == SET {
+	if c.State == SET {
 		c.attackButton.SSprite.Display(dst)
 		c.shieldButton.SSprite.Display(dst)
 
-		if c.Players[c.playerTurn].ChargeCard == nil {
+		if c.Players[c.PlayerTurn].ChargeCard == nil {
 			c.chargeButton.SSprite.Display(dst)
 		} else {
 			c.healButton.SSprite.Display(dst)
@@ -586,10 +572,10 @@ func (c *Camaretto) Display(dst *ebiten.Image) {
 		player.RenderCards(dst, centerX + x, centerY + y, theta)
 	}
 
-	if len(c.toReveal) > 0 {
-		for i, card := range c.toReveal {
+	if len(c.ToReveal) > 0 {
+		for i, card := range c.ToReveal {
 			var s *view.Sprite = card.SSprite
-			var x float64 = (float64(i) - float64(len(c.toReveal)-1)/2) * float64(view.CardWidth)
+			var x float64 = (float64(i) - float64(len(c.ToReveal)-1)/2) * float64(view.CardWidth)
 			s.Move(centerX + x, centerY, 0.5)
 			card.SSprite.Rotate(0, 0.2)
 			s.MoveOffset(0, 0, 0.2)

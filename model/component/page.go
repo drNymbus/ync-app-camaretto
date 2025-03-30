@@ -8,9 +8,10 @@ import (
 
 type PageSignal int
 const (
-	UPDATE PageSignal = iota // Blank signal; nothing has to be done
-	PREVIOUS
+	PREVIOUS PageSignal = iota
 	NEXT
+	SETTING // This is to open the settings menu (thoughful future implementation that might be deleted later)
+	UPDATE // This is basically a NONE statement, nothing has happened and nothing should be done.
 )
 
 type Page interface {

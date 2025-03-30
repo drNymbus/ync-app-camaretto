@@ -3,18 +3,26 @@ package model
 import (
 	"log"
 
+	"time"
+
 	"net"
 
 	"camaretto/model/game"
 )
 
-type PageSignal int
-const (
-	PREVIOUS PageSignal = iota
-	NEXT
-	SETTING // This is to open the settings menu (thoughful future implementation that might be deleted later)
-	UPDATE // This is basically a NONE statement, nothing has happened and nothing should be done.
-)
+type ClientConnection struct {
+	Connection *net.TCPConn
+	Encoder *gob.Encoder
+	Decoder *gob.Decoder
+}
+
+func NewClientConnection(c *net.TCPConn) *ClientConnection {
+	var cc *ClientConnection = &ClientConnection{}
+	cc.Conn = c
+	cc.Encoder = gob.NewEncoder(cc.Conn)
+	cc.Decoder = gob.NewDecoder(cc.Conn)
+	return cc
+}
 
 type CamarettoServer struct {
 	listener *net.TCPListener
@@ -49,13 +57,26 @@ func (server *CamarettoServer) handleError(e error, from string, action string) 
 	log.Println(msg, e)
 }
 
+// @desc:
 func (server *CamarettoServer) Run() {
 	server.lobbyRoutine()
 	server.gameRoutine()
+
+	var err error
+	for _, client := range server.clients {
+		err = client.Connection.Close()
+		if err != nil {
+			server.handleError(err, "Run", "Closing connection failed")
+		}
+	}
+
+	err = server.listener.Close()
+	if err != nil { server.handleError(err, "Run", "Closing listener failed")
 }
 
 // @desc: Send a given message to every current server's connection
 func (server *CamarettoServer) broadcastMessage(m *Message) {
+	log.Println("[CamarettoServer.broadcastMessage] Broadcasting:", m)
 	var err error
 	for _, conn := range server.clients {
 		err = conn.Encoder.Encode(m)
@@ -65,14 +86,16 @@ func (server *CamarettoServer) broadcastMessage(m *Message) {
 	}
 }
 
-// @desc:
-func (server *CamarettoServer) broadcastRoutine(pipe chan *Message) {
+// @desc: Once a message in found is found in pipe channel sends it to all stored connections
+// the routine is exited once a value is found in stop channel
+func (server *CamarettoServer) broadcastRoutine(pipe chan *Message, stop chan bool) {
 	for {
 		var message *Message = nil
 		select {
 			case message = <-pipe:
 				server.broadcastMessage(message)
-			default:
+			case <- stop:
+				return
 		}
 	}
 }
@@ -104,45 +127,58 @@ func (server *CamarettoServer) clientHandshake(conn *net.TCPConn) {
 	log.Println("[CamarettoServer.clientHandshake] Completed: {", playerInfo.Index, ",", playerInfo.Name, "}")
 }
 
-// @desc:
-func (server *CamarettoServer) acceptConnections(pipe chan *Message) {
+// @desc: Wait for a new connection to be opened, handshakes new client
+// then trigger a broadcasting message once connection is complete
+// the routine stops when a value is found in the stop channel
+func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan bool) {
 	var err error
 	var c *net.TCPConn
 
 	for {
-		c, err = server.listener.AcceptTCP()
-		if err != nil {
-			server.handleError(err, "acceptConnections", "AcceptTCP failed")
-		}
+		select {
+			case <- stop:
+				return
+			default:
+				c, err = server.listener.AcceptTCP()
+				if err != nil {
+					server.handleError(err, "acceptConnections", "AcceptTCP failed")
+				}
 
-		server.clientHandshake(c)
-		if len(server.clients) == game.MaxNbPlayers { return }
-		log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
-		pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
+				server.clientHandshake(c)
+				if len(server.clients) == game.MaxNbPlayers { return }
+				log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
+				pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
+		}
 	}
 }
 
-// @desc:
+// @desc: Handle new connections to server and update lobby state with all current connections
 func (server *CamarettoServer) lobbyRoutine() {
+	var stop chan bool = make(chan bool)
 	var pipe chan *Message = make(chan *Message)
-	go server.broadcastRoutine(pipe)
-	go server.acceptConnections(pipe)
+
+	go server.broadcastRoutine(pipe, stop)
+	go server.acceptConnections(pipe, stop)
 
 	// Wait for first connection
 	for ;len(server.clients) < 1; {}
 	log.Println(len(server.clients), "CLIENTS")
 
 	var err error
-	for {
+	for { // Wait for host to send START message
 		var msg *Message = &Message{}
 		err = server.clients[0].Decoder.Decode(msg)
 		if err != nil {
 			log.Println(msg.Typ, msg.Players, msg.Game)
 			server.handleError(err, "lobbyRoutine", "Receive message from host failed")
 		} else if msg.Typ == START {
+			stop <- true // Stop background routines
+			time.Sleep(time.Second * 5) // Wait for routines to be over
+
 			server.broadcastMessage(&Message{PLAYERS, server.camaretto.Players, nil})
 			server.broadcastMessage(&Message{STATE, nil, server.camaretto})
-			return
+
+			return // Exit lobbyRoutine routine
 		} else {
 			server.handleError(nil, "lobbyRoutine", "Received a message that should not have been sent")
 		}
