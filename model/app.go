@@ -121,8 +121,29 @@ func (app *Application) startCamaretto(seed int64) {
 /************ ********************************** UPDATE *********************************** ************/
 /************ ***************************************************************************** ************/
 
+// @desc: true if the player (Application.PlayerInfo) is required to do an action, false otherwise
+func (app *Application) isMyTurn() bool {
+	var flag bool = false
+
+	if app.camaretto.State == SET {
+		flag = (app.camaretto.PlayerTurn == app.PlayerInfo.Index)
+	} else {
+		if app.camaretto.Focus == PLAYER || app.camaretto.Focus == REVEAL {
+			flag = (app.camaretto.PlayerTurn == app.PlayerInfo.Index)
+		} else if app.camaretto.Focus == CARD {
+			flag = (app.camaretto.PlayerFocus == app.PlayerInfo.Index)
+		}
+	}
+
+	return flag
+}
+
 func (app *Application) Hover(x, y float64) {
-	if app.state == GAME { app.camaretto.Hover(x, y) }
+	if app.state == GAME {
+		if !app.online || app.isMyTurn() {
+			app.camaretto.Hover(x, y)
+		}
+	}
 }
 
 func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
@@ -166,10 +187,12 @@ func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
 			}
 		}
 	} else if app.state == GAME {
-		if e.Event == event.PRESSED {
-			app.camaretto.MousePress(e.X, e.Y)
-		} else if e.Event == event.RELEASED {
-			app.camaretto.MouseRelease(e.X, e.Y)
+		if !app.online || app.isMyTurn() {
+			if e.Event == event.PRESSED {
+				app.camaretto.MousePress(e.X, e.Y)
+			} else if e.Event == event.RELEASED {
+				app.camaretto.MouseRelease(e.X, e.Y)
+			}
 		}
 	} else if app.state == END {
 		if e.Event == event.RELEASED {
@@ -238,6 +261,7 @@ func (app *Application) Update() {
 		app.camaretto.Update()
 		if app.camaretto.IsGameOver() { app.state = END }
 	} else if app.state == END {
+		app.client.Disconnect()
 	}
 }
 

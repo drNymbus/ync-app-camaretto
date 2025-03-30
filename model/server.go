@@ -18,7 +18,7 @@ type ClientConnection struct {
 
 func NewClientConnection(c *net.TCPConn) *ClientConnection {
 	var cc *ClientConnection = &ClientConnection{}
-	cc.Conn = c
+	cc.Connection = c
 	cc.Encoder = gob.NewEncoder(cc.Conn)
 	cc.Decoder = gob.NewDecoder(cc.Conn)
 	return cc
@@ -139,15 +139,16 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 			case <- stop:
 				return
 			default:
-				c, err = server.listener.AcceptTCP()
-				if err != nil {
-					server.handleError(err, "acceptConnections", "AcceptTCP failed")
-				}
+				if len(server.clients) == game.MaxNbPlayers {
+					c, err = server.listener.AcceptTCP()
+					if err != nil {
+						server.handleError(err, "acceptConnections", "AcceptTCP failed")
+					}
 
-				server.clientHandshake(c)
-				if len(server.clients) == game.MaxNbPlayers { return }
-				log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
-				pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
+					server.clientHandshake(c)
+					log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
+					pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
+				}
 		}
 	}
 }

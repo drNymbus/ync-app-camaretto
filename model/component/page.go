@@ -10,8 +10,7 @@ type PageSignal int
 const (
 	PREVIOUS PageSignal = iota
 	NEXT
-	SETTING // This is to open the settings menu (thoughful future implementation that might be deleted later)
-	UPDATE // This is basically a NONE statement, nothing has happened and nothing should be done.
+	UPDATE // This is basically a NONE statement, nothing happened and nothing has to be done.
 )
 
 type Page interface {
