@@ -14,6 +14,11 @@ import (
 	"camaretto/view"
 )
 
+type PlayerInfo struct {
+	Index int
+	Name string
+}
+
 type Player struct {
 	Name string
 	NameSprite *view.Sprite

@@ -1,4 +1,4 @@
-package game
+package model
 
 import (
 	"image/color"
@@ -92,7 +92,6 @@ func (menu *Menu) MouseRelease(x, y float64) component.PageSignal {
 
 		if menu.local.SSprite.In(x, y) {
 			menu.Online = false
-			// GO TO LOBBY
 			return component.NEXT
 
 		} else if menu.host.SSprite.In(x, y) {

@@ -1,5 +1,5 @@
 package model
-
+/*
 import (
 	"log"
 
@@ -67,6 +67,7 @@ func (app *Application) Init(nbPlayers int) {
 /************ ****************************************************************************** ************/
 /************ ********************************** ROUTINE *********************************** ************/
 /************ ****************************************************************************** ************/
+/*
 
 func (app *Application) startServer() {
 	app.server = NewCamarettoServer()
@@ -120,6 +121,7 @@ func (app *Application) startCamaretto(seed int64) {
 /************ ***************************************************************************** ************/
 /************ ********************************** UPDATE *********************************** ************/
 /************ ***************************************************************************** ************/
+/*
 
 // @desc: true if the player (Application.PlayerInfo) is required to do an action, false otherwise
 func (app *Application) isMyTurn() bool {
@@ -180,7 +182,7 @@ func (app *Application) MouseEventUpdate(e *event.MouseEvent) {
 
 		if signal == component.NEXT {
 			if app.online {
-				app.client.SendMessage(&Message{START, nil, nil})
+				app.client.SendMessage(&Message{START, -1, nil, nil})
 			} else {
 				app.startCamaretto(time.Now().UnixNano())
 				app.state = GAME
@@ -224,9 +226,11 @@ func (app *Application) Update() {
 						for _, info := range message.Players {
 							app.lobby.Names[info.Index].SetText(info.Name)
 						}
-					} else if message.Typ == STATE { // Game is starting
-						app.startCamaretto(message.Game.Seed)
+					} else if message.Typ == INIT { // Game is starting
+						app.startCamaretto(message.Seed)
 						app.state = GAME
+					} else {
+						log.Println("[Application.Update] Unparsable message (should not have been sent in the first place)")
 					}
 					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				case err = <- app.ioError:
@@ -240,15 +244,15 @@ func (app *Application) Update() {
 			var err error
 			select {
 				case message = <- app.ioMessage:
-					if message.Typ == STATE {
-						var state *CamarettoState = message.Game
-						app.camaretto.State = state.Game
-						app.camaretto.Focus = state.Focus
-						app.camaretto.PlayerTurn = state.Turn
-						app.camaretto.PlayerFocus = state.Player
-						app.camaretto.CardFocus = state.Card
+					if message.Typ == ACTION {
+						var action *Action = message.Action
+						app.camaretto.State = action.Game
+						app.camaretto.Focus = action.Focus
+						app.camaretto.PlayerTurn = action.Turn
+						app.camaretto.PlayerFocus = action.Player
+						app.camaretto.CardFocus = action.Card
 						
-						for i, revealed := range state.Reveal {
+						for i, revealed := range action.Reveal {
 							if revealed { app.camaretto.ToReveal[i].Reveal() }
 						}
 					}
@@ -268,6 +272,7 @@ func (app *Application) Update() {
 /************ *************************************************************************** ************/
 /************ ********************************** RENDER ********************************* ************/
 /************ *************************************************************************** ************/
+/*
 
 func (app *Application) Display() *ebiten.Image {
 	app.imgBuffer.Clear()
@@ -288,3 +293,4 @@ func (app *Application) Display() *ebiten.Image {
 
 	return app.imgBuffer
 }
+*/

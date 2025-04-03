@@ -1,4 +1,4 @@
-package model
+package netplay
 
 import (
 	"log"
@@ -15,6 +15,7 @@ type ClientConnection struct {
 	Connection *net.TCPConn
 	Encoder *gob.Encoder
 	Decoder *gob.Decoder
+	Info *game.PlayerInfo
 }
 
 func NewClientConnection(c *net.TCPConn) *ClientConnection {
@@ -22,6 +23,7 @@ func NewClientConnection(c *net.TCPConn) *ClientConnection {
 	client.Connection = c
 	client.Encoder = gob.NewEncoder(client.Connection)
 	client.Decoder = gob.NewDecoder(client.Connection)
+	client.Info = nil
 	return client
 }
 
@@ -29,7 +31,9 @@ type CamarettoServer struct {
 	listener *net.TCPListener
 	clients []*ClientConnection
 
-	camaretto *CamarettoState
+	seed int64
+	action *game.Action
+	reveal []bool
 }
 
 // @desc: Create new instance of CamarettoServer then returns it
@@ -46,8 +50,6 @@ func NewCamarettoServer() *CamarettoServer {
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create TCPListener:", err) }
 
 	server.clients = []*ClientConnection{}
-
-	server.camaretto = NewCamarettoState()
 
 	return server
 }
@@ -96,6 +98,7 @@ func (server *CamarettoServer) broadcastRoutine(pipe chan *Message, stop chan bo
 			case message = <-pipe:
 				server.broadcastMessage(message)
 			case <-stop:
+				log.Println("[CamarettoServer.broadcastRoutine] Routine stopped")
 				return
 			default:
 		}
@@ -109,7 +112,7 @@ func (server *CamarettoServer) clientHandshake(conn *net.TCPConn) {
 	var client *ClientConnection = NewClientConnection(conn)
 	server.clients = append(server.clients, client)
 
-	var playerInfo *PlayerInfo = &PlayerInfo{}
+	var playerInfo *game.PlayerInfo = &game.PlayerInfo{}
 	// Read player name
 	err = client.Decoder.Decode(playerInfo)
 	if err != nil {
@@ -117,15 +120,14 @@ func (server *CamarettoServer) clientHandshake(conn *net.TCPConn) {
 	}
 
 	// Send game index position to new player
-	log.Println(len(server.camaretto.Players))
-	playerInfo.Index = len(server.camaretto.Players)
-	server.camaretto.Players = append(server.camaretto.Players, playerInfo)
+	playerInfo.Index = len(server.clients)
 
 	err = client.Encoder.Encode(playerInfo)
 	if err != nil {
 		server.handleError(err, "clientHandshake", "Send player index failed")
 	}
 
+	client.Info = playerInfo
 	log.Println("[CamarettoServer.clientHandshake] Completed: {", playerInfo.Index, ",", playerInfo.Name, "}")
 }
 
@@ -139,6 +141,7 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 	for {
 		select {
 			case <-stop:
+				log.Println("[CamarettoServer.acceptConnections] Routine stopped")
 				return
 			default:
 				if len(server.clients) < game.MaxNbPlayers {
@@ -148,8 +151,12 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 					}
 
 					server.clientHandshake(c)
-					log.Println("[CamarettoServer.acceptConnections]", server.camaretto.toString())
-					pipe <- &Message{PLAYERS, server.camaretto.Players, nil}
+
+					var players []*game.PlayerInfo = []*game.PlayerInfo{}
+					for _, client := range server.clients {
+						players = append(players, client.Info)
+					}
+					pipe <- &Message{PLAYERS, -1, players, nil, nil}
 				}
 		}
 	}
@@ -172,14 +179,19 @@ func (server *CamarettoServer) lobbyRoutine() {
 		var msg *Message = &Message{}
 		err = server.clients[0].Decoder.Decode(msg)
 		if err != nil {
-			log.Println(msg.Typ, msg.Players, msg.Game)
+			log.Println(msg.Typ, msg.Seed, msg.Players, msg.Action)
 			server.handleError(err, "lobbyRoutine", "Receive message from host failed")
 		} else if msg.Typ == START {
 			stop <- true // Stop background routines
-			time.Sleep(time.Second * 5) // Wait for routines to be over
+			time.Sleep(time.Second * 2) // Wait for routines to be over
 
-			server.broadcastMessage(&Message{PLAYERS, server.camaretto.Players, nil})
-			server.broadcastMessage(&Message{STATE, nil, server.camaretto})
+			server.seed = time.Now().UnixNano()
+
+			var players []*game.PlayerInfo = []*game.PlayerInfo{}
+			for _, client := range server.clients {
+				players = append(players, client.Info)
+			}
+			server.broadcastMessage(&Message{INIT, server.seed, players, nil, nil})
 
 			return // Exit lobbyRoutine
 		} else {

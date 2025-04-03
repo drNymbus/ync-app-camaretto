@@ -1,10 +1,12 @@
-package model
+package netplay
 
 import (
 	"log"
 
 	"net"
 	"encoding/gob"
+
+	"camaretto/model/game"
 )
 
 type CamarettoClient struct {
@@ -31,7 +33,7 @@ func (client *CamarettoClient) Scan() []*net.TCPAddr {
 }
 
 // @desc: Connect to server
-func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*PlayerInfo, error) {
+func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *game.PlayerInfo) (*game.PlayerInfo, error) {
 	var err error
 
 	var c *net.TCPConn
@@ -51,7 +53,7 @@ func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*Pl
 		return nil, err
 	}
 
-	info = &PlayerInfo{}
+	info = &game.PlayerInfo{}
 	err = client.Decoder.Decode(info)
 	if err != nil {
 		client.handleError(err, "Connect", "Decode player info failed")
