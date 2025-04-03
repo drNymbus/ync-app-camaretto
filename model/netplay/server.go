@@ -31,9 +31,7 @@ type CamarettoServer struct {
 	listener *net.TCPListener
 	clients []*ClientConnection
 
-	seed int64
-	action *game.Action
-	reveal []bool
+	camaretto *game.Camaretto
 }
 
 // @desc: Create new instance of CamarettoServer then returns it
@@ -185,13 +183,14 @@ func (server *CamarettoServer) lobbyRoutine() {
 			stop <- true // Stop background routines
 			time.Sleep(time.Second * 2) // Wait for routines to be over
 
-			server.seed = time.Now().UnixNano()
+			var seed int64 = time.Now().UnixNano()
 
 			var players []*game.PlayerInfo = []*game.PlayerInfo{}
 			for _, client := range server.clients {
 				players = append(players, client.Info)
 			}
-			server.broadcastMessage(&Message{INIT, server.seed, players, nil, nil})
+			server.camaretto(seed, len(players), players)
+			server.broadcastMessage(&Message{INIT, seed, players, nil, nil})
 
 			return // Exit lobbyRoutine
 		} else {
@@ -203,5 +202,53 @@ func (server *CamarettoServer) lobbyRoutine() {
 // @desc:
 func (server *CamarettoServer) gameRoutine() {
 	for {
+		if server.camaretto.IsGameOver() { return }
+
+		var err error
+		var client *ClientConnection = nil
+
+		var action *game.Action = server.camaretto.Current
+		if action.State == game.SET {
+			client = server.getPlayerConn(action.PlayerTurn)
+
+			var msg *Message = &Message{}
+			err = client.Decoder.Decode(msg)
+			if err != nil {
+			}
+
+			server.broadcastMessage(msg)
+		} else {
+			if action.Focus == game.PLAYER && action.Focus == game.REVEAL {
+				client = server.getPlayerConn(action.PlayerTurn)
+
+				var msg *Message = &Message{}
+				err = client.Decoder.Decode(msg)
+				if err != nil {
+				}
+
+				server.broadcastMessage(msg)
+			} else if action.Focus == game.CARD {
+				client = server.getPlayerConn(action.PlayerFocus)
+
+				var msg *Message = &Message{}
+				err = client.Decoder.Decode(msg)
+				if err != nil {
+				}
+
+				server.broadcastMessage(msg)
+			} else if action.Focus == game.COMPLETE {
+				if action.State == game.ATTACK {
+					c.Attack()
+				} else if action.State == game.SHIELD {
+					c.Shield()
+				} else if action.State == game.CHARGE {
+					c.Charge()
+				} else if action.State == game.HEAL {
+					c.Heal()
+				}
+				c.EndTurn()
+			}
+		}
+
 	}
 }
