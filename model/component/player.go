@@ -1,10 +1,7 @@
-package game
+package component
 
 import (
-	"log"
 	"math"
-
-	"strconv"
 
 	"image/color"
 
@@ -20,144 +17,199 @@ type PlayerInfo struct {
 }
 
 type Player struct {
-	Name string
-	NameSprite *view.Sprite
+	x, y, r float64
+
+	nameSprite *view.Sprite
 	Dead bool
-	DeadSprite *view.Sprite
+	deadSprite *view.Sprite
 
 	Persona *Character
 
-	HealthCard [2]*Card
-	JokerHealth *Card
-	ShieldCard *Card
-	JokerShield *Card
-	ChargeCard *Card
+	shield *Card
+	jokerShield *Card
+	health [2]*Card
+	jokerHealth *Card
+	charge *Card
 }
 
-func NewPlayer(name string, char *Character) *Player {
+func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 	var p *Player = &Player{}
-	p.Name = name
+
+	p.x, p.y, p.r = x, y, r
 
 	var tWidth, tHeight float64 = text.Measure(name, view.TextFace, 0.0)
 	var img *ebiten.Image = ebiten.NewImage(int(tWidth), int(tHeight))
-
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
-	var nameSprite *view.Sprite = view.NewSprite(img, true, color.RGBA{75,75,75,127}, nil)
-	p.NameSprite = nameSprite
 
-	p.DeadSprite = view.NewSprite(view.LoadDeathImage(), false, color.RGBA{0,0,0,0}, nil)
+	p.nameSprite = view.NewSprite(img, nil)
+	p.nameSprite.MoveOffset(0, float64(view.CardHeight) * 3/2, 0.5)
+	p.nameSprite.RotateOffset(r, 0.5)
+	p.nameSprite.Move(x, y, 1)
+
+	p.deadSprite = view.NewSprite(view.LoadDeathImage(), nil)
+	p.deadSprite.Rotate(r, 0.2)
+	p.deadSprite.Move(x, y, 0.5)
+
 	p.Dead = false
 
 	p.Persona = char
 
+	p.shield = nil
+	p.jokerShield = nil
+	p.health = [2]*Card{nil, nil}
+	p.jokerHealth = nil
+	p.charge = nil
+
 	return p
 }
 
-// @desc: Swap charge slot's card with the health card at index at then returns the old health card
-func (p *Player) Heal(at int) *Card {
-	if (p.ChargeCard == nil) { log.Fatal("[Player.Heal] No card in Player.ChargeCard") }
+func (p *Player) GetPosition() (float64, float64, float64) { return p.x, p.y, p.r }
 
-	var c *Card = p.Uncharge()
-	p.HealthCard[at], c = c, p.HealthCard[at]
-	return c
-}
+// @desc: Set card at shield position modifying sprite position and all then returning the old card
+func (p *Player) SetShield(c *Card) *Card {
+	var old *Card = p.shield
 
-// @desc: Insert card c into the charge slot
-func (p *Player) Charge(c *Card) { 
-	if (p.ChargeCard != nil) { log.Fatal("[Player.Charge] Already a card in Player.ChargeCard") }
-	p.ChargeCard = c
-}
-
-func (p *Player) Uncharge() *Card {
-	if (p.ChargeCard == nil) { log.Fatal("[Player.Uncharge] No card in Player.ChargeCard") }
-	var c *Card = p.ChargeCard
-	c.Reveal()
-	p.ChargeCard = nil
-	return c
-}
-
-func (p *Player) setCard(c *Card, x, y, r, xOff, yOff, rOff float64) {
-	if c != nil {
-		var speed, rSpeed float64 = 0.5, 0.2
-		var s *view.Sprite = c.SSprite
-		s.Rotate(r, rSpeed)
-		s.MoveOffset(xOff, yOff, speed)
-		s.RotateOffset(rOff, rSpeed)
-		s.Move(x, y, speed)
-	} else { log.Fatal("[player.setCard] Cannot set nil card") }
-}
-
-func (p *Player) setShield(x, y, rOff float64) {
-	if p.ShieldCard == nil { log.Fatal("[player.setShield] ShieldCard is nil") }
-	var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2, math.Pi/2
-	p.setCard(p.ShieldCard, x, y, r, xOff, yOff, rOff)
-}
-
-func (p *Player) setJokerShield(x, y, rOff float64) {
-	if p.JokerShield == nil { log.Fatal("[player.setJokerShield] JokerShield is nil") }
-	var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2 - 15, math.Pi/2
-	p.setCard(p.JokerShield, x, y, r, xOff, yOff, rOff)
-}
-
-func (p *Player) setJokerHealth(x, y, rOff float64) {
-	if p.JokerHealth == nil { log.Fatal("[player.setJokerHealth] JokerHealth is nil") }
-	var xOff, yOff, r float64 = - float64(view.CardWidth) - float64(view.CardWidth)/2, float64(view.CardHeight)/2, 0
-	p.setCard(p.JokerHealth, x, y, r, xOff, yOff, rOff)
-}
-
-func (p *Player) setHealth(i int, x, y, rOff float64) {
-	if p.HealthCard[i] == nil { log.Fatal("[player.setHealth] HealthCard" + strconv.Itoa(i) + " is nil") }
-	var xOff float64 = float64((i-1) * view.CardWidth) + float64(view.CardWidth)/2
-	var yOff, r float64 = float64(view.CardHeight)/2, 0
-	p.setCard(p.HealthCard[i], x, y, r, xOff, yOff, rOff)
-}
-
-func (p *Player) setCharge(x, y, rOff float64) {
-	if p.ChargeCard == nil { log.Fatal("[player.setCharge] ChargeCard is nil") }
-	var xOff, yOff, r float64 = float64(view.CardWidth) + float64(view.CardWidth)/2, float64(view.CardHeight)/2, 0
-	p.setCard(p.ChargeCard, x, y, r, xOff, yOff, rOff)
-}
-
-func (p *Player) RenderCards(dst *ebiten.Image, x, y, r float64) {
-	if p.Dead {
-		p.DeadSprite.Rotate(r, 0.2)
-		p.DeadSprite.Move(x, y, 0.5)
-		p.DeadSprite.Display(dst)
-	} else {
-		if p.ShieldCard != nil {
-			p.setShield(x, y, r)
-			p.ShieldCard.SSprite.Display(dst)
-		}
-
-		if p.JokerShield != nil {
-			p.setJokerShield(x, y, r)
-			p.JokerShield.SSprite.Display(dst)
-		}
+	c.SSprite.Move(p.x, p.y, 1)
+	c.SSprite.RotateOffset(p.r, 1)
 	
-		if p.JokerHealth != nil {
-			p.setJokerHealth(x, y, r)
-			p.JokerHealth.SSprite.Display(dst)
-		}
+	var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2, math.Pi/2
+	c.SSprite.MoveOffset(xOff, yOff, 1)
+	c.SSprite.Rotate(r, 1)
 
-		if p.HealthCard[0] != nil {
-			p.setHealth(0, x, y, r)
-			p.HealthCard[0].SSprite.Display(dst)
-		}
+	p.shield = c
+	return old
+}
 
-		if p.HealthCard[1] != nil {
-			p.setHealth(1, x, y, r)
-			p.HealthCard[1].SSprite.Display(dst)
-		}
+// @desc: Set card at joker shield position modifying sprite position and all then returning the old card
+func (p *Player) SetJokerShield(c *Card) *Card {
+	var old *Card = p.jokerShield
 
-		if p.ChargeCard != nil {
-			p.setCharge(x, y, r)
-			p.ChargeCard.SSprite.Display(dst)
+	c.SSprite.Move(p.x, p.y, 1)
+	c.SSprite.RotateOffset(p.r, 1)
+
+	var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2 - 15, math.Pi/2
+	c.SSprite.MoveOffset(xOff, yOff, 1)
+	c.SSprite.Rotate(r, 1)
+
+	p.jokerShield = c
+	return old
+}
+
+
+// @desc: Set card at health[i] position modifying sprite position and all then returning the old card
+func (p *Player) SetHealth(c *Card, i int) *Card {
+	var old *Card = p.health[i]
+
+	c.SSprite.Move(p.x, p.y, 1)
+	c.SSprite.RotateOffset(p.r, 1)
+
+	var xOff float64 = float64((i-1) * view.CardWidth) + float64(view.CardWidth)/2
+	var yOff float64 = float64(view.CardHeight)/2
+	var r float64 = 0
+	c.SSprite.MoveOffset(xOff, yOff, 1)
+	c.SSprite.Rotate(r, 1)
+
+	p.health[i] = c
+	return old
+}
+
+// @desc: Set card at joker health position modifying sprite position and all then returning the old card
+func (p *Player) SetJokerHealth(c *Card) *Card {
+	var old *Card = p.jokerHealth
+
+	c.SSprite.Move(p.x, p.y, 1)
+	c.SSprite.RotateOffset(p.r, 1)
+
+	var xOff float64 = - float64(view.CardWidth) - float64(view.CardWidth)/2
+	var yOff float64 = float64(view.CardHeight)/2
+	var r float64 = 0
+	c.SSprite.MoveOffset(xOff, yOff, 1)
+	c.SSprite.Rotate(r, 1)
+
+	p.jokerHealth = c
+	return old
+}
+
+// @desc: Return true in case charge is empty, false otherwise
+func (p *Player) IsChargeEmpty() bool { return p.charge == nil }
+
+// @desc: Set card at charge position modifying sprite position and all then returning the old card
+func (p *Player) SetCharge(c *Card) *Card {
+	var old *Card = p.charge
+
+	c.SSprite.Move(p.x, p.y, 1)
+	c.SSprite.RotateOffset(p.r, 1)
+
+	var xOff float64 = float64(view.CardWidth) + float64(view.CardWidth)/2
+	var yOff float64 = float64(view.CardHeight)/2
+	var r float64 = 0
+	c.SSprite.MoveOffset(xOff, yOff, 1)
+	c.SSprite.Rotate(r, 1)
+
+	p.charge = c
+	return old
+}
+
+func (p *Player) ResetTrigger() {
+	if p.shield != nil { p.shield.Trigger = nil }
+	if p.jokerShield != nil { p.jokerShield.Trigger = nil }
+
+	if p.health[0] != nil { p.health[0].Trigger = nil }
+	if p.health[1] != nil { p.health[1].Trigger = nil }
+	if p.jokerHealth != nil { p.jokerHealth.Trigger = nil }
+
+	if p.charge != nil { p.charge.Trigger = nil }
+}
+
+// @desc: Set callback for any card clicked
+func (p *Player) OnPlayer(trigger func()) {
+	if p.shield != nil { p.shield.Trigger = trigger }
+	if p.jokerShield != nil { p.jokerShield.Trigger = trigger }
+
+	if p.health[0] != nil { p.health[0].Trigger = trigger }
+	if p.health[1] != nil { p.health[1].Trigger = trigger }
+	if p.jokerHealth != nil { p.jokerHealth.Trigger = trigger }
+
+	if p.charge != nil { p.charge.Trigger = trigger }
+}
+
+// @desc: Set callback for health cards and nil for all other cards
+func (p *Player) OnHealth(trigger func(int)) {
+	p.ResetTrigger()
+	for i, card := range p.health {
+		if card != nil {
+			card.Trigger = func() { trigger(i) }
 		}
 	}
+}
 
-	p.NameSprite.MoveOffset(0, float64(view.CardHeight) * 3/2, 0.5)
-	p.NameSprite.RotateOffset(r, 0.2)
-	p.NameSprite.Move(x, y, 0.5)
-	p.NameSprite.Display(dst)
+func (p *Player) Update() error {
+	if p.shield != nil { p.shield.Update() }
+	if p.jokerShield != nil { p.jokerShield.Update() }
+
+	if p.health[0] != nil { p.health[0].Update() }
+	if p.health[1] != nil { p.health[1].Update() }
+	if p.jokerHealth != nil { p.jokerHealth.Update() }
+
+	if p.charge != nil { p.charge.Update() }
+
+	return nil
+}
+
+func (p *Player) Draw(screen *ebiten.Image) {
+	if p.Dead {
+		p.deadSprite.Draw(screen)
+	} else {
+		if p.shield != nil { p.shield.Draw(screen) }
+		if p.jokerShield != nil { p.jokerShield.Draw(screen) }
+
+		if p.health[0] != nil { p.health[0].Draw(screen) }
+		if p.health[1] != nil { p.health[1].Draw(screen) }
+		if p.jokerHealth != nil { p.jokerHealth.Draw(screen) }
+
+		if p.charge != nil { p.charge.Draw(screen) }
+	}
+
+	p.nameSprite.Draw(screen)
 }

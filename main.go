@@ -15,7 +15,6 @@ import (
 	"camaretto/model"
 	"camaretto/model/component"
 	"camaretto/model/netplay"
-	"camaretto/model/game"
 	"camaretto/event"
 	"camaretto/view"
 )
@@ -44,7 +43,7 @@ type Application struct {
 	state AppState
 	online, hosting bool
 
-	playerInfo *game.PlayerInfo
+	playerInfo *component.PlayerInfo
 
 	menu *model.Menu
 	lobby *model.Lobby
@@ -63,12 +62,14 @@ func (app *Application) Init() {
 	app.state = MENU
 	app.online, app.hosting = false, false
 
-	app.playerInfo = &game.PlayerInfo{}
+	app.playerInfo = &component.PlayerInfo{}
 
 	app.menu = &model.Menu{}
-	app.menu.Init(WinWidth, WinHeight)
+	app.menu.Init(WinWidth, WinHeight, app.startLobby, app.startServer, app.joinServer, app.scanServers)
 
 	app.lobby = &model.Lobby{}
+	// app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting, app.startGame)
+
 	app.game = &model.Game{}
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
@@ -78,13 +79,29 @@ func (app *Application) Init() {
 /************ ********************************** ROUTINE *********************************** ************/
 /************ ****************************************************************************** ************/
 
+func (app *Application) startLobby() {
+	app.state = LOBBY
+	app.menu = &model.Menu{}
+	app.lobby.Init(WinWidth, WinHeight, app.menu.Online, app.menu.Hosting, app.startGame)
+}
+
+func (app *Application) startGame() {
+	app.state = GAME
+
+	var playerNames []string = []string{}
+	for i := 0; i < app.lobby.NbPlayers; i++ {
+		playerNames = append(playerNames, app.lobby.Names[i].GetText())
+	}
+
+	app.lobby = &model.Lobby{}
+	var seed int64 = time.Now().UnixNano()
+	app.game.Init(seed, playerNames, WinWidth, WinHeight)
+}
+
 func (app *Application) startServer() {
 	app.server = netplay.NewCamarettoServer()
 	go app.server.Run()
-
 	log.Println("SERVER LAUNCHED")
-
-	app.joinServer()
 }
 
 func (app *Application) joinServer() {
@@ -105,7 +122,6 @@ func (app *Application) joinServer() {
 	}
 
 	if app.playerInfo != nil {
-		app.lobby.Focus = app.playerInfo.Index
 		app.lobby.Names[app.playerInfo.Index].SetText(app.playerInfo.Name)
 	}
 
@@ -118,20 +134,12 @@ func (app *Application) joinServer() {
 func (app *Application) scanServers() {
 }
 
-func (app *Application) startCamaretto(seed int64) {
-	var playerNames []string = []string{}
-	for i := 0; i < app.lobby.NbPlayers; i++ {
-		playerNames = append(playerNames, app.lobby.Names[i].GetText())
-	}
-
-	app.game.Init(seed, app.lobby.NbPlayers, playerNames, WinWidth, WinHeight)
-}
-
 /************ ***************************************************************************** ************/
 /************ ********************************** EBITEN *********************************** ************/
 /************ ***************************************************************************** ************/
 
 func (app *Application) Update() error {
+/*
 	app.events.Update()
 
 	if app.state == GAME {
@@ -260,6 +268,28 @@ func (app *Application) Update() error {
 		if signal == component.NEXT { app.state = END }
 	} else if app.state == END {
 	}
+*/
+	var err error
+
+	if app.state == MENU {
+		err = app.menu.Update()
+		if err != nil {
+			log.Println("[Main.Update] Error updating menu:", err)
+			return err
+		}
+	} else if app.state == LOBBY {
+		err = app.lobby.Update()
+		if err != nil {
+			log.Println("[Main.Update] Error updating lobby:", err)
+			return err
+		}
+	} else if app.state == GAME {
+		err = app.game.Update()
+		if err != nil {
+			log.Println("[Main.Update] Error update game:", err)
+			return err
+		}
+	}
 
 	return nil
 }
@@ -270,6 +300,7 @@ func (app *Application) Draw(screen *ebiten.Image) {
 	app.imgBuffer.Clear()
 	app.imgBuffer.Fill(color.White)
 
+/*
 	if app.state == MENU {
 		app.menu.Display(app.imgBuffer)
 	} else if app.state == LOBBY {
@@ -281,6 +312,15 @@ func (app *Application) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(WinWidth/2) - tw/2, float64(WinHeight/2) - th/2)
 		app.imgBuffer.DrawImage(img, op)
+	}
+*/
+
+	if app.state == MENU {
+		app.menu.Draw(app.imgBuffer)
+	} else if app.state == LOBBY {
+		app.lobby.Draw(app.imgBuffer)
+	} else if app.state == GAME {
+		app.game.Draw(app.imgBuffer)
 	}
 
 	screen.DrawImage(app.imgBuffer, nil)

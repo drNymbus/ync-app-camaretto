@@ -1,6 +1,7 @@
 package model
 
 import (
+	"log"
 	"math"
 
 	"strconv"
@@ -8,10 +9,11 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
 	"camaretto/model/component"
 	"camaretto/view"
-	"camaretto/event"
+	// "camaretto/event"
 )
 
 const (
@@ -24,7 +26,7 @@ type Lobby struct {
 
 	Names []*component.TextCapture
 
-	Focus int
+	focus int
 	cursor *view.Sprite
 
 	NbPlayers int
@@ -33,13 +35,13 @@ type Lobby struct {
 	start *component.Button
 }
 
-func (lobby *Lobby) Init(w, h int, online, host bool) {
+func (lobby *Lobby) Init(w, h int, online, host bool, startGame func()) {
 	lobby.width, lobby.height = float64(w), float64(h)
 	lobby.online, lobby.hosting = online, host
 
 	lobby.NbPlayers = 2
-	lobby.Names = make([]*component.TextCapture, MaxNbPlayers)
 
+	lobby.Names = make([]*component.TextCapture, MaxNbPlayers)
 	var tcWidth, tcHeight float64 = lobby.width*3/4, lobby.height/10
 	for i := 0; i < MaxNbPlayers; i++ {
 		lobby.Names[i] = component.NewTextCapture(55, int(tcWidth), int(tcHeight), 2)
@@ -47,71 +49,86 @@ func (lobby *Lobby) Init(w, h int, online, host bool) {
 		lobby.Names[i].SSprite.SetCenter(lobby.width/2, lobby.height/2 + 50 + diffY, 0)
 	}
 
-	lobby.Focus = 0
-	lobby.cursor = view.NewSprite(view.LoadCursorImage(), false, color.RGBA{0, 0, 0, 0}, nil)
+	lobby.focus = 0
+	lobby.cursor = view.NewSprite(view.LoadCursorImage(), nil)
 
 	var x, y float64 = lobby.width/2, lobby.height/8
-	lobby.minusButton = component.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED")
+	lobby.minusButton = component.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED", lobby.removePlayer)
 	lobby.minusButton.SSprite.SetCenter(x - float64(view.ButtonWidth)/2 - 5, y, 0)
 
-	lobby.plusButton = component.NewButton("+", color.RGBA{0, 0, 0, 255}, "RED")
+	lobby.plusButton = component.NewButton("+", color.RGBA{0, 0, 0, 255}, "RED", lobby.addPlayer)
 	lobby.plusButton.SSprite.SetCenter(x + float64(view.ButtonWidth)/2 + 5, y, 0)
 
-	lobby.start = component.NewButton("START", color.RGBA{0, 0, 0, 255}, "GREEN")
+	lobby.start = component.NewButton("START", color.RGBA{0, 0, 0, 255}, "GREEN", startGame)
 	lobby.start.SSprite.SetCenter(lobby.width/2, lobby.height - float64(view.ButtonHeight), 0)
 }
 
-func (lobby *Lobby) MousePress(x, y float64) component.PageSignal {
-	if lobby.plusButton.SSprite.In(x, y) {
-		lobby.plusButton.Pressed()
-	} else if lobby.minusButton.SSprite.In(x, y) {
-		lobby.minusButton.Pressed()
-	} else if lobby.start.SSprite.In(x, y) {
-		lobby.start.Pressed()
-	} else if !lobby.online {
-		for i, textInput := range lobby.Names {
-			if textInput.SSprite.In(x, y) { lobby.Focus = i }
-		}
+func (lobby *Lobby) addPlayer() {
+	if lobby.NbPlayers < MaxNbPlayers {
+		lobby.NbPlayers++
 	}
-	return component.UPDATE
 }
 
-func (lobby *Lobby) MouseRelease(x, y float64) component.PageSignal {
-	lobby.plusButton.Released()
-	lobby.minusButton.Released()
-	lobby.start.Released()
+func (lobby *Lobby) removePlayer() {
+	if lobby.NbPlayers > 2 {
+		lobby.NbPlayers--
+	}
+}
+
+func (lobby *Lobby) handleError(err error, from string, action string) error {
+	var msg string = "[Lobby." + from + "] " + action + ":"
+	log.Println(msg, err)
+	return err
+}
+
+func (lobby *Lobby) Update() error {
+	var err error
+
 	if !lobby.online {
-		if lobby.plusButton.SSprite.In(x, y) {
-			if lobby.NbPlayers < 6 { lobby.NbPlayers++ }
-		} else if lobby.minusButton.SSprite.In(x, y) {
-			if lobby.NbPlayers > 2 { lobby.NbPlayers-- }
-		} else if lobby.start.SSprite.In(x, y) {
-			return component.NEXT
-		}
-	} else if lobby.hosting {
-		lobby.start.Released()
-		if lobby.start.SSprite.In(x, y) {
-			return component.NEXT
-		}
-	}
-	return component.UPDATE
-}
-
-func (lobby *Lobby) HandleKeyEvent(e *event.KeyEvent) component.PageSignal {
-	if e.Event == event.PRESSED && !lobby.online {
-		lobby.Names[lobby.Focus].HandleEvent(e, nil)
-	}
-	return component.UPDATE
-}
-
-func (lobby *Lobby) Display(dst *ebiten.Image) {
-	if !lobby.online {
-		lobby.minusButton.SSprite.Display(dst)
-		lobby.plusButton.SSprite.Display(dst)
+		lobby.minusButton.Update()
+		if err != nil { return lobby.handleError(err, "Update", "Button minusButton.Update") }
+		lobby.plusButton.Update()
+		if err != nil { return lobby.handleError(err, "Update", "Button plusButton.Update") }
 	}
 
 	if !lobby.online || lobby.hosting {
-		lobby.start.SSprite.Display(dst)
+		lobby.start.Update()
+		if err != nil { return lobby.handleError(err, "Update", "Button start.Update") }
+	}
+
+	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+		var x, y int = ebiten.CursorPosition()
+
+		for i, tc := range lobby.Names {
+			if tc.SSprite.In(float64(x), float64(y)) {
+				lobby.focus = i
+			}
+		}
+	}
+
+	var tc *component.TextCapture = lobby.Names[lobby.focus]
+	var x, y float64
+	x = lobby.width/2 - tc.SSprite.Width/2
+	y = lobby.height/2 + float64(lobby.focus - MaxNbPlayers/2) * tc.SSprite.Height
+	y = y + float64(lobby.focus * 10) + 50
+	lobby.cursor.Move(x, y, 3)
+	lobby.cursor.Rotate(math.Pi/2, 1)
+
+	lobby.cursor.Update()
+
+	lobby.Names[lobby.focus].Update()
+
+	return nil
+}
+
+func (lobby *Lobby) Draw(screen *ebiten.Image) {
+	if !lobby.online {
+		lobby.minusButton.Draw(screen)
+		lobby.plusButton.Draw(screen)
+	}
+
+	if !lobby.online || lobby.hosting {
+		lobby.start.Draw(screen)
 	}
 
 	var x, y float64 = lobby.width/2, lobby.height/8 - float64(view.ButtonHeight)/2
@@ -120,18 +137,11 @@ func (lobby *Lobby) Display(dst *ebiten.Image) {
 	var tw, th float64
 	textImg, tw, th = view.TextToImage(strconv.Itoa(lobby.NbPlayers), color.RGBA{0, 0, 0, 255})
 	op := &ebiten.DrawImageOptions{}; op.GeoM.Translate(x - tw/2, y - th)
-	dst.DrawImage(textImg, op)
+	screen.DrawImage(textImg, op)
 
-	var tcWidth, tcHeight float64 = lobby.width*3/4, lobby.height/10
 	for i := 0; i < lobby.NbPlayers; i++ {
-		var diffY float64 = float64(i - MaxNbPlayers/2) * tcHeight + float64(i*10)
-		lobby.Names[i].SSprite.SetCenter(lobby.width/2, lobby.height/2 + 50 + diffY, 0)
-		lobby.Names[i].SSprite.Display(dst)
+		lobby.Names[i].Draw(screen)
 	}
 
-	x = lobby.width/2 - tcWidth/2
-	y = lobby.height/2 + float64(lobby.Focus - MaxNbPlayers/2) * tcHeight + float64(lobby.Focus * 10) + 50
-	lobby.cursor.Move(x, y, 1)
-	lobby.cursor.Rotate(math.Pi/2, 1)
-	lobby.cursor.Display(dst)
+	lobby.cursor.Draw(screen)
 }

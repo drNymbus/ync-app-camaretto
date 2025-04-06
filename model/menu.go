@@ -7,7 +7,6 @@ import (
 
 	"camaretto/model/component"
 	"camaretto/view"
-	"camaretto/event"
 )
 
 type MenuState int
@@ -22,39 +21,32 @@ type Menu struct {
 
 	width, height float64
 
-	NbPlayers int
-	minusButton, plusButton *component.Button
-
 	local, join, host *component.Button
 
 	Name *component.TextCapture
 
 	Online bool
 	Hosting bool
+
+	goToLobby func()
+	startServer func()
+	joinServer func()
+	scanServer func()
 }
 
-func (menu *Menu) Init(w, h int) {
+func (menu *Menu) Init(w, h int, lobby, host, join, scan func()) {
 	menu.state = HOME
-
-	menu.NbPlayers = 2
 
 	menu.width, menu.height = float64(w), float64(h)
 
-	var x, y float64 = menu.width/2, menu.height/8
-	menu.minusButton = component.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED")
-	menu.minusButton.SSprite.SetCenter(x - float64(view.ButtonWidth)/2 - 5, y, 0)
-
-	menu.plusButton = component.NewButton("+", color.RGBA{0, 0, 0, 255}, "RED")
-	menu.plusButton.SSprite.SetCenter(x + float64(view.ButtonWidth)/2 + 5, y, 0)
-
-	y = menu.height/2
-	menu.local = component.NewButton("Local", color.RGBA{0, 0, 0, 255}, "GREEN")
+	var x, y float64 = menu.width/2, menu.height/2
+	menu.local = component.NewButton("Local", color.RGBA{0, 0, 0, 255}, "GREEN", lobby)
 	menu.local.SSprite.SetCenter(x, y - float64(view.ButtonHeight) - 5, 0)
 
-	menu.host = component.NewButton("Host", color.RGBA{0, 0, 0, 255}, "BLUE")
+	menu.host = component.NewButton("Host", color.RGBA{0, 0, 0, 255}, "BLUE", menu.hostGame)
 	menu.host.SSprite.SetCenter(x, y, 0)
 
-	menu.join = component.NewButton("Join", color.RGBA{0, 0, 0, 255}, "RED")
+	menu.join = component.NewButton("Join", color.RGBA{0, 0, 0, 255}, "RED", menu.joinGame)
 	menu.join.SSprite.SetCenter(x, y + float64(view.ButtonHeight) + 5, 0)
 
 	menu.Name = component.NewTextCapture(55, int(menu.width*3/4), int(menu.height/10), 2)
@@ -62,37 +54,71 @@ func (menu *Menu) Init(w, h int) {
 
 	menu.Online = false
 	menu.Hosting = false
+
+	menu.goToLobby = lobby
+	menu.startServer = host
+	menu.joinServer = join
+	menu.scanServer = scan
 }
 
-func (menu *Menu) MousePress(x, y float64) component.PageSignal {
+func (menu *Menu) hostGame() {
+	menu.state = JOIN
+	go menu.startServer()
+
+	menu.host.SSprite.Move(menu.width/2, menu.height/2 + float64(view.ButtonHeight)*2, 2)
+	menu.host.Trigger = menu.goToLobby
+}
+
+func (menu *Menu) joinGame() {
+	menu.state = JOIN
+
+	menu.join.SSprite.Move(menu.width/2, menu.height/2 + float64(view.ButtonHeight)*2, 2)
+	menu.join.Trigger = menu.goToLobby
+}
+
+func (menu *Menu) scanGames() {
+}
+
+func (menu *Menu) Update() error {
+	menu.local.Update()
+	menu.host.Update()
+	menu.join.Update()
+
+	if menu.state == JOIN {
+		menu.Name.Update()
+	}
+
+	return nil
+}
+
+/*
+func (menu *Menu) MousePress(x, y float64)  {
 	if menu.state == HOME {
 		if menu.local.SSprite.In(x, y) {
-			menu.local.Pressed()
+			// menu.local.pressed()
 		} else if menu.join.SSprite.In(x, y) {
-			menu.join.Pressed()
+			// menu.join.pressed()
 		} else if menu.host.SSprite.In(x, y) {
-			menu.host.Pressed()
+			// menu.host.pressed()
 		}
 	} else if menu.state == SCAN {
 	} else if menu.state == JOIN {
 		if menu.Hosting && menu.host.SSprite.In(x, y) {
-			menu.host.Pressed()
+			// menu.host.pressed()
 		} else if menu.join.SSprite.In(x, y) {
-			menu.join.Pressed()
+			// menu.join.pressed()
 		}
 	}
-	return component.UPDATE
 }
 
-func (menu *Menu) MouseRelease(x, y float64) component.PageSignal {
+func (menu *Menu) MouseRelease(x, y float64)  {
 	if menu.state == HOME {
-		menu.local.Released()
-		menu.host.Released()
-		menu.join.Released()
+		// menu.local.released()
+		// menu.host.released()
+		// menu.join.released()
 
 		if menu.local.SSprite.In(x, y) {
 			menu.Online = false
-			return component.NEXT
 
 		} else if menu.host.SSprite.In(x, y) {
 			menu.Online = true
@@ -118,36 +144,35 @@ func (menu *Menu) MouseRelease(x, y float64) component.PageSignal {
 	} else if menu.state == SCAN {
 	} else if menu.state == JOIN {
 		if menu.Hosting {
-			menu.host.Released()
-			if menu.host.SSprite.In(x, y) { return component.NEXT }
+			// menu.host.released()
+			// if menu.host.SSprite.In(x, y) { return NEXT }
 		} else {
-			menu.join.Released()
-			if menu.join.SSprite.In(x, y) { return component.NEXT }
+			// menu.join.released()
+			// if menu.join.SSprite.In(x, y) { return NEXT }
 		}
 	}
 
-	return component.UPDATE
 }
 
-func (menu *Menu) HandleKeyEvent(e *event.KeyEvent) component.PageSignal {
+func (menu *Menu) HandleKeyEvent(e *event.KeyEvent)  {
 	if e.Event == event.PRESSED && menu.state == JOIN {
-		menu.Name.HandleEvent(e, nil)
+		// menu.Name.HandleEvent(e, nil)
 	}
-	return component.UPDATE
 }
+*/
 
-func (menu *Menu) Display(dst *ebiten.Image) {
+func (menu *Menu) Draw(dst *ebiten.Image) {
 	if menu.state == HOME {
-		menu.local.SSprite.Display(dst)
-		menu.join.SSprite.Display(dst)
-		menu.host.SSprite.Display(dst)
+		menu.local.Draw(dst)
+		menu.join.Draw(dst)
+		menu.host.Draw(dst)
 	} else if menu.state == SCAN {
 	} else if menu.state == JOIN {
-		menu.Name.SSprite.Display(dst)
+		menu.Name.SSprite.Draw(dst)
 		if menu.Hosting {
-			menu.host.SSprite.Display(dst)
+			menu.host.Draw(dst)
 		} else {
-			menu.join.SSprite.Display(dst)
+			menu.join.Draw(dst)
 		}
 	}
 }

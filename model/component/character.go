@@ -1,4 +1,4 @@
-package game
+package component
 
 import (
 	"image/color"
@@ -44,34 +44,22 @@ func NewCharacter(name string) *Character {
 	c.closedMouth = pi.ClosedMouth
 
 	c.image = ebiten.NewImage(view.PersonaBodyWidth, view.PersonaBodyHeight)
-	c.SSprite = view.NewSprite(c.image, false, color.RGBA{0,0,0,0}, nil)
+	c.SSprite = view.NewSprite(c.image, nil)
 
 	return c
 }
 
 func (c *Character) Talk(state GameState) string {
 	var msg string = ""
-	if state == SET {
-		msg = "Choisis une action, ego player que tu es ! Tu crois j'tai pas vu ? va jouer à la dinette plutot"
-	} else if state == ATTACK {
-		msg = "Je vais attaquer de toute ma puissance !"
-	} else if state == SHIELD {
-		msg = "Changement ! Zinedine rentre sur le terrain afin de donner du sang neuf, on voyait bien que Zidane commençait à fatiguer."
-	} else if state == CHARGE {
-		msg = "Meditation mode"
-	} else if state == HEAL {
-		msg = "Regenaration de mes pouvoirs"
-	}
-
 	return msg
 }
 
 // @desc: Generate sprite image depending on character's state
-func (c *Character) Render() {
+func (c *Character) Update() error {
 	var modify bool = false
 	if c.Talking {
 		c.count++
-		if c.count > 7 {
+		if c.count > 5 {
 			c.isMouthOpen = !c.isMouthOpen
 			c.count = 0
 			modify = true
@@ -98,4 +86,11 @@ func (c *Character) Render() {
 
 		c.SSprite.SetImage(c.image)
 	}
+
+	c.SSprite.Update()
+	return nil
+}
+
+func (c *Character) Draw(screen *ebiten.Image) {
+	c.SSprite.Draw(screen)
 }
