@@ -1,10 +1,10 @@
 package view
 
 import (
-	"strconv"
+	// "strconv"
 	"math"
 
-	"image/color"
+	// "image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -25,16 +25,13 @@ type Sprite struct {
 
 	scaleX, scaleY float64
 
-	// bg bool
-	// bgColor color.RGBA
 
 	options *ebiten.DrawImageOptions
-	// background *ebiten.Image
 	image *ebiten.Image
 }
 
 // @desc: Init a sprite struct then returns it
-func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawImageOptions) *Sprite {
+func NewSprite(img *ebiten.Image, op *ebiten.DrawImageOptions) *Sprite {
 	var s *Sprite = &Sprite{}
 
 	var w, h int = img.Size()
@@ -42,7 +39,6 @@ func NewSprite(img *ebiten.Image, bgEnabled bool, c color.RGBA, op *ebiten.DrawI
 	s.image.DrawImage(img, nil)
 
 	s.Width, s.Height = float64(w), float64(h)
-	// s.bg, s.bgColor = bgEnabled, c
 
 	if op == nil { op = &ebiten.DrawImageOptions{} }
 	s.options = op
@@ -101,7 +97,7 @@ func (s *Sprite) Rotate(r, sp float64) { s.targetRCenter, s.rSpeedCenter = r, sp
 func (s *Sprite) MoveOffset(x, y, sp float64) { s.targetXOffset, s.targetYOffset, s.speedOffset = x, y, sp }
 func (s *Sprite) RotateOffset(r, sp float64) { s.targetROffset, s.rSpeedOffset = math.Mod(r, math.Pi*2), sp }
 
-func (s *Sprite) tickTranslateCenter() {
+func (s *Sprite) updateTranslateCenter() {
 	var dx, dy float64 = (s.targetXCenter - s.xCenter), (s.targetYCenter - s.yCenter)
 
 	var vx, vy float64 = dx * s.speedCenter/50, dy * s.speedCenter/50
@@ -119,7 +115,7 @@ func (s *Sprite) tickTranslateCenter() {
 	}
 }
 
-func (s *Sprite) tickRotateCenter() {
+func (s *Sprite) updateRotateCenter() {
 	var vr float64 = s.targetRCenter * s.rSpeedCenter/50
 	if s.targetRCenter - s.rCenter < math.Pi/90 {
 		s.rCenter = s.targetRCenter
@@ -128,7 +124,7 @@ func (s *Sprite) tickRotateCenter() {
 	}
 }
 
-func (s *Sprite) tickTranslateOffset() {
+func (s *Sprite) updateTranslateOffset() {
 	var dx, dy float64 = (s.targetXOffset - s.xOffset), (s.targetYOffset - s.yOffset)
 
 	var vx, vy float64 = dx * s.speedOffset/50, dy * s.speedOffset/50
@@ -146,7 +142,7 @@ func (s *Sprite) tickTranslateOffset() {
 	}
 }
 
-func (s *Sprite) tickRotateOffset() {
+func (s *Sprite) updateRotateOffset() {
 	// var vr float64 = s.targetROffset * s.rSpeedOffset/50
 	// if s.targetROffset - s.rOffset < math.Pi/90 {
 	// 	s.rOffset = s.targetROffset
@@ -156,17 +152,17 @@ func (s *Sprite) tickRotateOffset() {
 	s.rOffset = s.targetROffset
 }
 
-func (s *Sprite) tick() {
-	if s.xCenter != s.targetXCenter || s.yCenter != s.targetYCenter { s.tickTranslateCenter() }
-	if s.rCenter != s.targetRCenter { s.tickRotateCenter() }
+func (s *Sprite) Update() error {
+	if s.xCenter != s.targetXCenter || s.yCenter != s.targetYCenter { s.updateTranslateCenter() }
+	if s.rCenter != s.targetRCenter { s.updateRotateCenter() }
 
-	if s.xOffset != s.targetXOffset || s.yOffset != s.targetYOffset { s.tickTranslateOffset() }
-	if s.rOffset != s.targetROffset { s.tickRotateOffset() }
+	if s.xOffset != s.targetXOffset || s.yOffset != s.targetYOffset { s.updateTranslateOffset() }
+	if s.rOffset != s.targetROffset { s.updateRotateOffset() }
+	
+	return nil
 }
 
-func (s *Sprite) Display(dst *ebiten.Image) {
-	s.tick()
-
+func (s *Sprite) Draw(screen *ebiten.Image) {
 	s.options.GeoM.Reset()
 	s.options.GeoM.Scale(s.scaleX, s.scaleY)
 	s.options.GeoM.Translate(-s.Width/2, -s.Height/2) // Center img
@@ -175,11 +171,5 @@ func (s *Sprite) Display(dst *ebiten.Image) {
 	s.options.GeoM.Rotate(s.rOffset) // Apply offset rotation
 	s.options.GeoM.Translate(s.xCenter, s.yCenter) // Put img in place
 
-	dst.DrawImage(s.image, s.options)
-}
-
-func (s *Sprite) ToString() string {
-	msg := "DX" + strconv.FormatFloat((s.targetXCenter - s.xCenter), 'f', 3, 64)
-	msg = msg + ", DY" + strconv.FormatFloat((s.targetYCenter - s.yCenter), 'f', 3, 64)
-	return msg
+	screen.DrawImage(s.image, s.options)
 }

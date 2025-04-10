@@ -1,28 +1,18 @@
-package model
+package netplay
 
 import (
 	"log"
 
 	"net"
 	"encoding/gob"
+
+	"camaretto/model/component"
 )
 
-type ClientConnection struct {
-	Conn *net.TCPConn
+type CamarettoClient struct {
+	Connection *net.TCPConn
 	Encoder *gob.Encoder
 	Decoder *gob.Decoder
-}
-
-func NewClientConnection(c *net.TCPConn) *ClientConnection {
-	var cc *ClientConnection = &ClientConnection{}
-	cc.Conn = c
-	cc.Encoder = gob.NewEncoder(cc.Conn)
-	cc.Decoder = gob.NewDecoder(cc.Conn)
-	return cc
-}
-
-type CamarettoClient struct {
-	Connection *ClientConnection
 }
 
 // @desc: Create new instance of CamarettoClient then returns it
@@ -43,7 +33,7 @@ func (client *CamarettoClient) Scan() []*net.TCPAddr {
 }
 
 // @desc: Connect to server
-func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*PlayerInfo, error) {
+func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *component.PlayerInfo) (*component.PlayerInfo, error) {
 	var err error
 
 	var c *net.TCPConn
@@ -53,15 +43,18 @@ func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*Pl
 		return nil, err
 	}
 
-	client.Connection = NewClientConnection(c)
-	err = client.Connection.Encoder.Encode(info)
+	client.Connection = c
+	client.Encoder = gob.NewEncoder(client.Connection)
+	client.Decoder = gob.NewDecoder(client.Connection)
+
+	err = client.Encoder.Encode(info)
 	if err != nil {
 		client.handleError(err, "Connect", "Encode player info failed")
 		return nil, err
 	}
 
-	info = &PlayerInfo{}
-	err = client.Connection.Decoder.Decode(info)
+	info = &component.PlayerInfo{}
+	err = client.Decoder.Decode(info)
 	if err != nil {
 		client.handleError(err, "Connect", "Decode player info failed")
 		return nil, err
@@ -73,13 +66,23 @@ func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *PlayerInfo) (*Pl
 
 // @desc: Disconnect from server
 func (client *CamarettoClient) Disconnect() error {
+	var err error
+
+	err = client.Connection.Close()
+	if err != nil {
+		client.handleError(err, "Disconnect", "Closing connection failed")
+		return err
+	}
+
+	client.Connection = nil
 	return nil
 }
 
+// @desc: Send data "msg" (*Message) to the connection
 func (client *CamarettoClient) SendMessage(msg *Message) error {
 	var err error
 
-	err = client.Connection.Encoder.Encode(msg)
+	err = client.Encoder.Encode(msg)
 	if err != nil {
 		client.handleError(err, "SendMessage", "Encode message failed")
 		return err
@@ -88,12 +91,12 @@ func (client *CamarettoClient) SendMessage(msg *Message) error {
 	return nil
 }
 
-// @desc:
+// @desc: Receive data from connection storing it into "io" channel
 func (client *CamarettoClient) ReceiveMessage(io chan *Message, e chan error) {
 	var err error
 	var msg *Message = &Message{}
 
-	err = client.Connection.Decoder.Decode(msg)
+	err = client.Decoder.Decode(msg)
 	if err != nil {
 		client.handleError(err, "ReceiveUpdate", "Decode message failed")
 		e <- err
