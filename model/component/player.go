@@ -25,11 +25,11 @@ type Player struct {
 
 	Persona *Character
 
-	shield *Card
-	jokerShield *Card
-	health [2]*Card
-	jokerHealth *Card
-	charge *Card
+	Shield *Card
+	JokerShield *Card
+	Health [2]*Card
+	JokerHealth *Card
+	Charge *Card
 }
 
 func NewPlayer(name string, char *Character, x, y, r float64) *Player {
@@ -55,11 +55,11 @@ func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 
 	p.Persona = char
 
-	p.shield = nil
-	p.jokerShield = nil
-	p.health = [2]*Card{nil, nil}
-	p.jokerHealth = nil
-	p.charge = nil
+	p.Shield = nil
+	p.JokerShield = nil
+	p.Health = [2]*Card{nil, nil}
+	p.JokerHealth = nil
+	p.Charge = nil
 
 	return p
 }
@@ -68,131 +68,165 @@ func (p *Player) GetPosition() (float64, float64, float64) { return p.x, p.y, p.
 
 // @desc: Set card at shield position modifying sprite position and all then returning the old card
 func (p *Player) SetShield(c *Card) *Card {
-	var old *Card = p.shield
+	var old *Card = p.Shield
 
-	c.SSprite.Move(p.x, p.y, 1)
-	c.SSprite.RotateOffset(p.r, 1)
-	
-	var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2, math.Pi/2
-	c.SSprite.MoveOffset(xOff, yOff, 1)
-	c.SSprite.Rotate(r, 1)
+	if c != nil {
+		c.SSprite.Move(p.x, p.y, 1)
+		c.SSprite.RotateOffset(p.r, 1)
+		
+		var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2, math.Pi/2
+		c.SSprite.MoveOffset(xOff, yOff, 1)
+		c.SSprite.Rotate(r, 1)
+	}
 
-	p.shield = c
+	p.Shield = c
 	return old
 }
 
 // @desc: Set card at joker shield position modifying sprite position and all then returning the old card
 func (p *Player) SetJokerShield(c *Card) *Card {
-	var old *Card = p.jokerShield
+	var old *Card = p.JokerShield
 
-	c.SSprite.Move(p.x, p.y, 1)
-	c.SSprite.RotateOffset(p.r, 1)
+	if c != nil {
+		c.SSprite.Move(p.x, p.y, 1)
+		c.SSprite.RotateOffset(p.r, 1)
 
-	var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2 - 15, math.Pi/2
-	c.SSprite.MoveOffset(xOff, yOff, 1)
-	c.SSprite.Rotate(r, 1)
+		var xOff, yOff, r float64 = 0, -float64(view.CardWidth)/2 - 15, math.Pi/2
+		c.SSprite.MoveOffset(xOff, yOff, 1)
+		c.SSprite.Rotate(r, 1)
+	}
 
-	p.jokerShield = c
+	p.JokerShield = c
 	return old
 }
 
 
-// @desc: Set card at health[i] position modifying sprite position and all then returning the old card
+// @desc: Set card at Health[i] position modifying sprite position and all then returning the old card
 func (p *Player) SetHealth(c *Card, i int) *Card {
-	var old *Card = p.health[i]
+	var old *Card = p.Health[i]
 
-	c.SSprite.Move(p.x, p.y, 1)
-	c.SSprite.RotateOffset(p.r, 1)
+	if c != nil {
+		c.SSprite.Move(p.x, p.y, 1)
+		c.SSprite.RotateOffset(p.r, 1)
 
-	var xOff float64 = float64((i-1) * view.CardWidth) + float64(view.CardWidth)/2
-	var yOff float64 = float64(view.CardHeight)/2
-	var r float64 = 0
-	c.SSprite.MoveOffset(xOff, yOff, 1)
-	c.SSprite.Rotate(r, 1)
+		var xOff float64 = float64((i-1) * view.CardWidth) + float64(view.CardWidth)/2
+		var yOff float64 = float64(view.CardHeight)/2
+		var r float64 = 0
+		c.SSprite.MoveOffset(xOff, yOff, 1)
+		c.SSprite.Rotate(r, 1)
+	}
 
-	p.health[i] = c
+	p.Health[i] = c
 	return old
 }
 
-// @desc: Set card at joker health position modifying sprite position and all then returning the old card
+// @desc: Set card at joker Health position modifying sprite position and all then returning the old card
 func (p *Player) SetJokerHealth(c *Card) *Card {
-	var old *Card = p.jokerHealth
+	var old *Card = p.JokerHealth
 
-	c.SSprite.Move(p.x, p.y, 1)
-	c.SSprite.RotateOffset(p.r, 1)
+	if c != nil {
+		c.SSprite.Move(p.x, p.y, 1)
+		c.SSprite.RotateOffset(p.r, 1)
 
-	var xOff float64 = - float64(view.CardWidth) - float64(view.CardWidth)/2
-	var yOff float64 = float64(view.CardHeight)/2
-	var r float64 = 0
-	c.SSprite.MoveOffset(xOff, yOff, 1)
-	c.SSprite.Rotate(r, 1)
+		var xOff float64 = - float64(view.CardWidth) - float64(view.CardWidth)/2
+		var yOff float64 = float64(view.CardHeight)/2
+		var r float64 = 0
+		c.SSprite.MoveOffset(xOff, yOff, 1)
+		c.SSprite.Rotate(r, 1)
+	}
 
-	p.jokerHealth = c
+	p.JokerHealth = c
 	return old
 }
 
-// @desc: Return true in case charge is empty, false otherwise
-func (p *Player) IsChargeEmpty() bool { return p.charge == nil }
+// @desc: Return true in case Charge is empty, false otherwise
+func (p *Player) IsChargeEmpty() bool { return p.Charge == nil }
 
-// @desc: Set card at charge position modifying sprite position and all then returning the old card
+// @desc: Set card at Charge position modifying sprite position and all then returning the old card
 func (p *Player) SetCharge(c *Card) *Card {
-	var old *Card = p.charge
+	var old *Card = p.Charge
 
-	c.SSprite.Move(p.x, p.y, 1)
-	c.SSprite.RotateOffset(p.r, 1)
+	if c != nil {
+		c.SSprite.Move(p.x, p.y, 1)
+		c.SSprite.RotateOffset(p.r, 1)
 
-	var xOff float64 = float64(view.CardWidth) + float64(view.CardWidth)/2
-	var yOff float64 = float64(view.CardHeight)/2
-	var r float64 = 0
-	c.SSprite.MoveOffset(xOff, yOff, 1)
-	c.SSprite.Rotate(r, 1)
+		var xOff float64 = float64(view.CardWidth) + float64(view.CardWidth)/2
+		var yOff float64 = float64(view.CardHeight)/2
+		var r float64 = 0
+		c.SSprite.MoveOffset(xOff, yOff, 1)
+		c.SSprite.Rotate(r, 1)
+	}
 
-	p.charge = c
+	p.Charge = c
 	return old
 }
 
 func (p *Player) ResetTrigger() {
-	if p.shield != nil { p.shield.Trigger = nil }
-	if p.jokerShield != nil { p.jokerShield.Trigger = nil }
+	if p.Shield != nil { p.Shield.Trigger = nil }
+	if p.JokerShield != nil { p.JokerShield.Trigger = nil }
 
-	if p.health[0] != nil { p.health[0].Trigger = nil }
-	if p.health[1] != nil { p.health[1].Trigger = nil }
-	if p.jokerHealth != nil { p.jokerHealth.Trigger = nil }
+	if p.Health[0] != nil { p.Health[0].Trigger = nil }
+	if p.Health[1] != nil { p.Health[1].Trigger = nil }
+	if p.JokerHealth != nil { p.JokerHealth.Trigger = nil }
 
-	if p.charge != nil { p.charge.Trigger = nil }
+	if p.Charge != nil { p.Charge.Trigger = nil }
 }
 
 // @desc: Set callback for any card clicked
 func (p *Player) OnPlayer(trigger func()) {
-	if p.shield != nil { p.shield.Trigger = trigger }
-	if p.jokerShield != nil { p.jokerShield.Trigger = trigger }
+	if p.Shield != nil { p.Shield.Trigger = trigger }
+	if p.JokerShield != nil { p.JokerShield.Trigger = trigger }
 
-	if p.health[0] != nil { p.health[0].Trigger = trigger }
-	if p.health[1] != nil { p.health[1].Trigger = trigger }
-	if p.jokerHealth != nil { p.jokerHealth.Trigger = trigger }
+	if p.Health[0] != nil { p.Health[0].Trigger = trigger }
+	if p.Health[1] != nil { p.Health[1].Trigger = trigger }
+	if p.JokerHealth != nil { p.JokerHealth.Trigger = trigger }
 
-	if p.charge != nil { p.charge.Trigger = trigger }
+	if p.Charge != nil { p.Charge.Trigger = trigger }
 }
 
-// @desc: Set callback for health cards and nil for all other cards
+// @desc: Set callback for Health cards and nil for all other cards
 func (p *Player) OnHealth(trigger func(int)) {
 	p.ResetTrigger()
-	for i, card := range p.health {
+	for i, card := range p.Health {
 		if card != nil {
 			card.Trigger = func() { trigger(i) }
 		}
 	}
 }
 
+func (p *Player) HoverPlayer(x, y float64) bool {
+	var flag bool = false
+
+	if p.Shield != nil { flag = flag || p.Shield.SSprite.In(x, y) }
+	if p.JokerShield != nil { flag = flag || p.JokerShield.SSprite.In(x, y) }
+
+	if p.Health[0] != nil { flag = flag || p.Health[0].SSprite.In(x, y) }
+	if p.Health[1] != nil { flag = flag || p.Health[1].SSprite.In(x, y) }
+	if p.JokerHealth != nil { flag = flag || p.JokerHealth.SSprite.In(x, y) }
+
+	if p.Charge != nil { flag = flag || p.Charge.SSprite.In(x, y) }
+
+	return flag
+}
+
+func (p *Player) HoverHealth(x, y float64) int {
+	if p.Health[0] != nil && p.Health[0].SSprite.In(x, y) { return 0 }
+	if p.Health[1] != nil && p.Health[1].SSprite.In(x, y) { return 1 }
+	return -1
+}
+
 func (p *Player) Update() error {
-	if p.shield != nil { p.shield.Update() }
-	if p.jokerShield != nil { p.jokerShield.Update() }
+	p.nameSprite.Update()
+	p.deadSprite.Update()
 
-	if p.health[0] != nil { p.health[0].Update() }
-	if p.health[1] != nil { p.health[1].Update() }
-	if p.jokerHealth != nil { p.jokerHealth.Update() }
+	if p.Shield != nil { p.Shield.Update() }
+	if p.JokerShield != nil { p.JokerShield.Update() }
 
-	if p.charge != nil { p.charge.Update() }
+	if p.Health[0] != nil { p.Health[0].Update() }
+	if p.Health[1] != nil { p.Health[1].Update() }
+	if p.JokerHealth != nil { p.JokerHealth.Update() }
+
+	if p.Charge != nil { p.Charge.Update() }
 
 	return nil
 }
@@ -201,14 +235,14 @@ func (p *Player) Draw(screen *ebiten.Image) {
 	if p.Dead {
 		p.deadSprite.Draw(screen)
 	} else {
-		if p.shield != nil { p.shield.Draw(screen) }
-		if p.jokerShield != nil { p.jokerShield.Draw(screen) }
+		if p.Shield != nil { p.Shield.Draw(screen) }
+		if p.JokerShield != nil { p.JokerShield.Draw(screen) }
 
-		if p.health[0] != nil { p.health[0].Draw(screen) }
-		if p.health[1] != nil { p.health[1].Draw(screen) }
-		if p.jokerHealth != nil { p.jokerHealth.Draw(screen) }
+		if p.Health[0] != nil { p.Health[0].Draw(screen) }
+		if p.Health[1] != nil { p.Health[1].Draw(screen) }
+		if p.JokerHealth != nil { p.JokerHealth.Draw(screen) }
 
-		if p.charge != nil { p.charge.Draw(screen) }
+		if p.Charge != nil { p.Charge.Draw(screen) }
 	}
 
 	p.nameSprite.Draw(screen)

@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	// "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const (
@@ -83,8 +83,8 @@ func (c *Camaretto) Init(seed int64, names []string, w, h float64) {
 		var char *Character = NewCharacter(name)
 
 		var theta float64 = angleStep * float64(i)
-		var x float64 = radius * math.Cos(theta + math.Pi/2)
-		var y float64 = radius * math.Sin(theta + math.Pi/2)
+		var x float64 = w/2 + radius * math.Cos(theta + math.Pi/2)
+		var y float64 = h/2 + radius * math.Sin(theta + math.Pi/2)
 
 		c.Players = append(c.Players, NewPlayer(name, char, x, y, theta))
 	}
@@ -137,7 +137,7 @@ func (c *Camaretto) IsGameOver() bool {
 }
 
 // @desc: Finish turn reset game state and pass onto the next player's turn
-func (c *Camaretto) EndTurn() {
+func (c *Camaretto) endTurn() {
 	var newTurn int = (c.Current.PlayerTurn+1) % c.NbPlayers
 	for ;c.Players[newTurn].Dead; { newTurn = (newTurn+1) % c.NbPlayers }
 	
@@ -158,6 +158,8 @@ func (c *Camaretto) playerFocusTrigger() {
 			c.Current.Focus = REVEAL
 			c.Current.PlayerFocus = i
 			c.reveal()
+
+			for _, player := range c.Players { player.ResetTrigger() }
 		}
 	}
 
@@ -310,7 +312,13 @@ func (c *Camaretto) attack() {
 // @desc: Player at index player gets assigned a new shield
 func (c *Camaretto) shield() {
 	var player *Player = c.Players[c.Current.PlayerFocus]
-	var old *Card = player.SetShield(c.ToReveal[0])
+
+	var old *Card
+	if c.ToReveal[0].Name == "Joker" {
+		old = player.SetJokerShield(c.ToReveal[0])
+	} else {
+		old = player.SetShield(c.ToReveal[0])
+	}
 
 	c.ToReveal = []*Card{}
 	c.DeckPile.DiscardCard(old)
@@ -344,10 +352,12 @@ func (c *Camaretto) addCardToReveal(card *Card) {
 		var x, y, r float64 = c.Players[c.Current.PlayerTurn].GetPosition()
 		var iOff int = i - len(c.ToReveal)/2
 
-		reveal.SSprite.Move(x + (reveal.SSprite.Width * float64(iOff)), y, 1)
+		reveal.SSprite.Move(x, y, 1)
 		reveal.SSprite.Rotate(r, 1)
 
-		reveal.SSprite.MoveOffset(0, reveal.SSprite.Height*3/2, 1)
+		var xOff float64 = reveal.SSprite.Width * float64(iOff)
+		var yOff float64 = -reveal.SSprite.Height * 3/2
+		reveal.SSprite.MoveOffset(xOff, yOff, 1)
 		reveal.SSprite.RotateOffset(0, 1)
 	}
 }
@@ -377,17 +387,22 @@ func (c *Camaretto) Update() error {
 		card.Update()
 	}
 	
-	if c.Current.State != SET && c.Current.Focus == COMPLETE {
-		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-			var x, y int = ebiten.CursorPosition()
-			if (x >= 0 && x <= int(c.width)) && (y >= 0 && y <= int(c.height)) {
-				switch ;c.Current.State {
-					case ATTACK: c.attack()
-					case SHIELD: c.shield()
-					case CHARGE: c.charge()
-					case HEAL: c.heal()
-				}
+	if c.Current.State != SET {
+		if c.Current.Focus == COMPLETE {
+			switch ;c.Current.State {
+				case ATTACK: c.attack()
+				case SHIELD: c.shield()
+				case CHARGE: c.charge()
+				case HEAL: c.heal()
 			}
+			c.endTurn()
+		} else if c.Current.Focus == REVEAL {
+			var done bool = true
+			for _, card := range c.ToReveal {
+				if card.Hidden { done = false }
+			}
+
+			if done { c.Current.Focus = COMPLETE }
 		}
 	}
 

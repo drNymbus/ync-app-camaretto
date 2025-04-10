@@ -2,7 +2,7 @@ package model
 
 import (
 	// "log"
-	// "math"
+	"math"
 
 	"image/color"
 
@@ -87,16 +87,70 @@ func (g *Game) Update() error {
 	var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerTurn]
 	player.Persona.Update()
 
+	var ix, iy int = ebiten.CursorPosition()
+	var x, y float64 = float64(ix), float64(iy)
+
+	var cx, cy, cr float64 = g.cursor.GetCenter()
+	var cxOff, cyOff, crOff float64 = g.cursor.GetOffset()
+	var cursorSpeed float64 = 25
+
 	if g.camaretto.Current.State == component.SET {
 		g.attack.Update()
 		g.shield.Update()
+		if g.attack.SSprite.In(x, y) {
+			cx, cy, cr = g.attack.SSprite.GetCenter()
+			cx = cx - g.attack.SSprite.Width/2
+			cr = cr + math.Pi/2
+		} else if g.shield.SSprite.In(x, y) {
+			cx, cy, cr = g.shield.SSprite.GetCenter()
+			cx = cx - g.shield.SSprite.Width/2
+			cr = cr + math.Pi/2
+		}
+
 		if player.IsChargeEmpty() {
 			g.charge.Update()
+			if g.charge.SSprite.In(x, y) {
+				cx, cy, cr = g.charge.SSprite.GetCenter()
+				cx = cx - g.charge.SSprite.Width/2
+				cr = cr + math.Pi/2
+			}
 		} else {
 			g.heal.Update()
+			if g.heal.SSprite.In(x, y) {
+				cx, cy, cr = g.heal.SSprite.GetCenter()
+				cx = cx - g.heal.SSprite.Width/2
+				cr = cr + math.Pi/2
+			}
+		}
+
+	} else if g.camaretto.Current.Focus == component.PLAYER {
+		for _, player := range g.camaretto.Players {
+			if player.HoverPlayer(x, y) {
+				cx, cy, crOff = player.GetPosition()
+
+				cyOff = -float64(view.CardHeight)
+				cr = math.Pi
+			}
+		}
+	} else if g.camaretto.Current.Focus == component.CARD {
+		var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerFocus]
+		var i int = player.HoverHealth(x, y)
+		if i != -1 {
+			cx, cy, crOff = player.GetPosition()
+
+			cxOff, cyOff, _ = player.Health[i].SSprite.GetOffset()
+			cyOff = cyOff - float64(view.CardHeight)
+			cr = math.Pi
 		}
 	}
 
+	g.cursor.Move(cx, cy, cursorSpeed)
+	g.cursor.Rotate(cr, cursorSpeed)
+
+	g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+	g.cursor.RotateOffset(crOff, cursorSpeed)
+
+	g.cursor.Update()
 	return nil
 }
 
@@ -117,4 +171,5 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	g.camaretto.Draw(screen)
+	g.cursor.Draw(screen)
 }

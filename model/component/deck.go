@@ -36,7 +36,6 @@ func (d *Deck) Init(s int64, x, y float64) {
 		var val int = i%13
 		d.DrawPile[i] = NewCard("_" + strconv.Itoa(val+1), val+1, ci.Card[val], ci.Hidden)
 		d.DrawPile[i].Hide()
-		d.DrawPile[i].SSprite.Move(d.x - float64(view.CardWidth)/2, d.y - float64(i)*0.2, 1)
 	}
 
 	// Add a non-value card
@@ -52,8 +51,8 @@ func (d *Deck) Init(s int64, x, y float64) {
 	d.Seed = s
 	d.shuffleDrawPile()
 
-	for _, card := range d.DrawPile {
-		card.SSprite.Move(d.x - float64(view.CardWidth)/2, d.y - float64(d.LenDrawPile)*0.2, 1)
+	for i, card := range d.DrawPile {
+		card.SSprite.Move(d.x - float64(view.CardWidth)/2, d.y - float64(i)*0.2, 1)
 	}
 }
 
