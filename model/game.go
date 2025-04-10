@@ -9,8 +9,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"camaretto/model/component"
-	// "camaretto/model/game"
-	// "camaretto/model/netplay"
 	"camaretto/view"
 )
 
@@ -37,7 +35,7 @@ func (g *Game) Init(seed int64, names []string, w, h int) {
 	g.width, g.height = float64(w), float64(h)
 
 	g.camaretto = &component.Camaretto{}
-	g.camaretto.Init(seed, names, g.width, g.height)
+	g.camaretto.Init(seed, names, g.width, g.height * 8/10)
 
 	for _, player := range g.camaretto.Players {
 		var bodyX float64 = player.Persona.SSprite.Width/2
@@ -90,8 +88,8 @@ func (g *Game) Update() error {
 	var ix, iy int = ebiten.CursorPosition()
 	var x, y float64 = float64(ix), float64(iy)
 
-	var cx, cy, cr float64 = g.cursor.GetCenter()
-	var cxOff, cyOff, crOff float64 = g.cursor.GetOffset()
+	var cx, cy, cr float64
+	var cxOff, cyOff, crOff float64
 	var cursorSpeed float64 = 25
 
 	if g.camaretto.Current.State == component.SET {
@@ -101,10 +99,20 @@ func (g *Game) Update() error {
 			cx, cy, cr = g.attack.SSprite.GetCenter()
 			cx = cx - g.attack.SSprite.Width/2
 			cr = cr + math.Pi/2
+
+			g.cursor.Move(cx, cy, cursorSpeed)
+			g.cursor.Rotate(cr, cursorSpeed)
+			g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+			g.cursor.RotateOffset(crOff, cursorSpeed)
 		} else if g.shield.SSprite.In(x, y) {
 			cx, cy, cr = g.shield.SSprite.GetCenter()
 			cx = cx - g.shield.SSprite.Width/2
 			cr = cr + math.Pi/2
+
+			g.cursor.Move(cx, cy, cursorSpeed)
+			g.cursor.Rotate(cr, cursorSpeed)
+			g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+			g.cursor.RotateOffset(crOff, cursorSpeed)
 		}
 
 		if player.IsChargeEmpty() {
@@ -113,6 +121,11 @@ func (g *Game) Update() error {
 				cx, cy, cr = g.charge.SSprite.GetCenter()
 				cx = cx - g.charge.SSprite.Width/2
 				cr = cr + math.Pi/2
+
+				g.cursor.Move(cx, cy, cursorSpeed)
+				g.cursor.Rotate(cr, cursorSpeed)
+				g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+				g.cursor.RotateOffset(crOff, cursorSpeed)
 			}
 		} else {
 			g.heal.Update()
@@ -120,6 +133,11 @@ func (g *Game) Update() error {
 				cx, cy, cr = g.heal.SSprite.GetCenter()
 				cx = cx - g.heal.SSprite.Width/2
 				cr = cr + math.Pi/2
+
+				g.cursor.Move(cx, cy, cursorSpeed)
+				g.cursor.Rotate(cr, cursorSpeed)
+				g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+				g.cursor.RotateOffset(crOff, cursorSpeed)
 			}
 		}
 
@@ -127,9 +145,13 @@ func (g *Game) Update() error {
 		for _, player := range g.camaretto.Players {
 			if player.HoverPlayer(x, y) {
 				cx, cy, crOff = player.GetPosition()
-
 				cyOff = -float64(view.CardHeight)
 				cr = math.Pi
+
+				g.cursor.Move(cx, cy, cursorSpeed)
+				g.cursor.Rotate(cr, cursorSpeed)
+				g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+				g.cursor.RotateOffset(crOff, cursorSpeed)
 			}
 		}
 	} else if g.camaretto.Current.Focus == component.CARD {
@@ -137,18 +159,17 @@ func (g *Game) Update() error {
 		var i int = player.HoverHealth(x, y)
 		if i != -1 {
 			cx, cy, crOff = player.GetPosition()
-
 			cxOff, cyOff, _ = player.Health[i].SSprite.GetOffset()
-			cyOff = cyOff - float64(view.CardHeight)
+			cyOff = cyOff - float64(view.CardHeight)/2
 			cr = math.Pi
+
+			g.cursor.Move(cx, cy, cursorSpeed)
+			g.cursor.Rotate(cr, cursorSpeed)
+			g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+			g.cursor.RotateOffset(crOff, cursorSpeed)
 		}
 	}
 
-	g.cursor.Move(cx, cy, cursorSpeed)
-	g.cursor.Rotate(cr, cursorSpeed)
-
-	g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-	g.cursor.RotateOffset(crOff, cursorSpeed)
 
 	g.cursor.Update()
 	return nil

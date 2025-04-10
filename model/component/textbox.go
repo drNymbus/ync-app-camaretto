@@ -84,7 +84,6 @@ func (tb *TextBox) renderBorder() {
 	op.GeoM.Scale(scaleWidth, barScale)
 	op.GeoM.Translate(-(barWidth*scaleWidth)/2, -barHeight/2)
 	op.GeoM.Translate(tb.width/2, topMargin/2)
-	// tb.background.DrawImage(view.BarImage, op)
 	tb.border.DrawImage(ii.Bar, op)
 
 	// Bottom border
@@ -92,7 +91,6 @@ func (tb *TextBox) renderBorder() {
 	op.GeoM.Scale(scaleWidth, barScale)
 	op.GeoM.Translate(-(barWidth*scaleWidth)/2, -barHeight/2)
 	op.GeoM.Translate(tb.width/2, tb.height - (bottomMargin/2))
-	// tb.background.DrawImage(view.BarImage, op)
 	tb.border.DrawImage(ii.Bar, op)
 
 	// Left border
@@ -101,7 +99,6 @@ func (tb *TextBox) renderBorder() {
 	op.GeoM.Translate(-(barWidth*scaleHeight)/2, -barHeight/2)
 	op.GeoM.Rotate(math.Pi/2)
 	op.GeoM.Translate(leftMargin/2, tb.height/2)
-	// tb.background.DrawImage(view.BarImage, op)
 	tb.border.DrawImage(ii.Bar, op)
 
 	// Right border
@@ -110,7 +107,6 @@ func (tb *TextBox) renderBorder() {
 	op.GeoM.Translate(-(barWidth*scaleHeight)/2, -barHeight/2)
 	op.GeoM.Rotate(math.Pi/2)
 	op.GeoM.Translate(tb.width - (rightMargin/2), tb.height/2)
-	// tb.background.DrawImage(view.BarImage, op)
 	tb.border.DrawImage(ii.Bar, op)
 
 	var iconScale float64 = 0.1
@@ -122,14 +118,12 @@ func (tb *TextBox) renderBorder() {
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(leftMargin/2, topMargin/2)
-	// tb.background.DrawImage(view.CoffeeImage, op)
 	tb.border.DrawImage(ii.Coffee, op)
 	// Bottom right coffee icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(tb.width - rightMargin/2, tb.height - bottomMargin/2)
-	// tb.background.DrawImage(view.CoffeeImage, op)
 	tb.border.DrawImage(ii.Coffee, op)
 
 	w, h = float64(view.AmarettoWidth)*iconScale, float64(view.AmarettoHeight)*iconScale
@@ -138,14 +132,12 @@ func (tb *TextBox) renderBorder() {
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(tb.width - rightMargin/2, topMargin/2)
-	// tb.background.DrawImage(view.AmarettoImage, op)
 	tb.border.DrawImage(ii.Amaretto, op)
 	// Bottom left amaretto icon
 	op.GeoM.Reset()
 	op.GeoM.Scale(iconScale, iconScale)
 	op.GeoM.Translate(-w/2, -h/2)
 	op.GeoM.Translate(leftMargin/2, tb.height - bottomMargin/2)
-	// tb.background.DrawImage(view.AmarettoImage, op)
 	tb.border.DrawImage(ii.Amaretto, op)
 }
 

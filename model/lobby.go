@@ -13,7 +13,6 @@ import (
 
 	"camaretto/model/component"
 	"camaretto/view"
-	// "camaretto/event"
 )
 
 const (

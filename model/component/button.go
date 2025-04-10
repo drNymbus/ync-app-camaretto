@@ -12,7 +12,6 @@ import (
 )
 
 type Button struct {
-	// width, height int
 	message string
 	textColor color.RGBA
 
