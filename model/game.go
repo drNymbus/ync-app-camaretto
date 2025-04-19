@@ -26,12 +26,14 @@ type Game struct {
 
 	info *component.TextBox
 
+	gotoEnd func
+
 	count int
 }
 
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
-func (g *Game) Init(seed int64, names []string, w, h int) {
+func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func) {
 	g.width, g.height = float64(w), float64(h)
 
 	g.camaretto = &component.Camaretto{}
@@ -71,6 +73,7 @@ func (g *Game) Init(seed int64, names []string, w, h int) {
 	g.cursor.SetOffset(0, 0, 0)
 
 	g.count = 0
+	g.gotoEnd = endRoutine
 }
 
 // @desc: true if the player (Application.PlayerInfo) is required to do an action, false otherwise
@@ -80,6 +83,8 @@ func (g *Game) IsMyTurn(index int) bool {
 
 func (g *Game) Update() error {
 	g.camaretto.Update()
+	if g.camaretto.IsGameOver() { g.gotoEnd() }
+
 	g.info.Update()
 
 	var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerTurn]
@@ -170,8 +175,8 @@ func (g *Game) Update() error {
 		}
 	}
 
-
 	g.cursor.Update()
+
 	return nil
 }
 
