@@ -19,9 +19,9 @@ type PlayerInfo struct {
 type Player struct {
 	x, y, r float64
 
-	nameSprite *view.Sprite
+	nameSprite *Sprite
 	Dead bool
-	deadSprite *view.Sprite
+	deadSprite *Sprite
 
 	Persona *Character
 
@@ -42,12 +42,13 @@ func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 
-	p.nameSprite = view.NewSprite(img, nil)
-	p.nameSprite.MoveOffset(0, float64(view.CardHeight) * 3/2, 0.5)
+	p.nameSprite = NewSprite(img, nil)
+	p.nameSprite.MoveOffset(0, float64(view.CardHeight) * 2, 0.5)
 	p.nameSprite.RotateOffset(r, 0.5)
 	p.nameSprite.Move(x, y, 1)
+	p.nameSprite.Rotate(-r, 0.5)
 
-	p.deadSprite = view.NewSprite(view.LoadDeathImage(), nil)
+	p.deadSprite = NewSprite(view.LoadDeathImage(), nil)
 	p.deadSprite.Rotate(r, 0.2)
 	p.deadSprite.Move(x, y, 0.5)
 

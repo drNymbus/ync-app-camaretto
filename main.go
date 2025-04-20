@@ -15,7 +15,7 @@ import (
 	"camaretto/model"
 	"camaretto/model/component"
 	"camaretto/model/netplay"
-	"camaretto/event"
+	// "camaretto/event"
 	"camaretto/view"
 )
 
@@ -37,7 +37,7 @@ const (
 )
 
 type Application struct {
-	events *event.EventQueue
+	// events *event.EventQueue
 	imgBuffer *ebiten.Image
 
 	state AppState
@@ -57,7 +57,7 @@ type Application struct {
 }
 
 func (app *Application) Init() {
-	app.events = event.NewEventQueue(20)
+	// app.events = event.NewEventQueue(20)
 
 	app.state = MENU
 	app.online, app.hosting = false, false
@@ -95,7 +95,13 @@ func (app *Application) startGame() {
 
 	app.lobby = &model.Lobby{}
 	var seed int64 = time.Now().UnixNano()
-	app.game.Init(seed, playerNames, WinWidth, WinHeight)
+	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
+}
+
+func (app *Application) endGame() {
+	app.state = END
+
+	app.game = &model.Game{}
 }
 
 func (app *Application) startServer() {
@@ -289,6 +295,9 @@ func (app *Application) Update() error {
 			log.Println("[Main.Update] Error update game:", err)
 			return err
 		}
+	} else if app.state == END {
+		app.state = LOBBY
+		app.startLobby()
 	}
 
 	return nil

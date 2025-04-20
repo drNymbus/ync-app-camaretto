@@ -13,17 +13,23 @@ const (
 	PersonaBodyHeight int = 590
 	PersonaMouthWidth int = 159
 	PersonaMouthHeight int = 82
+
+	PersonaWidth int = 452
+	PersonaHeight int = 600
 )
 
 type PersonaImage struct {
-	Body *ebiten.Image
-	OpenMouth *ebiten.Image
-	ClosedMouth *ebiten.Image
+	NeutralClosed *ebiten.Image
+	NeutralOpen *ebiten.Image
 }
 
 func LoadPersonaImage(name string) *PersonaImage {
 	var pi *PersonaImage = &PersonaImage{}
 
+	pi.NeutralClosed = GetImage("assets/characters/char_closed.png")
+	pi.NeutralOpen = GetImage("assets/characters/char_open.png")
+
+/*
 	pi.Body = GetImage("assets/characters/char.png")
 	pi.OpenMouth = GetImage("assets/characters/mouth_open.png")
 	pi.ClosedMouth = GetImage("assets/characters/mouth_closed.png")
@@ -43,6 +49,7 @@ func LoadPersonaImage(name string) *PersonaImage {
 	tmp = GetImage("assets/characters/mouth_closed.png")
 	pi.ClosedMouth = ebiten.NewImage(PersonaMouthWidth, PersonaBodyHeight)
 	pi.ClosedMouth.DrawImage(tmp, op)
+*/
 
 	return pi
 }

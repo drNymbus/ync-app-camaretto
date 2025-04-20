@@ -17,7 +17,7 @@ type TextCapture struct {
 	charLimit int
 
 	background *ebiten.Image
-	SSprite *view.Sprite
+	SSprite *Sprite
 
 	count int
 }
@@ -39,7 +39,7 @@ func NewTextCapture(limit, w, h, margin int) *TextCapture {
 	op.GeoM.Translate(float64(tc.margin), float64(tc.margin))
 
 	tc.background.DrawImage(filling, op)
-	tc.SSprite = view.NewSprite(tc.background, nil)
+	tc.SSprite = NewSprite(tc.background, nil)
 
 	tc.count = 0
 

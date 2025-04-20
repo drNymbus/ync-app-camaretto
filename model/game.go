@@ -22,16 +22,17 @@ type Game struct {
 	charge *component.Button
 	heal *component.Button
 
-	cursor *view.Sprite
+	cursor *component.Sprite
 
 	info *component.TextBox
 
 	count int
+	gotoEnd func()
 }
 
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
-func (g *Game) Init(seed int64, names []string, w, h int) {
+func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func()) {
 	g.width, g.height = float64(w), float64(h)
 
 	g.camaretto = &component.Camaretto{}
@@ -66,11 +67,12 @@ func (g *Game) Init(seed int64, names []string, w, h int) {
 	g.heal = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", g.camaretto.HealHook)
 	g.heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.cursor = view.NewSprite(view.LoadCursorImage(), nil)
+	g.cursor = component.NewSprite(view.LoadCursorImage(), nil)
 	g.cursor.SetCenter(-g.cursor.Width, -g.cursor.Height, 0)
 	g.cursor.SetOffset(0, 0, 0)
 
 	g.count = 0
+	g.gotoEnd = endRoutine
 }
 
 // @desc: true if the player (Application.PlayerInfo) is required to do an action, false otherwise
@@ -80,6 +82,7 @@ func (g *Game) IsMyTurn(index int) bool {
 
 func (g *Game) Update() error {
 	g.camaretto.Update()
+	if g.camaretto.IsGameOver() { g.gotoEnd() }
 	g.info.Update()
 
 	var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerTurn]

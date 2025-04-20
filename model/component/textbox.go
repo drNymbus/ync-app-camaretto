@@ -28,7 +28,7 @@ type TextBox struct {
 
 	image *ebiten.Image
 
-	SSprite *view.Sprite
+	SSprite *Sprite
 }
 
 func wrapText(message string, width int) string {
@@ -54,7 +54,7 @@ func NewTextBox(w, h float64, msg string, textColor color.RGBA, backgroundColor 
 	tb.renderBackground(backgroundColor)
 	tb.renderBorder()
 
-	tb.SSprite = view.NewSprite(tb.background, nil)
+	tb.SSprite = NewSprite(tb.background, nil)
 
 	return tb
 }

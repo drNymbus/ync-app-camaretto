@@ -26,7 +26,7 @@ type Lobby struct {
 	Names []*component.TextCapture
 
 	focus int
-	cursor *view.Sprite
+	cursor *component.Sprite
 
 	NbPlayers int
 	minusButton, plusButton *component.Button
@@ -49,7 +49,7 @@ func (lobby *Lobby) Init(w, h int, online, host bool, startGame func()) {
 	}
 
 	lobby.focus = 0
-	lobby.cursor = view.NewSprite(view.LoadCursorImage(), nil)
+	lobby.cursor = component.NewSprite(view.LoadCursorImage(), nil)
 
 	var x, y float64 = lobby.width/2, lobby.height/8
 	lobby.minusButton = component.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED", lobby.removePlayer)
