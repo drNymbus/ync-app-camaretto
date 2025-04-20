@@ -22,18 +22,19 @@ type Game struct {
 	charge *component.Button
 	heal *component.Button
 
-	cursor *view.Sprite
+	cursor *component.Sprite
 
 	info *component.TextBox
 
 	gotoEnd func
 
 	count int
+	gotoEnd func()
 }
 
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
-func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func) {
+func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func()) {
 	g.width, g.height = float64(w), float64(h)
 
 	g.camaretto = &component.Camaretto{}
@@ -68,7 +69,7 @@ func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func) {
 	g.heal = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", g.camaretto.HealHook)
 	g.heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.cursor = view.NewSprite(view.LoadCursorImage(), nil)
+	g.cursor = component.NewSprite(view.LoadCursorImage(), nil)
 	g.cursor.SetCenter(-g.cursor.Width, -g.cursor.Height, 0)
 	g.cursor.SetOffset(0, 0, 0)
 

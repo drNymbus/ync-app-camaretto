@@ -348,16 +348,16 @@ func (c *Camaretto) addCardToReveal(card *Card) {
 	c.ToReveal = append(c.ToReveal, card)
 	
 	for i, reveal := range c.ToReveal {
-		var x, y, r float64 = c.Players[c.Current.PlayerTurn].GetPosition()
-		var iOff int = i - len(c.ToReveal)/2
+		var x, y, rOff float64 = c.Players[c.Current.PlayerTurn].GetPosition()
 
 		reveal.SSprite.Move(x, y, 1)
-		reveal.SSprite.Rotate(r, 1)
+		reveal.SSprite.Rotate(0, 1)
+		reveal.SSprite.RotateOffset(rOff, 1)
 
+		var iOff int = i - len(c.ToReveal)/2
 		var xOff float64 = reveal.SSprite.Width * float64(iOff)
 		var yOff float64 = -reveal.SSprite.Height * 3/2
 		reveal.SSprite.MoveOffset(xOff, yOff, 1)
-		reveal.SSprite.RotateOffset(0, 1)
 	}
 }
 

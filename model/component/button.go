@@ -23,7 +23,7 @@ type Button struct {
 	pressedImg *ebiten.Image
 	releasedImg *ebiten.Image
 
-	SSprite *view.Sprite
+	SSprite *Sprite
 }
 
 func NewButton(msg string, textClr color.RGBA, buttonColor string, onClick func()) *Button {
@@ -41,7 +41,7 @@ func NewButton(msg string, textClr color.RGBA, buttonColor string, onClick func(
 	b.sourceReleasedImg = bi.Released
 
 	b.render()
-	b.SSprite = view.NewSprite(b.releasedImg, nil)
+	b.SSprite = NewSprite(b.releasedImg, nil)
 
 	return b
 }

@@ -56,7 +56,6 @@ type Application struct {
 }
 
 func (app *Application) Init() {
-
 	app.state = MENU
 	app.online, app.hosting = false, false
 
@@ -90,6 +89,13 @@ func (app *Application) startGame() {
 
 	app.lobby = &model.Lobby{}
 	var seed int64 = time.Now().UnixNano()
+	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
+}
+
+func (app *Application) endGame() {
+	app.state = END
+
+	app.game = &model.Game{}
 	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.startLobby)
 	// app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
 }
@@ -287,6 +293,9 @@ func (app *Application) Update() error {
 			log.Println("[Main.Update] Error update game:", err)
 			return err
 		}
+	} else if app.state == END {
+		app.state = LOBBY
+		app.startLobby()
 	}
 
 	return nil
