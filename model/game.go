@@ -26,6 +26,8 @@ type Game struct {
 
 	info *component.TextBox
 
+	gotoEnd func
+
 	count int
 	gotoEnd func()
 }
@@ -83,6 +85,7 @@ func (g *Game) IsMyTurn(index int) bool {
 func (g *Game) Update() error {
 	g.camaretto.Update()
 	if g.camaretto.IsGameOver() { g.gotoEnd() }
+
 	g.info.Update()
 
 	var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerTurn]
@@ -173,8 +176,8 @@ func (g *Game) Update() error {
 		}
 	}
 
-
 	g.cursor.Update()
+
 	return nil
 }
 

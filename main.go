@@ -37,7 +37,6 @@ const (
 )
 
 type Application struct {
-	// events *event.EventQueue
 	imgBuffer *ebiten.Image
 
 	state AppState
@@ -57,8 +56,6 @@ type Application struct {
 }
 
 func (app *Application) Init() {
-	// app.events = event.NewEventQueue(20)
-
 	app.state = MENU
 	app.online, app.hosting = false, false
 
@@ -66,10 +63,7 @@ func (app *Application) Init() {
 
 	app.menu = &model.Menu{}
 	app.menu.Init(WinWidth, WinHeight, app.startLobby, app.startServer, app.joinServer, app.scanServers)
-
 	app.lobby = &model.Lobby{}
-	// app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting, app.startGame)
-
 	app.game = &model.Game{}
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
@@ -102,7 +96,11 @@ func (app *Application) endGame() {
 	app.state = END
 
 	app.game = &model.Game{}
+	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.startLobby)
+	// app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
 }
+
+func (app *Application) endGame() {}
 
 func (app *Application) startServer() {
 	app.server = netplay.NewCamarettoServer()
@@ -308,21 +306,6 @@ func (app *Application) Draw(screen *ebiten.Image) {
 
 	app.imgBuffer.Clear()
 	app.imgBuffer.Fill(color.White)
-
-/*
-	if app.state == MENU {
-		app.menu.Display(app.imgBuffer)
-	} else if app.state == LOBBY {
-		app.lobby.Display(app.imgBuffer)
-	} else if app.state == GAME {
-		app.game.Display(app.imgBuffer)
-	} else if app.state == END {
-		img, tw, th := view.TextToImage("C'EST LA FIN!", color.RGBA{0, 0, 0, 255})
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(WinWidth/2) - tw/2, float64(WinHeight/2) - th/2)
-		app.imgBuffer.DrawImage(img, op)
-	}
-*/
 
 	if app.state == MENU {
 		app.menu.Draw(app.imgBuffer)
