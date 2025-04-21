@@ -52,6 +52,27 @@ func NewAction(i int) *Action {
 	return a
 }
 
+// @desc: Returns true if Action structs are different, false otherwise
+func ActionDiff(src, dst *Action) bool {
+	var flag = false
+	flag = flag || (src.State != dst.State)
+	flag = flag || (src.Focus != dst.Focus)
+	flag = flag || (src.PlayerTurn != dst.PlayerTurn)
+	flag = flag || (src.PlayerFocus != dst.PlayerFocus)
+	flag = flag || (src.CardFocus != dst.CardFocus)
+	return flag
+}
+
+func RevealDiff(src, dst []bool) bool {
+	if len(src) != len(dst) { return true }
+
+	for i := 0; i < len(src); i++ {
+		if src[i] != dst[i] { return true }
+	}
+
+	return false
+}
+
 type Camaretto struct {
 	width, height float64
 
@@ -150,13 +171,13 @@ func (c *Camaretto) playerFocusTrigger() {
 		focus = func(i int) {
 			c.Current.Focus = CARD
 			c.Current.PlayerFocus = i
-			c.cardFocusTrigger()
+			c.CardFocusTrigger()
 		}
 	} else if c.Current.State == SHIELD {
 		focus = func(i int) {
 			c.Current.Focus = REVEAL
 			c.Current.PlayerFocus = i
-			c.reveal()
+			// c.reveal()
 
 			for _, player := range c.Players { player.ResetTrigger() }
 		}
@@ -168,13 +189,13 @@ func (c *Camaretto) playerFocusTrigger() {
 	}
 }
 
-func (c *Camaretto) cardFocusTrigger() {
+func (c *Camaretto) CardFocusTrigger() {
 	for i, _ := range c.Players { c.Players[i].ResetTrigger() }
 
 	var focus func(int) = func(i int) {
 		c.Current.CardFocus = i
 		c.Current.Focus = REVEAL
-		c.reveal()
+		// c.reveal()
 		c.Players[c.Current.PlayerFocus].ResetTrigger()
 	}
 
@@ -207,7 +228,19 @@ func (c *Camaretto) HealHook() {
 	c.Current.Focus = CARD
 
 	c.Current.PlayerFocus = c.Current.PlayerTurn
-	c.cardFocusTrigger()
+	c.CardFocusTrigger()
+}
+
+/************ ***************************************************************************** ************/
+/************ ********************************** NETPLAY ********************************** ************/
+/************ ***************************************************************************** ************/
+
+// @desc:
+func (c *Camaretto) ApplyNewState(a *Action, r []bool) {
+	c.Current = a
+	for i, _ := range r {
+		if r[i] { c.ToReveal[i].Reveal() }
+	}
 }
 
 /************ ***************************************************************************** ************/
@@ -402,6 +435,10 @@ func (c *Camaretto) Update() error {
 			}
 
 			if done { c.Current.Focus = COMPLETE }
+		}
+
+		if len(c.ToReveal) == 0 {
+			c.reveal()
 		}
 	}
 

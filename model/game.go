@@ -15,7 +15,10 @@ import (
 type Game struct {
 	width, height float64
 
-	camaretto *component.Camaretto
+	online bool
+	playerInfo *component.PlayerInfo
+
+	Camaretto *component.Camaretto
 
 	attack *component.Button
 	shield *component.Button
@@ -32,13 +35,16 @@ type Game struct {
 
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
-func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func()) {
+func (g *Game) Init(seed int64, names []string, w, h int, online bool, player *component.PlayerInfo, endRoutine func()) {
 	g.width, g.height = float64(w), float64(h)
 
-	g.camaretto = &component.Camaretto{}
-	g.camaretto.Init(seed, names, g.width, g.height * 8/10)
+	g.online = online
+	g.playerInfo = player
 
-	for _, player := range g.camaretto.Players {
+	g.Camaretto = &component.Camaretto{}
+	g.Camaretto.Init(seed, names, g.width, g.height * 8/10)
+
+	for _, player := range g.Camaretto.Players {
 		var bodyX float64 = player.Persona.SSprite.Width/2
 		var bodyY float64 = g.height - player.Persona.SSprite.Height/2
 		player.Persona.SSprite.SetCenter(bodyX, bodyY, 0)
@@ -51,20 +57,20 @@ func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func()) {
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = g.height * 9/10
 
-	g.attack = component.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", g.camaretto.AttackHook)
+	g.attack = component.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", g.Camaretto.AttackHook)
 	buttonXPos = (g.width * 1/4) + (float64(view.ButtonWidth)/2)
 	g.attack.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.shield = component.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", g.camaretto.ShieldHook)
+	g.shield = component.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", g.Camaretto.ShieldHook)
 	buttonXPos = (g.width * 2/4) + (float64(view.ButtonWidth)/2)
 	g.shield.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	buttonXPos = (g.width * 3/4) + (float64(view.ButtonWidth)/2)
 
-	g.charge = component.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", g.camaretto.ChargeHook)
+	g.charge = component.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", g.Camaretto.ChargeHook)
 	g.charge.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.heal = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", g.camaretto.HealHook)
+	g.heal = component.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", g.Camaretto.HealHook)
 	g.heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	g.cursor = component.NewSprite(view.LoadCursorImage(), nil)
@@ -76,18 +82,31 @@ func (g *Game) Init(seed int64, names []string, w, h int, endRoutine func()) {
 }
 
 // @desc: true if the player (Application.PlayerInfo) is required to do an action, false otherwise
-func (g *Game) IsMyTurn(index int) bool {
-	return true
+func (g *Game) IsMyTurn() bool {
+	if g.Camaretto.Current.Focus == component.CARD {
+		return (g.playerInfo.Index == g.Camaretto.Current.PlayerFocus)
+	} else {
+		return (g.playerInfo.Index == g.Camaretto.Current.PlayerTurn)
+	}
 }
 
 func (g *Game) Update() error {
-	g.camaretto.Update()
-	if g.camaretto.IsGameOver() { g.gotoEnd() }
+	g.Camaretto.Update()
+	if g.Camaretto.IsGameOver() { g.gotoEnd() }
 
 	g.info.Update()
 
-	var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerTurn]
+	var player *component.Player = g.Camaretto.Players[g.Camaretto.Current.PlayerTurn]
 	player.Persona.Update()
+
+	if g.online && !g.IsMyTurn() { return nil }
+	if g.online {
+		if !g.IsMyTurn() {
+			return nil
+		} else if g.playerInfo.Index == g.Camaretto.Current.PlayerFocus {
+			g.Camaretto.CardFocusTrigger()
+		}
+	}
 
 	var ix, iy int = ebiten.CursorPosition()
 	var x, y float64 = float64(ix), float64(iy)
@@ -96,7 +115,7 @@ func (g *Game) Update() error {
 	var cxOff, cyOff, crOff float64
 	var cursorSpeed float64 = 25
 
-	if g.camaretto.Current.State == component.SET {
+	if g.Camaretto.Current.State == component.SET {
 		g.attack.Update()
 		g.shield.Update()
 		if g.attack.SSprite.In(x, y) {
@@ -145,8 +164,8 @@ func (g *Game) Update() error {
 			}
 		}
 
-	} else if g.camaretto.Current.Focus == component.PLAYER {
-		for _, player := range g.camaretto.Players {
+	} else if g.Camaretto.Current.Focus == component.PLAYER {
+		for _, player := range g.Camaretto.Players {
 			if player.HoverPlayer(x, y) {
 				cx, cy, crOff = player.GetPosition()
 				cyOff = -float64(view.CardHeight)
@@ -158,8 +177,8 @@ func (g *Game) Update() error {
 				g.cursor.RotateOffset(crOff, cursorSpeed)
 			}
 		}
-	} else if g.camaretto.Current.Focus == component.CARD {
-		var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerFocus]
+	} else if g.Camaretto.Current.Focus == component.CARD {
+		var player *component.Player = g.Camaretto.Players[g.Camaretto.Current.PlayerFocus]
 		var i int = player.HoverHealth(x, y)
 		if i != -1 {
 			cx, cy, crOff = player.GetPosition()
@@ -181,11 +200,11 @@ func (g *Game) Update() error {
 
 // @desc: Render all elements on a given image (dst)
 func (g *Game) Draw(screen *ebiten.Image) {
-	var player *component.Player = g.camaretto.Players[g.camaretto.Current.PlayerTurn]
+	var player *component.Player = g.Camaretto.Players[g.Camaretto.Current.PlayerTurn]
 	player.Persona.Draw(screen)
 	g.info.Draw(screen)
 
-	if g.camaretto.Current.State == component.SET {
+	if g.Camaretto.Current.State == component.SET {
 		g.attack.Draw(screen)
 		g.shield.Draw(screen)
 		if player.IsChargeEmpty() {
@@ -195,6 +214,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	g.camaretto.Draw(screen)
+	g.Camaretto.Draw(screen)
 	g.cursor.Draw(screen)
 }

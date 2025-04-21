@@ -14,7 +14,7 @@ import (
 
 	"camaretto/model"
 	"camaretto/model/component"
-	"camaretto/model/netplay"
+	"camaretto/netplay"
 	"camaretto/view"
 )
 
@@ -101,7 +101,7 @@ func (app *Application) startGame() {
 
 	app.lobby = &model.Lobby{}
 	if !app.online { app.seed = time.Now().UnixNano() }
-	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.endGame)
+	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
 }
 
 func (app *Application) serverStartGame() {
@@ -125,7 +125,7 @@ func (app *Application) joinServer() {
 	app.client = netplay.NewCamarettoClient()
 
 	var addr *net.TCPAddr
-	addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
+	addr, err = net.ResolveTCPAddr("tcp", "localhost:58132")
 	if err != nil {
 		log.Println("[Application.joinServer] Unable to resolve host:", err)
 		return
@@ -155,136 +155,6 @@ func (app *Application) scanServers() {
 /************ ***************************************************************************** ************/
 
 func (app *Application) Update() error {
-/*
-	app.events.Update()
-
-	if app.state == GAME {
-		if !app.online || app.game.IsMyTurn(app.playerInfo.Index) {
-			app.game.Hover(app.events.X, app.events.Y)
-		}
-	}
-
-	var me *event.MouseEvent = nil
-	var ke *event.KeyEvent = nil
-	for ;!app.events.IsEmpty(); {
-		me = app.events.ReadMouseEvent()
-		if me != nil {
-			var signal component.PageSignal = component.UPDATE
-			if app.state == MENU {
-				if me.Event == event.PRESSED {
-					signal = app.menu.MousePress(me.X, me.Y)
-				} else if me.Event == event.RELEASED {
-					signal = app.menu.MouseRelease(me.X, me.Y)
-				}
-
-				if signal == component.NEXT {
-					app.online, app.hosting = app.menu.Online, app.menu.Hosting
-					app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting)
-
-					if app.online {
-						app.playerInfo.Name = app.menu.Name.GetText()
-						if app.hosting {
-							app.startServer()
-						} else if app.online {
-							app.joinServer()
-						}
-					}
-
-					app.menu = &model.Menu{}
-					app.state = LOBBY
-				}
-			} else if app.state == LOBBY {
-				if me.Event == event.PRESSED {
-					signal = app.lobby.MousePress(me.X, me.Y)
-				} else if me.Event == event.RELEASED {
-					signal = app.lobby.MouseRelease(me.X, me.Y)
-				}
-
-				if signal == component.NEXT {
-					if app.online {
-						app.client.SendMessage(&netplay.Message{netplay.START, -1, nil, nil, nil})
-					} else {
-						app.startCamaretto(time.Now().UnixNano())
-
-						app.lobby = &model.Lobby{}
-						app.state = GAME
-					}
-				}
-			} else if app.state == GAME {
-				if !app.online || app.game.IsMyTurn(app.playerInfo.Index) {
-					if me.Event == event.PRESSED {
-						app.game.MousePress(me.X, me.Y)
-					} else if me.Event == event.RELEASED {
-						app.game.MouseRelease(me.X, me.Y)
-					}
-				}
-			} else if app.state == END {
-				if me.Event == event.RELEASED {
-					app.state = MENU
-					app.menu.Init(WinWidth, WinHeight)
-				}
-			}
-		}
-
-		ke = app.events.ReadKeyEvent()
-		if ke != nil {
-			if app.state == MENU {
-				app.menu.HandleKeyEvent(ke)
-			} else if app.state == LOBBY {
-				app.lobby.HandleKeyEvent(ke)
-			}
-		}
-	}
-
-	if app.state == LOBBY {
-		if app.online {
-			var message *netplay.Message
-			var err error
-			select {
-				case message = <- app.ioMessage:
-					if message.Typ == netplay.PLAYERS { // New player
-						app.lobby.NbPlayers = len(message.Players)
-						for _, info := range message.Players {
-							app.lobby.Names[info.Index].SetText(info.Name)
-						}
-					} else if message.Typ == netplay.INIT { // Game is starting
-						app.lobby.NbPlayers = len(message.Players)
-						for _, info := range message.Players {
-							app.lobby.Names[info.Index].SetText(info.Name)
-						}
-						app.startCamaretto(message.Seed)
-
-						app.lobby = &model.Lobby{}
-						app.state = GAME
-					} else {
-						log.Println("[Application.Update] Unparsable message (should not have been sent in the first place)")
-					}
-					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
-				case err = <- app.ioError:
-					log.Println("[Application.Update]", err)
-				default: // Escape to continue to run program
-			}
-		}
-	} else if app.state == GAME {
-		if app.online {
-			var message *netplay.Message
-			var err error
-			select {
-				case message = <- app.ioMessage:
-					if message.Typ == netplay.ACTION {
-						app.game.DeserializeCamaretto(message)
-					}
-				case err = <- app.ioError:
-					log.Println("[Application.Update]", err)
-				default: // Escape to continue to run program
-			}
-		}
-
-		var signal component.PageSignal = app.game.Update()
-		if signal == component.NEXT { app.state = END }
-	} else if app.state == END {
-	}
-*/
 	var err error
 
 	if app.state == MENU {
@@ -331,6 +201,8 @@ func (app *Application) Update() error {
 			}
 		}
 	} else if app.state == GAME {
+		var old component.Action = *app.game.Camaretto.Current
+
 		err = app.game.Update()
 		if err != nil {
 			log.Println("[Main.Update] Error update game:", err)
@@ -338,14 +210,30 @@ func (app *Application) Update() error {
 		}
 
 		if app.online {
+			if component.ActionDiff(&old, app.game.Camaretto.Current) {
+				var msg *netplay.Message = &netplay.Message{}
+				msg.Typ = netplay.ACTION
+				msg.Action = app.game.Camaretto.Current
+				msg.Reveal = []bool{}
+				for _, card := range app.game.Camaretto.ToReveal {
+					msg.Reveal = append(msg.Reveal, card.Hidden)
+				}
+				app.client.SendMessage(msg)
+			}
+
 			var message *netplay.Message
 			var err error
 			select {
 				case message = <- app.ioMessage:
 					if message.Typ == netplay.ACTION {
+						log.Println("[Application.Update] Received new state", app.game.Camaretto.Current, message.Action)
+						app.game.Camaretto.ApplyNewState(message.Action, message.Reveal)
+						app.game.Camaretto.Update()
 					}
+					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				case err = <- app.ioError:
-					log.Println("[Application.Update]", err)
+					log.Println("[Application.Update] Error:", err)
+					// go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				default: // Escape to continue to run program
 			}
 		}

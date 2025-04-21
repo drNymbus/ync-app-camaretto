@@ -41,13 +41,15 @@ func NewCamarettoServer() *CamarettoServer {
 	var server *CamarettoServer = &CamarettoServer{}
 
 	var addr *net.TCPAddr
-	addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
+	addr, err = net.ResolveTCPAddr("tcp", "localhost:58132")
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create ResolveTCPAddr:", err) }
 
 	server.listener, err = net.ListenTCP("tcp", addr)
 	if err != nil { log.Fatal("[NewCamarettoServer] Unable to create TCPListener:", err) }
 
 	server.clients = []*ClientConnection{}
+
+	server.camaretto = &component.Camaretto{}
 
 	return server
 }
@@ -81,7 +83,6 @@ func (server *CamarettoServer) Run() {
 
 // @desc: Send a given message to every current server's connection
 func (server *CamarettoServer) broadcastMessage(m *Message) {
-	log.Println("[CamarettoServer.broadcastMessage] Broadcasting:", m)
 	var err error
 	for _, conn := range server.clients {
 		err = conn.Encoder.Encode(m)
@@ -98,6 +99,7 @@ func (server *CamarettoServer) broadcastRoutine(pipe chan *Message, stop chan bo
 		var message *Message = nil
 		select {
 			case message = <-pipe:
+				log.Println("[CamarettoServer.broadcastMessage] Broadcasting:", message)
 				server.broadcastMessage(message)
 			case <-stop:
 				log.Println("[CamarettoServer.broadcastRoutine] Routine stopped")
@@ -178,6 +180,7 @@ func (server *CamarettoServer) lobbyRoutine() {
 
 	// Wait for first connection
 	for ;len(server.clients) < 1; {}
+	time.Sleep(time.Second * 2) // Wait for handshake to end
 
 	var err error
 	for { // Wait for host to send START message
@@ -190,16 +193,19 @@ func (server *CamarettoServer) lobbyRoutine() {
 			// Stop background routines
 			stopBroadcast <- true
 			stopAcceptConnections <- true
-			// time.Sleep(time.Second * 2) // Wait for routines to be over
+			time.Sleep(time.Second * 2) // Wait for routines to be over
 
 			var seed int64 = time.Now().UnixNano()
 
+			var names []string = make([]string, len(server.clients))
 			var players []*component.PlayerInfo = []*component.PlayerInfo{}
 			for _, client := range server.clients {
+				names[client.Info.Index] = client.Info.Name
 				players = append(players, client.Info)
 			}
 
 			server.broadcastMessage(&Message{INIT, seed, players, nil, nil})
+			server.camaretto.Init(seed, names, 0, 0)
 
 			return // Exit lobbyRoutine
 		} else {
@@ -209,5 +215,53 @@ func (server *CamarettoServer) lobbyRoutine() {
 }
 
 // @desc:
+func (server *CamarettoServer) getPlayerConnection(index int) *ClientConnection {
+	for _, client := range server.clients {
+		if client.Info.Index == index {
+			return client
+		}
+	}
+	return nil
+}
+
+// @desc:
 func (server *CamarettoServer) gameRoutine() {
+	var err error
+	for ;!server.camaretto.IsGameOver(); {
+		var player int = -1
+
+		if server.camaretto.Current.Focus == component.CARD {
+			player = server.camaretto.Current.PlayerFocus
+		} else {
+			player = server.camaretto.Current.PlayerTurn
+		}
+
+		var clientTurn *ClientConnection = server.getPlayerConnection(player)
+		if clientTurn == nil {
+			server.handleError(nil, "gameRoutine", "Client connection lost")
+		}
+
+		var msg *Message = &Message{}
+		err = clientTurn.Decoder.Decode(msg)
+		if err != nil {
+			server.handleError(err, "gameRoutine", "Unable to decode client message")
+		}
+		log.Println("[CamarettoServer.gameRoutine] Received new state", msg.Action)
+
+		var old *component.Action = server.camaretto.Current
+		server.camaretto.ApplyNewState(msg.Action, msg.Reveal)
+		if component.ActionDiff(old, server.camaretto.Current) {
+			log.Println("[CamarettoServer.gameRoutine] Sending new state", server.camaretto.Current)
+			server.broadcastMessage(msg)
+
+			server.camaretto.Update()
+			msg.Typ = ACTION
+			msg.Action = server.camaretto.Current
+			msg.Reveal = []bool{}
+			for _, card := range server.camaretto.ToReveal {
+				msg.Reveal = append(msg.Reveal, card.Hidden)
+			}
+			server.broadcastMessage(msg)
+		}
+	}
 }
