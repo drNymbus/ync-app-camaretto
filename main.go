@@ -15,7 +15,6 @@ import (
 	"camaretto/model"
 	"camaretto/model/component"
 	"camaretto/model/netplay"
-	// "camaretto/event"
 	"camaretto/view"
 )
 
@@ -46,6 +45,8 @@ type Application struct {
 
 	menu *model.Menu
 	lobby *model.Lobby
+
+	seed int64
 	game *model.Game
 
 	ioMessage chan *netplay.Message
@@ -75,8 +76,19 @@ func (app *Application) Init() {
 
 func (app *Application) startLobby() {
 	app.state = LOBBY
+
+	app.online = app.menu.Online
+	app.hosting = app.menu.Hosting
+	app.playerInfo.Name = app.menu.Name.GetText()
+
 	app.menu = &model.Menu{}
-	app.lobby.Init(WinWidth, WinHeight, app.menu.Online, app.menu.Hosting, app.startGame)
+	var startFn func() = nil
+	if app.online && app.hosting {
+		startFn = app.serverStartGame
+	} else if !app.online {
+		startFn = app.startGame
+	}
+	app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting, startFn)
 }
 
 func (app *Application) startGame() {
@@ -88,19 +100,19 @@ func (app *Application) startGame() {
 	}
 
 	app.lobby = &model.Lobby{}
-	var seed int64 = time.Now().UnixNano()
-	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
+	if !app.online { app.seed = time.Now().UnixNano() }
+	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.endGame)
+}
+
+func (app *Application) serverStartGame() {
+	app.client.SendMessage(&netplay.Message{netplay.START, -1, nil, nil, nil})
 }
 
 func (app *Application) endGame() {
 	app.state = END
 
 	app.game = &model.Game{}
-	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.startLobby)
-	// app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
 }
-
-func (app *Application) endGame() {}
 
 func (app *Application) startServer() {
 	app.server = netplay.NewCamarettoServer()
@@ -287,14 +299,57 @@ func (app *Application) Update() error {
 			log.Println("[Main.Update] Error updating lobby:", err)
 			return err
 		}
+
+		if app.online {
+			var message *netplay.Message
+			var err error
+			select {
+				case message = <- app.ioMessage:
+					log.Println("[Application.Update] Message Players")
+					if message.Typ == netplay.PLAYERS { // New player
+						app.lobby.NbPlayers = len(message.Players)
+						for _, info := range message.Players {
+							app.lobby.Names[info.Index].SetText(info.Name)
+						}
+					} else if message.Typ == netplay.INIT { // Game is starting
+						log.Println("[Application.Update] Message INIT")
+						app.lobby.NbPlayers = len(message.Players)
+						for _, info := range message.Players {
+							app.lobby.Names[info.Index].SetText(info.Name)
+						}
+
+						app.seed = message.Seed
+						app.startGame()
+
+					} else {
+						log.Println("[Application.Update] Unparsable message (should not have been sent in the first place)")
+					}
+					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
+				case err = <- app.ioError:
+					log.Println("[Application.Update]", err)
+				default: // Escape to continue to run program
+			}
+		}
 	} else if app.state == GAME {
 		err = app.game.Update()
 		if err != nil {
 			log.Println("[Main.Update] Error update game:", err)
 			return err
 		}
+
+		if app.online {
+			var message *netplay.Message
+			var err error
+			select {
+				case message = <- app.ioMessage:
+					if message.Typ == netplay.ACTION {
+					}
+				case err = <- app.ioError:
+					log.Println("[Application.Update]", err)
+				default: // Escape to continue to run program
+			}
+		}
 	} else if app.state == END {
-		app.state = LOBBY
 		app.startLobby()
 	}
 

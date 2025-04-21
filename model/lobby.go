@@ -46,8 +46,10 @@ func (lobby *Lobby) Init(w, h int, online, host bool, startGame func()) {
 		lobby.Names[i] = component.NewTextCapture(55, int(tcWidth), int(tcHeight), 2)
 		var diffY float64 = float64(i - MaxNbPlayers/2) * tcHeight + float64(i*10)
 		lobby.Names[i].SSprite.SetCenter(lobby.width/2, lobby.height/2 + 50 + diffY, 0)
+		lobby.Names[i].Disable()
 	}
 
+	if !lobby.online { lobby.Names[0].Enable() }
 	lobby.focus = 0
 	lobby.cursor = component.NewSprite(view.LoadCursorImage(), nil)
 
@@ -95,11 +97,13 @@ func (lobby *Lobby) Update() error {
 		if err != nil { return lobby.handleError(err, "Update", "Button start.Update") }
 	}
 
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+	if !lobby.online && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		var x, y int = ebiten.CursorPosition()
 
 		for i, tc := range lobby.Names {
 			if tc.SSprite.In(float64(x), float64(y)) {
+				lobby.Names[lobby.focus].Disable()
+				lobby.Names[i].Enable()
 				lobby.focus = i
 			}
 		}
@@ -115,7 +119,10 @@ func (lobby *Lobby) Update() error {
 
 	lobby.cursor.Update()
 
-	lobby.Names[lobby.focus].Update()
+	for i := 0; i < lobby.NbPlayers; i++ {
+		lobby.Names[i].Update()
+	}
+	// lobby.Names[lobby.focus].Update()
 
 	return nil
 }

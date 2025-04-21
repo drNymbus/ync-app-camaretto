@@ -28,7 +28,7 @@ type Menu struct {
 	Online bool
 	Hosting bool
 
-	goToLobby func()
+	lobby func()
 	startServer func()
 	joinServer func()
 	scanServer func()
@@ -55,7 +55,7 @@ func (menu *Menu) Init(w, h int, lobby, host, join, scan func()) {
 	menu.Online = false
 	menu.Hosting = false
 
-	menu.goToLobby = lobby
+	menu.lobby = lobby
 	menu.startServer = host
 	menu.joinServer = join
 	menu.scanServer = scan
@@ -63,20 +63,34 @@ func (menu *Menu) Init(w, h int, lobby, host, join, scan func()) {
 
 func (menu *Menu) hostGame() {
 	menu.state = JOIN
-	go menu.startServer()
+
+	menu.Online = true
+	menu.Hosting = true
 
 	menu.host.SSprite.Move(menu.width/2, menu.height/2 + float64(view.ButtonHeight)*2, 2)
-	menu.host.Trigger = menu.goToLobby
+	menu.host.Trigger = menu.gotoLobby
 }
 
 func (menu *Menu) joinGame() {
 	menu.state = JOIN
 
+	menu.Online = true
+	menu.Hosting = false
+
 	menu.join.SSprite.Move(menu.width/2, menu.height/2 + float64(view.ButtonHeight)*2, 2)
-	menu.join.Trigger = menu.goToLobby
+	menu.join.Trigger = menu.gotoLobby
 }
 
 func (menu *Menu) scanGames() {
+}
+
+func (menu *Menu) gotoLobby() {
+	menu.lobby()
+
+	if menu.Online {
+		if menu.Hosting { menu.startServer() }
+		menu.joinServer()
+	}
 }
 
 func (menu *Menu) Update() error {

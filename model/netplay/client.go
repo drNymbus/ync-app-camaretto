@@ -101,6 +101,7 @@ func (client *CamarettoClient) ReceiveMessage(io chan *Message, e chan error) {
 		client.handleError(err, "ReceiveUpdate", "Decode message failed")
 		e <- err
 	} else {
+		log.Println("[CamarettoClient] ROGER")
 		io <- msg
 	}
 }

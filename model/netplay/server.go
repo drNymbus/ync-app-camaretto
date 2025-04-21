@@ -60,8 +60,12 @@ func (server *CamarettoServer) handleError(e error, from string, action string) 
 
 // @desc:
 func (server *CamarettoServer) Run() {
+	log.Println("[CamarettoServer.Run] Lobby Routine begin")
 	server.lobbyRoutine()
+	log.Println("[CamarettoServer.Run] Lobby Routine end")
+	log.Println("[CamarettoServer.Run] Game Routine begin")
 	server.gameRoutine()
+	log.Println("[CamarettoServer.Run] Game Routine end")
 
 	var err error
 	for _, client := range server.clients {
@@ -115,14 +119,16 @@ func (server *CamarettoServer) clientHandshake(conn *net.TCPConn) {
 	err = client.Decoder.Decode(playerInfo)
 	if err != nil {
 		server.handleError(err, "clientHandshake", "Receive player name failed")
+		return
 	}
 
 	// Send game index position to new player
-	playerInfo.Index = len(server.clients)
+	playerInfo.Index = len(server.clients) - 1
 
 	err = client.Encoder.Encode(playerInfo)
 	if err != nil {
 		server.handleError(err, "clientHandshake", "Send player index failed")
+		return
 	}
 
 	client.Info = playerInfo
@@ -143,18 +149,19 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 				return
 			default:
 				if len(server.clients) < component.MaxNbPlayers {
+					server.listener.SetDeadline(time.Now().Add(5))
 					c, err = server.listener.AcceptTCP()
-					if err != nil {
+					if err != nil && !err.(net.Error).Timeout() {
 						server.handleError(err, "acceptConnections", "AcceptTCP failed")
-					}
+					} else if err == nil {
+						server.clientHandshake(c)
 
-					server.clientHandshake(c)
-
-					var players []*component.PlayerInfo = []*component.PlayerInfo{}
-					for _, client := range server.clients {
-						players = append(players, client.Info)
+						var players []*component.PlayerInfo = []*component.PlayerInfo{}
+						for _, client := range server.clients {
+							players = append(players, client.Info)
+						}
+						pipe <- &Message{PLAYERS, -1, players, nil, nil}
 					}
-					pipe <- &Message{PLAYERS, -1, players, nil, nil}
 				}
 		}
 	}
@@ -162,15 +169,15 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 
 // @desc: Handle new connections to server and update lobby state with all current connections
 func (server *CamarettoServer) lobbyRoutine() {
-	var stop chan bool = make(chan bool)
+	var stopBroadcast chan bool = make(chan bool)
+	var stopAcceptConnections chan bool = make(chan bool)
 	var pipe chan *Message = make(chan *Message)
 
-	go server.broadcastRoutine(pipe, stop)
-	go server.acceptConnections(pipe, stop)
+	go server.broadcastRoutine(pipe, stopBroadcast)
+	go server.acceptConnections(pipe, stopAcceptConnections)
 
 	// Wait for first connection
 	for ;len(server.clients) < 1; {}
-	log.Println(len(server.clients), "CLIENTS")
 
 	var err error
 	for { // Wait for host to send START message
@@ -180,8 +187,10 @@ func (server *CamarettoServer) lobbyRoutine() {
 			log.Println(msg.Typ, msg.Seed, msg.Players, msg.Action)
 			server.handleError(err, "lobbyRoutine", "Receive message from host failed")
 		} else if msg.Typ == START {
-			stop <- true // Stop background routines
-			time.Sleep(time.Second * 2) // Wait for routines to be over
+			// Stop background routines
+			stopBroadcast <- true
+			stopAcceptConnections <- true
+			// time.Sleep(time.Second * 2) // Wait for routines to be over
 
 			var seed int64 = time.Now().UnixNano()
 

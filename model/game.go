@@ -26,8 +26,6 @@ type Game struct {
 
 	info *component.TextBox
 
-	gotoEnd func
-
 	count int
 	gotoEnd func()
 }
