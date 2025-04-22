@@ -1,7 +1,10 @@
-package component
+package view
 
 import (
+	// "strconv"
 	"math"
+
+	// "image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -21,6 +24,7 @@ type Sprite struct {
 	speedOffset, rSpeedOffset float64
 
 	scaleX, scaleY float64
+
 
 	options *ebiten.DrawImageOptions
 	image *ebiten.Image

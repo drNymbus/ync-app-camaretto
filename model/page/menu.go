@@ -1,11 +1,11 @@
-package model
+package page
 
 import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"camaretto/model/component"
+	"camaretto/model/ui"
 	"camaretto/view"
 )
 
@@ -21,9 +21,9 @@ type Menu struct {
 
 	width, height float64
 
-	local, join, host *component.Button
+	local, join, host *ui.Button
 
-	Name *component.TextCapture
+	Name *ui.TextCapture
 
 	Online bool
 	Hosting bool
@@ -40,16 +40,16 @@ func (menu *Menu) Init(w, h int, lobby, host, join, scan func()) {
 	menu.width, menu.height = float64(w), float64(h)
 
 	var x, y float64 = menu.width/2, menu.height/2
-	menu.local = component.NewButton("Local", color.RGBA{0, 0, 0, 255}, "GREEN", lobby)
+	menu.local = ui.NewButton("Local", color.RGBA{0, 0, 0, 255}, "GREEN", lobby)
 	menu.local.SSprite.SetCenter(x, y - float64(view.ButtonHeight) - 5, 0)
 
-	menu.host = component.NewButton("Host", color.RGBA{0, 0, 0, 255}, "BLUE", menu.hostGame)
+	menu.host = ui.NewButton("Host", color.RGBA{0, 0, 0, 255}, "BLUE", menu.hostGame)
 	menu.host.SSprite.SetCenter(x, y, 0)
 
-	menu.join = component.NewButton("Join", color.RGBA{0, 0, 0, 255}, "RED", menu.joinGame)
+	menu.join = ui.NewButton("Join", color.RGBA{0, 0, 0, 255}, "RED", menu.joinGame)
 	menu.join.SSprite.SetCenter(x, y + float64(view.ButtonHeight) + 5, 0)
 
-	menu.Name = component.NewTextCapture(55, int(menu.width*3/4), int(menu.height/10), 2)
+	menu.Name = ui.NewTextCapture(55, int(menu.width*3/4), int(menu.height/10), 2)
 	menu.Name.SSprite.SetCenter(x, y, 0)
 
 	menu.Online = false

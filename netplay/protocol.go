@@ -1,7 +1,7 @@
 package netplay
 
 import (
-	"camaretto/model/component"
+	"camaretto/model/game"
 )
 
 type MessageType int
@@ -15,7 +15,7 @@ const (
 type Message struct {
 	Typ MessageType
 	Seed int64
-	Players []*component.PlayerInfo
-	Action *component.Action
+	Players []*game.PlayerInfo
+	Action *game.Action
 	Reveal []bool
 }

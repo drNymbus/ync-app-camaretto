@@ -1,4 +1,4 @@
-package component
+package ui
 
 import (
 	"image/color"
@@ -19,7 +19,7 @@ type TextCapture struct {
 	charLimit int
 
 	background *ebiten.Image
-	SSprite *Sprite
+	SSprite *view.Sprite
 
 	count int
 }
@@ -44,7 +44,7 @@ func NewTextCapture(limit, w, h, margin int) *TextCapture {
 	op.GeoM.Translate(float64(tc.margin), float64(tc.margin))
 
 	tc.background.DrawImage(filling, op)
-	tc.SSprite = NewSprite(tc.background, nil)
+	tc.SSprite = view.NewSprite(tc.background, nil)
 
 	tc.count = 0
 

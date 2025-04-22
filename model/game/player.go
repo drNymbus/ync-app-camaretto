@@ -1,4 +1,4 @@
-package component
+package game
 
 import (
 	"math"
@@ -19,9 +19,9 @@ type PlayerInfo struct {
 type Player struct {
 	x, y, r float64
 
-	nameSprite *Sprite
+	nameSprite *view.Sprite
 	Dead bool
-	deadSprite *Sprite
+	deadSprite *view.Sprite
 
 	Persona *Character
 
@@ -30,6 +30,8 @@ type Player struct {
 	Health [2]*Card
 	JokerHealth *Card
 	Charge *Card
+
+	Trigger func()
 }
 
 func NewPlayer(name string, char *Character, x, y, r float64) *Player {
@@ -42,13 +44,13 @@ func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 
-	p.nameSprite = NewSprite(img, nil)
+	p.nameSprite = view.NewSprite(img, nil)
 	p.nameSprite.MoveOffset(0, float64(view.CardHeight) * 2, 0.5)
 	p.nameSprite.RotateOffset(r, 0.5)
 	p.nameSprite.Move(x, y, 1)
 	p.nameSprite.Rotate(-r, 0.5)
 
-	p.deadSprite = NewSprite(view.LoadDeathImage(), nil)
+	p.deadSprite = view.NewSprite(view.LoadDeathImage(), nil)
 	p.deadSprite.Rotate(r, 0.2)
 	p.deadSprite.Move(x, y, 0.5)
 
@@ -61,6 +63,8 @@ func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 	p.Health = [2]*Card{nil, nil}
 	p.JokerHealth = nil
 	p.Charge = nil
+
+	p.Trigger = nil
 
 	return p
 }
@@ -162,72 +166,51 @@ func (p *Player) SetCharge(c *Card) *Card {
 	return old
 }
 
-func (p *Player) ResetTrigger() {
-	if p.Shield != nil { p.Shield.Trigger = nil }
-	if p.JokerShield != nil { p.JokerShield.Trigger = nil }
-
-	if p.Health[0] != nil { p.Health[0].Trigger = nil }
-	if p.Health[1] != nil { p.Health[1].Trigger = nil }
-	if p.JokerHealth != nil { p.JokerHealth.Trigger = nil }
-
-	if p.Charge != nil { p.Charge.Trigger = nil }
-}
-
-// @desc: Set callback for any card clicked
-func (p *Player) OnPlayer(trigger func()) {
-	if p.Shield != nil { p.Shield.Trigger = trigger }
-	if p.JokerShield != nil { p.JokerShield.Trigger = trigger }
-
-	if p.Health[0] != nil { p.Health[0].Trigger = trigger }
-	if p.Health[1] != nil { p.Health[1].Trigger = trigger }
-	if p.JokerHealth != nil { p.JokerHealth.Trigger = trigger }
-
-	if p.Charge != nil { p.Charge.Trigger = trigger }
-}
-
-// @desc: Set callback for Health cards and nil for all other cards
-func (p *Player) OnHealth(trigger func(int)) {
-	p.ResetTrigger()
-	for i, card := range p.Health {
-		if card != nil {
-			card.Trigger = func() { trigger(i) }
-		}
-	}
-}
-
-func (p *Player) HoverPlayer(x, y float64) bool {
-	var flag bool = false
-
-	if p.Shield != nil { flag = flag || p.Shield.SSprite.In(x, y) }
-	if p.JokerShield != nil { flag = flag || p.JokerShield.SSprite.In(x, y) }
-
-	if p.Health[0] != nil { flag = flag || p.Health[0].SSprite.In(x, y) }
-	if p.Health[1] != nil { flag = flag || p.Health[1].SSprite.In(x, y) }
-	if p.JokerHealth != nil { flag = flag || p.JokerHealth.SSprite.In(x, y) }
-
-	if p.Charge != nil { flag = flag || p.Charge.SSprite.In(x, y) }
-
-	return flag
-}
-
-func (p *Player) HoverHealth(x, y float64) int {
-	if p.Health[0] != nil && p.Health[0].SSprite.In(x, y) { return 0 }
-	if p.Health[1] != nil && p.Health[1].SSprite.In(x, y) { return 1 }
-	return -1
-}
-
+// @desc:
 func (p *Player) Update() error {
 	p.nameSprite.Update()
 	p.deadSprite.Update()
 
-	if p.Shield != nil { p.Shield.Update() }
-	if p.JokerShield != nil { p.JokerShield.Update() }
+	var ix, iy int = ebiten.CursorPosition()
+	var x, y float64 = float64(ix), float64(iy)
 
-	if p.Health[0] != nil { p.Health[0].Update() }
-	if p.Health[1] != nil { p.Health[1].Update() }
-	if p.JokerHealth != nil { p.JokerHealth.Update() }
+	var cursorIn bool = false
 
-	if p.Charge != nil { p.Charge.Update() }
+	if p.Shield != nil {
+		cursorIn = cursorIn || p.Shield.SSprite.In(x,y)
+		p.Shield.Update()
+	}
+
+	if p.JokerShield != nil {
+		cursorIn = cursorIn || p.JokerShield.In(x, y)
+		p.JokerShield.Update()
+	}
+
+	if p.Health[0] != nil {
+		cursorIn = cursorIn || p.Health[0].In(x, y)
+		p.Health[0].Update()
+	}
+
+	if p.Health[1] != nil {
+		cursorIn = cursorIn || p.Health[1].In(x, y)
+		p.Health[1].Update()
+	}
+
+	if p.JokerHealth != nil {
+		cursorIn = cursorIn || p.JokerHealth.In(x, y)
+		p.JokerHealth.Update()
+	}
+
+	if p.Charge != nil {
+		cursorIn = cursorIn || p.Charge.In(x, y)
+		p.Charge.Update()
+	}
+
+	if p.Trigger != nil {
+		if cursorIn && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+			p.Trigger()
+		}
+	}
 
 	return nil
 }

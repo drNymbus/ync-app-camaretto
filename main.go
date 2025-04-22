@@ -12,8 +12,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"camaretto/model"
-	"camaretto/model/component"
+	"camaretto/model/game"
+	"camaretto/model/page"
 	"camaretto/netplay"
 	"camaretto/view"
 )
@@ -41,13 +41,13 @@ type Application struct {
 	state AppState
 	online, hosting bool
 
-	playerInfo *component.PlayerInfo
+	playerInfo *game.PlayerInfo
 
-	menu *model.Menu
-	lobby *model.Lobby
+	menu *page.Menu
+	lobby *page.Lobby
 
 	seed int64
-	game *model.Game
+	game *page.Game
 
 	ioMessage chan *netplay.Message
 	ioError chan error
@@ -60,12 +60,12 @@ func (app *Application) Init() {
 	app.state = MENU
 	app.online, app.hosting = false, false
 
-	app.playerInfo = &component.PlayerInfo{}
+	app.playerInfo = &game.PlayerInfo{}
 
-	app.menu = &model.Menu{}
+	app.menu = &page.Menu{}
 	app.menu.Init(WinWidth, WinHeight, app.startLobby, app.startServer, app.joinServer, app.scanServers)
-	app.lobby = &model.Lobby{}
-	app.game = &model.Game{}
+	app.lobby = &page.Lobby{}
+	app.game = &page.Game{}
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
 }
@@ -81,7 +81,7 @@ func (app *Application) startLobby() {
 	app.hosting = app.menu.Hosting
 	app.playerInfo.Name = app.menu.Name.GetText()
 
-	app.menu = &model.Menu{}
+	app.menu = &page.Menu{}
 	var startFn func() = nil
 	if app.online && app.hosting {
 		startFn = app.serverStartGame
@@ -99,7 +99,7 @@ func (app *Application) startGame() {
 		playerNames = append(playerNames, app.lobby.Names[i].GetText())
 	}
 
-	app.lobby = &model.Lobby{}
+	app.lobby = &page.Lobby{}
 	if !app.online { app.seed = time.Now().UnixNano() }
 	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
 }
@@ -111,7 +111,7 @@ func (app *Application) serverStartGame() {
 func (app *Application) endGame() {
 	app.state = END
 
-	app.game = &model.Game{}
+	app.game = &page.Game{}
 }
 
 func (app *Application) startServer() {
@@ -201,7 +201,7 @@ func (app *Application) Update() error {
 			}
 		}
 	} else if app.state == GAME {
-		var old component.Action = *app.game.Camaretto.Current
+		var old game.Action = *app.game.Camaretto.Current
 
 		err = app.game.Update()
 		if err != nil {
@@ -210,7 +210,7 @@ func (app *Application) Update() error {
 		}
 
 		if app.online {
-			if component.ActionDiff(&old, app.game.Camaretto.Current) {
+			if game.ActionDiff(&old, app.game.Camaretto.Current) {
 				var msg *netplay.Message = &netplay.Message{}
 				msg.Typ = netplay.ACTION
 				msg.Action = app.game.Camaretto.Current

@@ -1,8 +1,10 @@
-package component
+package game
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+
+	"camaretto/view"
 )
 
 type Card struct {
@@ -14,7 +16,7 @@ type Card struct {
 
 	revealedImg *ebiten.Image
 	hiddenImg *ebiten.Image
-	SSprite *Sprite
+	SSprite *view.Sprite
 }
 
 // @desc: Init a new Card struct then returns it
@@ -29,7 +31,7 @@ func NewCard(name string, value int, revealedImg *ebiten.Image, hiddenImg *ebite
 
 	c.revealedImg = revealedImg
 	c.hiddenImg = hiddenImg
-	c.SSprite = NewSprite(revealedImg, nil)
+	c.SSprite = view.NewSprite(revealedImg, nil)
 
 	return c
 }

@@ -8,14 +8,14 @@ import (
 	"net"
 	"encoding/gob"
 
-	"camaretto/model/component"
+	"camaretto/model/game"
 )
 
 type ClientConnection struct {
 	Connection *net.TCPConn
 	Encoder *gob.Encoder
 	Decoder *gob.Decoder
-	Info *component.PlayerInfo
+	Info *game.PlayerInfo
 }
 
 func NewClientConnection(c *net.TCPConn) *ClientConnection {
@@ -31,7 +31,7 @@ type CamarettoServer struct {
 	listener *net.TCPListener
 	clients []*ClientConnection
 
-	camaretto *component.Camaretto
+	camaretto *game.Camaretto
 }
 
 // @desc: Create new instance of CamarettoServer then returns it
@@ -49,7 +49,7 @@ func NewCamarettoServer() *CamarettoServer {
 
 	server.clients = []*ClientConnection{}
 
-	server.camaretto = &component.Camaretto{}
+	server.camaretto = &game.Camaretto{}
 
 	return server
 }
@@ -116,7 +116,7 @@ func (server *CamarettoServer) clientHandshake(conn *net.TCPConn) {
 	var client *ClientConnection = NewClientConnection(conn)
 	server.clients = append(server.clients, client)
 
-	var playerInfo *component.PlayerInfo = &component.PlayerInfo{}
+	var playerInfo *game.PlayerInfo = &game.PlayerInfo{}
 	// Read player name
 	err = client.Decoder.Decode(playerInfo)
 	if err != nil {
@@ -150,7 +150,7 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 				log.Println("[CamarettoServer.acceptConnections] Routine stopped")
 				return
 			default:
-				if len(server.clients) < component.MaxNbPlayers {
+				if len(server.clients) < game.MaxNbPlayers {
 					server.listener.SetDeadline(time.Now().Add(5))
 					c, err = server.listener.AcceptTCP()
 					if err != nil && !err.(net.Error).Timeout() {
@@ -158,7 +158,7 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 					} else if err == nil {
 						server.clientHandshake(c)
 
-						var players []*component.PlayerInfo = []*component.PlayerInfo{}
+						var players []*game.PlayerInfo = []*game.PlayerInfo{}
 						for _, client := range server.clients {
 							players = append(players, client.Info)
 						}
@@ -198,7 +198,7 @@ func (server *CamarettoServer) lobbyRoutine() {
 			var seed int64 = time.Now().UnixNano()
 
 			var names []string = make([]string, len(server.clients))
-			var players []*component.PlayerInfo = []*component.PlayerInfo{}
+			var players []*game.PlayerInfo = []*game.PlayerInfo{}
 			for _, client := range server.clients {
 				names[client.Info.Index] = client.Info.Name
 				players = append(players, client.Info)
@@ -230,7 +230,7 @@ func (server *CamarettoServer) gameRoutine() {
 	for ;!server.camaretto.IsGameOver(); {
 		var player int = -1
 
-		if server.camaretto.Current.Focus == component.CARD {
+		if server.camaretto.Current.Focus == game.CARD {
 			player = server.camaretto.Current.PlayerFocus
 		} else {
 			player = server.camaretto.Current.PlayerTurn
@@ -248,9 +248,9 @@ func (server *CamarettoServer) gameRoutine() {
 		}
 		log.Println("[CamarettoServer.gameRoutine] Received new state", msg.Action)
 
-		var old *component.Action = server.camaretto.Current
+		var old *game.Action = server.camaretto.Current
 		server.camaretto.ApplyNewState(msg.Action, msg.Reveal)
-		if component.ActionDiff(old, server.camaretto.Current) {
+		if game.ActionDiff(old, server.camaretto.Current) {
 			log.Println("[CamarettoServer.gameRoutine] Sending new state", server.camaretto.Current)
 			server.broadcastMessage(msg)
 

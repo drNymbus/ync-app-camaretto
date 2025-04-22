@@ -1,4 +1,4 @@
-package model
+package page
 
 import (
 	"log"
@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
-	"camaretto/model/component"
+	"camaretto/model/ui"
 	"camaretto/view"
 )
 
@@ -23,15 +23,15 @@ type Lobby struct {
 	width, height float64
 	online, hosting bool
 
-	Names []*component.TextCapture
+	Names []*ui.TextCapture
 
 	focus int
-	cursor *component.Sprite
+	cursor *view.Sprite
 
 	NbPlayers int
-	minusButton, plusButton *component.Button
+	minusButton, plusButton *ui.Button
 
-	start *component.Button
+	start *ui.Button
 }
 
 func (lobby *Lobby) Init(w, h int, online, host bool, startGame func()) {
@@ -40,10 +40,10 @@ func (lobby *Lobby) Init(w, h int, online, host bool, startGame func()) {
 
 	lobby.NbPlayers = 2
 
-	lobby.Names = make([]*component.TextCapture, MaxNbPlayers)
+	lobby.Names = make([]*ui.TextCapture, MaxNbPlayers)
 	var tcWidth, tcHeight float64 = lobby.width*3/4, lobby.height/10
 	for i := 0; i < MaxNbPlayers; i++ {
-		lobby.Names[i] = component.NewTextCapture(55, int(tcWidth), int(tcHeight), 2)
+		lobby.Names[i] = ui.NewTextCapture(55, int(tcWidth), int(tcHeight), 2)
 		var diffY float64 = float64(i - MaxNbPlayers/2) * tcHeight + float64(i*10)
 		lobby.Names[i].SSprite.SetCenter(lobby.width/2, lobby.height/2 + 50 + diffY, 0)
 		lobby.Names[i].Disable()
@@ -51,16 +51,16 @@ func (lobby *Lobby) Init(w, h int, online, host bool, startGame func()) {
 
 	if !lobby.online { lobby.Names[0].Enable() }
 	lobby.focus = 0
-	lobby.cursor = component.NewSprite(view.LoadCursorImage(), nil)
+	lobby.cursor = view.NewSprite(view.LoadCursorImage(), nil)
 
 	var x, y float64 = lobby.width/2, lobby.height/8
-	lobby.minusButton = component.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED", lobby.removePlayer)
+	lobby.minusButton = ui.NewButton("-", color.RGBA{0, 0, 0, 255}, "RED", lobby.removePlayer)
 	lobby.minusButton.SSprite.SetCenter(x - float64(view.ButtonWidth)/2 - 5, y, 0)
 
-	lobby.plusButton = component.NewButton("+", color.RGBA{0, 0, 0, 255}, "RED", lobby.addPlayer)
+	lobby.plusButton = ui.NewButton("+", color.RGBA{0, 0, 0, 255}, "RED", lobby.addPlayer)
 	lobby.plusButton.SSprite.SetCenter(x + float64(view.ButtonWidth)/2 + 5, y, 0)
 
-	lobby.start = component.NewButton("START", color.RGBA{0, 0, 0, 255}, "GREEN", startGame)
+	lobby.start = ui.NewButton("START", color.RGBA{0, 0, 0, 255}, "GREEN", startGame)
 	lobby.start.SSprite.SetCenter(lobby.width/2, lobby.height - float64(view.ButtonHeight), 0)
 }
 
@@ -109,7 +109,7 @@ func (lobby *Lobby) Update() error {
 		}
 	}
 
-	var tc *component.TextCapture = lobby.Names[lobby.focus]
+	var tc *ui.TextCapture = lobby.Names[lobby.focus]
 	var x, y float64
 	x = lobby.width/2 - tc.SSprite.Width/2
 	y = lobby.height/2 + float64(lobby.focus - MaxNbPlayers/2) * tc.SSprite.Height
