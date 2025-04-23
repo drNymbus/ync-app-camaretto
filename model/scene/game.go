@@ -1,4 +1,4 @@
-package page
+package scene
 
 import (
 	// "log"
@@ -58,20 +58,20 @@ func (g *Game) Init(seed int64, names []string, w, h int, online bool, player *g
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = g.height * 9/10
 
-	g.attack = ui.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", g.Camaretto.AttackHook)
+	g.attack = ui.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", func(){ g.Camaretto.Current.State = game.ATTACK })
 	buttonXPos = (g.width * 1/4) + (float64(view.ButtonWidth)/2)
 	g.attack.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.shield = ui.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", g.Camaretto.ShieldHook)
+	g.shield = ui.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", func(){ g.Camaretto.Current.State = game.SHIELD })
 	buttonXPos = (g.width * 2/4) + (float64(view.ButtonWidth)/2)
 	g.shield.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	buttonXPos = (g.width * 3/4) + (float64(view.ButtonWidth)/2)
 
-	g.charge = ui.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", g.Camaretto.ChargeHook)
+	g.charge = ui.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", func(){ g.Camaretto.Current.State = game.CHARGE })
 	g.charge.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.heal = ui.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", g.Camaretto.HealHook)
+	g.heal = ui.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", func(){ g.Camaretto.Current.State = game.HEAL })
 	g.heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	g.cursor = view.NewSprite(view.LoadCursorImage(), nil)
@@ -101,13 +101,6 @@ func (g *Game) Update() error {
 	player.Persona.Update()
 
 	if g.online && !g.IsMyTurn() { return nil }
-	if g.online {
-		if !g.IsMyTurn() {
-			return nil
-		} else if g.playerInfo.Index == g.Camaretto.Current.PlayerFocus {
-			g.Camaretto.CardFocusTrigger()
-		}
-	}
 
 	var ix, iy int = ebiten.CursorPosition()
 	var x, y float64 = float64(ix), float64(iy)
@@ -166,21 +159,27 @@ func (g *Game) Update() error {
 		}
 
 	} else if g.Camaretto.Current.Focus == game.PLAYER {
-		for _, player := range g.Camaretto.Players {
-			if player.HoverPlayer(x, y) {
-				cx, cy, crOff = player.GetPosition()
-				cyOff = -float64(view.CardHeight)
-				cr = math.Pi
+		for i, player := range g.Camaretto.Players {
+			if g.Camaretto.Current.State != game.ATTACK || g.Camaretto.Current.PlayerTurn != i {
+				if player.Hover(x, y) {
+					cx, cy, crOff = player.GetPosition()
+					cyOff = -float64(view.CardHeight)
+					cr = math.Pi
 
-				g.cursor.Move(cx, cy, cursorSpeed)
-				g.cursor.Rotate(cr, cursorSpeed)
-				g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-				g.cursor.RotateOffset(crOff, cursorSpeed)
+					g.cursor.Move(cx, cy, cursorSpeed)
+					g.cursor.Rotate(cr, cursorSpeed)
+					g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
+					g.cursor.RotateOffset(crOff, cursorSpeed)
+				}
 			}
 		}
 	} else if g.Camaretto.Current.Focus == game.CARD {
 		var player *game.Player = g.Camaretto.Players[g.Camaretto.Current.PlayerFocus]
-		var i int = player.HoverHealth(x, y)
+		var i int = -1
+		for j, health := range player.Health {
+			if health.SSprite.In(x, y) { i = j }
+		}
+
 		if i != -1 {
 			cx, cy, crOff = player.GetPosition()
 			cxOff, cyOff, _ = player.Health[i].SSprite.GetOffset()

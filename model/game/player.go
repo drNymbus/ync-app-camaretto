@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
 	"camaretto/view"
 )
@@ -166,6 +167,17 @@ func (p *Player) SetCharge(c *Card) *Card {
 	return old
 }
 
+func (p *Player) Hover(x, y float64) bool {
+	if p.Shield != nil && p.Shield.SSprite.In(x, y) { return true }
+	if p.JokerShield != nil && p.Shield.SSprite.In(x, y) { return true }
+	if p.JokerHealth != nil && p.JokerHealth.SSprite.In(x, y) { return true }
+	if p.Charge != nil && p.Charge.SSprite.In(x, y) { return true }
+	for _, health := range p.Health {
+		if health != nil && health.SSprite.In(x, y) { return true }
+	}
+	return false
+}
+
 // @desc:
 func (p *Player) Update() error {
 	p.nameSprite.Update()
@@ -182,27 +194,27 @@ func (p *Player) Update() error {
 	}
 
 	if p.JokerShield != nil {
-		cursorIn = cursorIn || p.JokerShield.In(x, y)
+		cursorIn = cursorIn || p.JokerShield.SSprite.In(x, y)
 		p.JokerShield.Update()
 	}
 
 	if p.Health[0] != nil {
-		cursorIn = cursorIn || p.Health[0].In(x, y)
+		cursorIn = cursorIn || p.Health[0].SSprite.In(x, y)
 		p.Health[0].Update()
 	}
 
 	if p.Health[1] != nil {
-		cursorIn = cursorIn || p.Health[1].In(x, y)
+		cursorIn = cursorIn || p.Health[1].SSprite.In(x, y)
 		p.Health[1].Update()
 	}
 
 	if p.JokerHealth != nil {
-		cursorIn = cursorIn || p.JokerHealth.In(x, y)
+		cursorIn = cursorIn || p.JokerHealth.SSprite.In(x, y)
 		p.JokerHealth.Update()
 	}
 
 	if p.Charge != nil {
-		cursorIn = cursorIn || p.Charge.In(x, y)
+		cursorIn = cursorIn || p.Charge.SSprite.In(x, y)
 		p.Charge.Update()
 	}
 

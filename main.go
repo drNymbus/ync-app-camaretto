@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"camaretto/model/game"
-	"camaretto/model/page"
+	"camaretto/model/scene"
 	"camaretto/netplay"
 	"camaretto/view"
 )
@@ -43,17 +43,19 @@ type Application struct {
 
 	playerInfo *game.PlayerInfo
 
-	menu *page.Menu
-	lobby *page.Lobby
+	menu *scene.Menu
+	lobby *scene.Lobby
 
 	seed int64
-	game *page.Game
+	game *scene.Game
 
 	ioMessage chan *netplay.Message
 	ioError chan error
 
 	server *netplay.CamarettoServer
 	client *netplay.CamarettoClient
+
+	tick int
 }
 
 func (app *Application) Init() {
@@ -62,12 +64,14 @@ func (app *Application) Init() {
 
 	app.playerInfo = &game.PlayerInfo{}
 
-	app.menu = &page.Menu{}
+	app.menu = &scene.Menu{}
 	app.menu.Init(WinWidth, WinHeight, app.startLobby, app.startServer, app.joinServer, app.scanServers)
-	app.lobby = &page.Lobby{}
-	app.game = &page.Game{}
+	app.lobby = &scene.Lobby{}
+	app.game = &scene.Game{}
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
+
+	app.tick = 0
 }
 
 /************ ****************************************************************************** ************/
@@ -81,7 +85,7 @@ func (app *Application) startLobby() {
 	app.hosting = app.menu.Hosting
 	app.playerInfo.Name = app.menu.Name.GetText()
 
-	app.menu = &page.Menu{}
+	// app.menu = &scene.Menu{}
 	var startFn func() = nil
 	if app.online && app.hosting {
 		startFn = app.serverStartGame
@@ -99,7 +103,7 @@ func (app *Application) startGame() {
 		playerNames = append(playerNames, app.lobby.Names[i].GetText())
 	}
 
-	app.lobby = &page.Lobby{}
+	// app.lobby = &scene.Lobby{}
 	if !app.online { app.seed = time.Now().UnixNano() }
 	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
 }
@@ -110,8 +114,6 @@ func (app *Application) serverStartGame() {
 
 func (app *Application) endGame() {
 	app.state = END
-
-	app.game = &page.Game{}
 }
 
 func (app *Application) startServer() {
@@ -201,8 +203,6 @@ func (app *Application) Update() error {
 			}
 		}
 	} else if app.state == GAME {
-		var old game.Action = *app.game.Camaretto.Current
-
 		err = app.game.Update()
 		if err != nil {
 			log.Println("[Main.Update] Error update game:", err)
@@ -210,13 +210,11 @@ func (app *Application) Update() error {
 		}
 
 		if app.online {
-			if game.ActionDiff(&old, app.game.Camaretto.Current) {
-				var msg *netplay.Message = &netplay.Message{}
-				msg.Typ = netplay.ACTION
-				msg.Action = app.game.Camaretto.Current
-				msg.Reveal = []bool{}
-				for _, card := range app.game.Camaretto.ToReveal {
-					msg.Reveal = append(msg.Reveal, card.Hidden)
+			if app.game.Camaretto.AlteredState {
+				log.Println("[Application.Update] Sending message")
+				var msg *netplay.Message = &netplay.Message{
+					Typ: netplay.ACTION,
+					Action:app.game.Camaretto.Current,
 				}
 				app.client.SendMessage(msg)
 			}
@@ -227,8 +225,7 @@ func (app *Application) Update() error {
 				case message = <- app.ioMessage:
 					if message.Typ == netplay.ACTION {
 						log.Println("[Application.Update] Received new state", app.game.Camaretto.Current, message.Action)
-						app.game.Camaretto.ApplyNewState(message.Action, message.Reveal)
-						app.game.Camaretto.Update()
+						app.game.Camaretto.Current = message.Action
 					}
 					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				case err = <- app.ioError:
@@ -255,6 +252,8 @@ func (app *Application) Draw(screen *ebiten.Image) {
 	} else if app.state == LOBBY {
 		app.lobby.Draw(app.imgBuffer)
 	} else if app.state == GAME {
+		app.game.Draw(app.imgBuffer)
+	} else if app.state == END {
 		app.game.Draw(app.imgBuffer)
 	}
 

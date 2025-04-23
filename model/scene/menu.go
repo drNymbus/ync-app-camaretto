@@ -1,4 +1,4 @@
-package page
+package scene
 
 import (
 	"image/color"

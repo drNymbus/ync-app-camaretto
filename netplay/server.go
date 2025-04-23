@@ -246,22 +246,20 @@ func (server *CamarettoServer) gameRoutine() {
 		if err != nil {
 			server.handleError(err, "gameRoutine", "Unable to decode client message")
 		}
+
 		log.Println("[CamarettoServer.gameRoutine] Received new state", msg.Action)
 
-		var old *game.Action = server.camaretto.Current
-		server.camaretto.ApplyNewState(msg.Action, msg.Reveal)
-		if game.ActionDiff(old, server.camaretto.Current) {
-			log.Println("[CamarettoServer.gameRoutine] Sending new state", server.camaretto.Current)
-			server.broadcastMessage(msg)
 
-			server.camaretto.Update()
-			msg.Typ = ACTION
-			msg.Action = server.camaretto.Current
-			msg.Reveal = []bool{}
-			for _, card := range server.camaretto.ToReveal {
-				msg.Reveal = append(msg.Reveal, card.Hidden)
-			}
-			server.broadcastMessage(msg)
-		}
+		server.broadcastMessage(msg)
+
+		// server.camaretto.Update()
+		// msg.Typ = ACTION
+		// msg.Action = server.camaretto.Current
+		// msg.Reveal = []bool{}
+		// for _, card := range server.camaretto.ToReveal {
+		// 	msg.Reveal = append(msg.Reveal, card.Hidden)
+		// }
+		// server.broadcastMessage(msg)
+		// }
 	}
 }

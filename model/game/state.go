@@ -48,7 +48,7 @@ func NewAction(i int) *Action {
 	return a
 }
 
-// @desc: Returns true if Action structs contains the values, false otherwise
+// @desc: Returns true if both structs contains the same values, false otherwise
 func (a *Action) Compare(b *Action) bool {
 	var flag = true
 	flag = flag || (a.State == b.State)
@@ -60,18 +60,14 @@ func (a *Action) Compare(b *Action) bool {
 }
 
 // @desc: Creates a copy of the Action struct then returns it
-func (a *Action) Copy() *Action {
-	var b *Action = &Action{}
+func (a *Action) Clone(b *Action) {
+	a.State = b.State
+	a.Focus = b.Focus
 
-	b.State = a.State
-	b.Focus = a.Focus
+	a.PlayerTurn = b.PlayerTurn
+	a.PlayerFocus = b.PlayerFocus
+	a.CardFocus = b.CardFocus
 
-	b.PlayerTurn = a.PlayerTurn
-	b.PlayerFocus = a.PlayerFocus
-	b.CardFocus = a.CardFocus
-
-	b.Reveal = []bool{}
-	for _, val := range a.Reveal { b.Reveal = append(b.Reveal, val) }
-
-	return b
+	a.Reveal = []bool{}
+	for _, val := range b.Reveal { a.Reveal = append(a.Reveal, val) }
 }
