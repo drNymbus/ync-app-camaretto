@@ -9,8 +9,7 @@ import (
 )
 
 type Camaretto struct {
-	width, height float64
-
+	// width, height float64
 	Log []*Action
 	Current *Action
 	AlteredState bool
@@ -27,7 +26,6 @@ type Camaretto struct {
 
 // @desc: Initialize attributes of a Camaretto instance, given the number of players: n
 func (c *Camaretto) Init(seed int64, names []string, w, h float64) {
-
 	c.Log = []*Action{}
 	c.Current = NewAction(0)
 	c.AlteredState = false
@@ -54,12 +52,13 @@ func (c *Camaretto) Init(seed int64, names []string, w, h float64) {
 	for i, _ := range make([]int, c.NbPlayers*2) { // Init Health
 		var card *Card = c.DeckPile.DrawCard()
 		if card.Name == "Joker" {
+			card.Reveal()
 			c.DeckPile.DiscardCard(card)
+
 			card = c.DeckPile.DrawCard()
 			if card.Name == "Joker" {
 				log.Fatal("[Camaretto.Init] (Health) 2 JOKERS IN A ROW ?! What were the chances anyway...")
 			}
-
 			card.Reveal()
 			c.Players[i%c.NbPlayers].SetJokerHealth(card)
 
@@ -244,13 +243,16 @@ func (c *Camaretto) heal() {
 	}
 }
 
-func (c *Camaretto) addCardToReveal(card *Card) {
+func (c *Camaretto) addCardToReveal(card *Card, disabled bool) {
+	var index int = len(c.Current.Reveal)
 	c.Current.Reveal = append(c.Current.Reveal, false)
 	c.ToReveal = append(c.ToReveal, card)
 
-	card.Trigger = func() {
-		c.Current.Reveal[len(c.ToReveal)-1] = true
-		card.Reveal()
+	if !disabled {
+		card.Trigger = func() {
+			c.Current.Reveal[index] = true
+			card.Reveal()
+		}
 	}
 	
 	for i, reveal := range c.ToReveal {
@@ -268,55 +270,60 @@ func (c *Camaretto) addCardToReveal(card *Card) {
 }
 
 // @desc: Place cards to be revealed before the action takes place
-func (c *Camaretto) reveal() {
+func (c *Camaretto) Reveal(disabled bool) {
 	for _, player := range c.Players {
 		player.Trigger = nil
-		for _, h := range player.Health { h.Trigger = nil }
+		for _, h := range player.Health {
+			if h != nil { h.Trigger = nil }
+		}
 	}
 
 	if c.Current.State == ATTACK {
-		c.addCardToReveal(c.DeckPile.DrawCard())
+		c.addCardToReveal(c.DeckPile.DrawCard(), disabled)
 
 		var player *Player = c.Players[c.Current.PlayerTurn]
 		if !player.IsChargeEmpty() {
-			c.addCardToReveal(player.SetCharge(nil))
+			c.addCardToReveal(player.SetCharge(nil), disabled)
 		}
 	} else if c.Current.State == SHIELD {
-		c.addCardToReveal(c.DeckPile.DrawCard())
+		c.addCardToReveal(c.DeckPile.DrawCard(), disabled)
 	}
 }
 
 func (c *Camaretto) Update() error {
-	for _, player := range c.Players {
-		player.Update()
-	}
-
 	c.DeckPile.Update()
-
-	for _, card := range c.ToReveal {
-		card.Update()
-	}
+	for _, player := range c.Players { player.Update() }
+	for _, card := range c.ToReveal { card.Update() }
 
 	c.AlteredState = false
+
 	if c.Current.State != SET {
 		if c.Current.Focus == NONE {
 			if c.Current.State == ATTACK {
 				c.Current.Focus = PLAYER
-
 				c.AlteredState = true
+				for i, player := range c.Players {
+					if c.Current.PlayerTurn != i {
+						player.Trigger = func() { c.Current.PlayerFocus = i }
+					}
+				}
 			} else if c.Current.State == SHIELD {
 				c.Current.Focus = PLAYER
-
+				for i, player := range c.Players {
+					player.Trigger = func() { c.Current.PlayerFocus = i }
+				}
 				c.AlteredState = true
 			} else if c.Current.State == CHARGE {
 				c.Current.Focus = COMPLETE
 				c.Current.PlayerFocus = c.Current.PlayerTurn
-
 				c.AlteredState = true
 			} else if c.Current.State == HEAL {
 				c.Current.Focus = CARD
 				c.Current.PlayerFocus = c.Current.PlayerTurn
-
+				var player *Player = c.Players[c.Current.PlayerFocus]
+				for i, health := range player.Health {
+					health.Trigger = func() { c.Current.CardFocus = i }
+				}
 				c.AlteredState = true
 			}
 		} else if c.Current.Focus == PLAYER {
@@ -325,44 +332,47 @@ func (c *Camaretto) Update() error {
 					c.Current.Focus = CARD
 					var player *Player = c.Players[c.Current.PlayerFocus]
 					for i, health := range player.Health {
-						if health != nil { health.Trigger = func() { c.Current.CardFocus = i } }
+						health.Trigger = func() { c.Current.CardFocus = i }
 					}
-
 					c.AlteredState = true
 				} else if c.Current.State == SHIELD {
 					c.Current.Focus = REVEAL
-					c.reveal()
-
+					c.Reveal(false)
 					c.AlteredState = true
 				}
 			} else {
+				/*
 				for i, player := range c.Players {
 					if c.Current.State != ATTACK || c.Current.PlayerTurn != i {
 						player.Trigger = func() { c.Current.PlayerFocus = i }
 					}
 				}
+				*/
 			}
 		} else if c.Current.Focus == CARD {
 			if c.Current.CardFocus != -1 {
 				c.Current.Focus = REVEAL
-				c.reveal()
-
+				c.Reveal(false)
 				c.AlteredState = true
 			} else {
+				/*
 				var player *Player = c.Players[c.Current.PlayerFocus]
 				for i, health := range player.Health {
 					health.Trigger = func() { c.Current.CardFocus = i }
 				}
+				*/
 			}
 		} else if c.Current.Focus == REVEAL {
 			if len(c.ToReveal) > 0 {
 				var done bool = true
-				for _, revealed := range c.Current.Reveal { done = done && revealed }
-				if done { c.Current.Focus = COMPLETE }
+				for i, revealed := range c.Current.Reveal {
+					if revealed { c.ToReveal[i].Reveal() }
+					done = done && revealed
+				}
 
+				if done { c.Current.Focus = COMPLETE }
 				c.AlteredState = true
 			}
-
 		} else if c.Current.Focus == COMPLETE {
 			switch ;c.Current.State {
 				case ATTACK: c.attack()
@@ -371,12 +381,11 @@ func (c *Camaretto) Update() error {
 				case HEAL: c.heal()
 			}
 			c.endTurn()
-
 			c.AlteredState = true
 		}
 	}
 
-	if c.AlteredState { log.Println("ALTER", c.Current) }
+	if c.AlteredState && c.Current.Focus != REVEAL { log.Println("ALTER", c.Current) }
 
 	return nil
 }

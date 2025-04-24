@@ -86,9 +86,9 @@ func (g *Game) Init(seed int64, names []string, w, h int, online bool, player *g
 func (g *Game) IsMyTurn() bool {
 	if g.Camaretto.Current.Focus == game.CARD {
 		return (g.playerInfo.Index == g.Camaretto.Current.PlayerFocus)
-	} else {
-		return (g.playerInfo.Index == g.Camaretto.Current.PlayerTurn)
 	}
+
+	return (g.playerInfo.Index == g.Camaretto.Current.PlayerTurn)
 }
 
 func (g *Game) Update() error {

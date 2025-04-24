@@ -48,6 +48,20 @@ func NewAction(i int) *Action {
 	return a
 }
 
+func (a *Action) SetState(s GameState) {
+	a.State = s
+	if a.State == ATTACK {
+	} else if a.State == SHIELD {
+		a.Focus = PLAYER
+	} else if a.State == CHARGE {
+		a.Focus = COMPLETE
+		a.PlayerFocus = a.PlayerTurn
+	} else if a.State == HEAL {
+		a.Focus = CARD
+		a.PlayerFocus = a.PlayerTurn
+	}
+}
+
 // @desc: Returns true if both structs contains the same values, false otherwise
 func (a *Action) Compare(b *Action) bool {
 	var flag = true

@@ -77,6 +77,7 @@ func (p *Player) SetShield(c *Card) *Card {
 	var old *Card = p.Shield
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 		
@@ -94,6 +95,7 @@ func (p *Player) SetJokerShield(c *Card) *Card {
 	var old *Card = p.JokerShield
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -112,6 +114,7 @@ func (p *Player) SetHealth(c *Card, i int) *Card {
 	var old *Card = p.Health[i]
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -131,6 +134,7 @@ func (p *Player) SetJokerHealth(c *Card) *Card {
 	var old *Card = p.JokerHealth
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -153,6 +157,7 @@ func (p *Player) SetCharge(c *Card) *Card {
 	var old *Card = p.Charge
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 

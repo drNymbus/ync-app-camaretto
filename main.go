@@ -105,7 +105,8 @@ func (app *Application) startGame() {
 
 	// app.lobby = &scene.Lobby{}
 	if !app.online { app.seed = time.Now().UnixNano() }
-	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
+	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, nil)
+	// app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
 }
 
 func (app *Application) serverStartGame() {
@@ -210,11 +211,19 @@ func (app *Application) Update() error {
 		}
 
 		if app.online {
-			if app.game.Camaretto.AlteredState {
+			if app.game.IsMyTurn() && app.game.Camaretto.AlteredState {
 				log.Println("[Application.Update] Sending message")
-				var msg *netplay.Message = &netplay.Message{
-					Typ: netplay.ACTION,
-					Action:app.game.Camaretto.Current,
+				var msg *netplay.Message = &netplay.Message{}
+				msg.Typ = netplay.ACTION
+				msg.Action = &game.Action{}
+				msg.Action.State = app.game.Camaretto.Current.State
+				msg.Action.Focus = app.game.Camaretto.Current.Focus
+				msg.Action.PlayerTurn = app.game.Camaretto.Current.PlayerTurn
+				msg.Action.PlayerFocus = app.game.Camaretto.Current.PlayerFocus
+				msg.Action.CardFocus = app.game.Camaretto.Current.CardFocus
+				msg.Action.Reveal = []bool{}
+				for _, val := range app.game.Camaretto.Current.Reveal {
+					msg.Action.Reveal = append(msg.Action.Reveal, val)
 				}
 				app.client.SendMessage(msg)
 			}
@@ -225,12 +234,27 @@ func (app *Application) Update() error {
 				case message = <- app.ioMessage:
 					if message.Typ == netplay.ACTION {
 						log.Println("[Application.Update] Received new state", app.game.Camaretto.Current, message.Action)
-						app.game.Camaretto.Current = message.Action
+						var cama *game.Camaretto = app.game.Camaretto
+						cama.Current = message.Action
+						
+						if cama.Current.Focus == game.CARD && cama.Current.PlayerFocus == app.playerInfo.Index {
+							for i, health := range cama.Players[cama.Current.PlayerFocus].Health {
+								health.Trigger = func() { cama.Current.CardFocus = i }
+							}
+						}
+						if cama.Current.Focus == game.REVEAL && len(cama.ToReveal) < 1 {
+							cama.Reveal(true)
+						}
+
+						for i, val := range message.Action.Reveal {
+							cama.Current.Reveal[i] = val
+							if val { cama.ToReveal[i].Reveal() }
+						}
 					}
 					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				case err = <- app.ioError:
 					log.Println("[Application.Update] Error:", err)
-					// go app.client.ReceiveMessage(app.ioMessage, app.ioError)
+					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
 				default: // Escape to continue to run program
 			}
 		}

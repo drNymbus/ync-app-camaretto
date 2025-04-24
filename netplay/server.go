@@ -82,12 +82,14 @@ func (server *CamarettoServer) Run() {
 }
 
 // @desc: Send a given message to every current server's connection
-func (server *CamarettoServer) broadcastMessage(m *Message) {
+func (server *CamarettoServer) broadcastMessage(m *Message, except int) {
 	var err error
 	for _, conn := range server.clients {
-		err = conn.Encoder.Encode(m)
-		if err != nil {
-			server.handleError(err, "broadcastMessage", "Broadcasting message failed")
+		if conn.Info.Index != except {
+			err = conn.Encoder.Encode(m)
+			if err != nil {
+				server.handleError(err, "broadcastMessage", "Broadcasting message failed")
+			}
 		}
 	}
 }
@@ -100,7 +102,7 @@ func (server *CamarettoServer) broadcastRoutine(pipe chan *Message, stop chan bo
 		select {
 			case message = <-pipe:
 				log.Println("[CamarettoServer.broadcastMessage] Broadcasting:", message)
-				server.broadcastMessage(message)
+				server.broadcastMessage(message, -1)
 			case <-stop:
 				log.Println("[CamarettoServer.broadcastRoutine] Routine stopped")
 				return
@@ -204,7 +206,7 @@ func (server *CamarettoServer) lobbyRoutine() {
 				players = append(players, client.Info)
 			}
 
-			server.broadcastMessage(&Message{INIT, seed, players, nil, nil})
+			server.broadcastMessage(&Message{INIT, seed, players, nil, nil}, -1)
 			server.camaretto.Init(seed, names, 0, 0)
 
 			return // Exit lobbyRoutine
@@ -247,19 +249,13 @@ func (server *CamarettoServer) gameRoutine() {
 			server.handleError(err, "gameRoutine", "Unable to decode client message")
 		}
 
-		log.Println("[CamarettoServer.gameRoutine] Received new state", msg.Action)
+		log.Println("[CamarettoServer.gameRoutine] Received new state from", clientTurn.Info, ":", msg.Action)
 
+		server.broadcastMessage(msg, clientTurn.Info.Index)
 
-		server.broadcastMessage(msg)
-
-		// server.camaretto.Update()
-		// msg.Typ = ACTION
-		// msg.Action = server.camaretto.Current
-		// msg.Reveal = []bool{}
-		// for _, card := range server.camaretto.ToReveal {
-		// 	msg.Reveal = append(msg.Reveal, card.Hidden)
-		// }
-		// server.broadcastMessage(msg)
-		// }
+		var cama *game.Camaretto = server.camaretto
+		cama.Current = msg.Action
+		if cama.Current.Focus == game.REVEAL && len(cama.ToReveal) < 1 { cama.Reveal(true) }
+		server.camaretto.Update()
 	}
 }
