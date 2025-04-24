@@ -94,12 +94,12 @@ func (menu *Menu) gotoLobby() {
 }
 
 func (menu *Menu) Update() error {
-	menu.local.Update()
-	menu.host.Update()
-	menu.join.Update()
+	menu.local.Update(nil)
+	menu.host.Update(nil)
+	menu.join.Update(nil)
 
 	if menu.state == JOIN {
-		menu.Name.Update()
+		menu.Name.Update(nil)
 	}
 
 	return nil

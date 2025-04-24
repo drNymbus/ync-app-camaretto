@@ -256,6 +256,6 @@ func (server *CamarettoServer) gameRoutine() {
 		var cama *game.Camaretto = server.camaretto
 		cama.Current = msg.Action
 		if cama.Current.Focus == game.REVEAL && len(cama.ToReveal) < 1 { cama.Reveal(true) }
-		server.camaretto.Update()
+		server.camaretto.Update(nil)
 	}
 }

@@ -86,14 +86,14 @@ func (lobby *Lobby) Update() error {
 	var err error
 
 	if !lobby.online {
-		lobby.minusButton.Update()
+		lobby.minusButton.Update(nil)
 		if err != nil { return lobby.handleError(err, "Update", "Button minusButton.Update") }
-		lobby.plusButton.Update()
+		lobby.plusButton.Update(nil)
 		if err != nil { return lobby.handleError(err, "Update", "Button plusButton.Update") }
 	}
 
 	if !lobby.online || lobby.hosting {
-		lobby.start.Update()
+		lobby.start.Update(nil)
 		if err != nil { return lobby.handleError(err, "Update", "Button start.Update") }
 	}
 
@@ -120,7 +120,7 @@ func (lobby *Lobby) Update() error {
 	lobby.cursor.Update()
 
 	for i := 0; i < lobby.NbPlayers; i++ {
-		lobby.Names[i].Update()
+		lobby.Names[i].Update(nil)
 	}
 	// lobby.Names[lobby.focus].Update()
 

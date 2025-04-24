@@ -1,6 +1,8 @@
 package game
 
 import (
+	"math"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
@@ -48,11 +50,21 @@ func (c *Card) Reveal() {
 	c.SSprite.SetImage(c.revealedImg)
 }
 
-func (c *Card) Update() error {
-	if c.Trigger != nil && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		var x, y int = ebiten.CursorPosition()
-		if c.SSprite.In(float64(x), float64(y)) {
+func (c *Card) Update(cursor *view.Sprite) error {
+	var x, y int = ebiten.CursorPosition()
+	if c.SSprite.In(float64(x), float64(y)) {
+		if c.Trigger != nil && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 			c.Trigger()
+		}
+
+		if cursor != nil {
+			var speed float64 = 25
+			var sx, sy, sr float64 = c.SSprite.GetCenter()
+			cursor.Move(sx, sy, speed)
+			cursor.Rotate(sr + math.Pi, speed)
+			sx, sy, sr = c.SSprite.GetOffset()
+			cursor.MoveOffset(sx, sy - float64(view.CardHeight)/2, speed)
+			cursor.RotateOffset(sr, speed)
 		}
 	}
 

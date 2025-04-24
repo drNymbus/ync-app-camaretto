@@ -76,7 +76,7 @@ func (tc *TextCapture) SetText(s string) {
 }
 func (tc *TextCapture) GetText() string { return tc.textInput }
 
-func (tc *TextCapture) Update() error {
+func (tc *TextCapture) Update(cursor *view.Sprite) error {
 	var shiftModifier int = 0
 
 	if tc.enabled {
@@ -100,6 +100,22 @@ func (tc *TextCapture) Update() error {
 			}
 		}
 	}
+
+	/*
+	if cursor != nil {
+		var ix, iy int = ebiten.CursorPosition()
+		var cx, cy float64 = float64(ix), float64(iy)
+
+		if tc.SSprite.In(x, y) && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+			var speed float64 = 50
+			var x, y, _ float64 = tc.SSprite.GetCenter()
+			cursor.SSprite.Move(x, y, speed)
+			cursor.SSprite.Rotate(0, speed)
+			cursor.SSprite.MoveOffset(0, 0, speed)
+			cursor.SSprite.RotateOffset(0, speed)
+		}
+	}
+	*/
 
 	tc.render()
 	return nil

@@ -6,6 +6,8 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"camaretto/view"
 )
 
 type Camaretto struct {
@@ -290,10 +292,24 @@ func (c *Camaretto) Reveal(disabled bool) {
 	}
 }
 
-func (c *Camaretto) Update() error {
+func (c *Camaretto) Update(cursor *view.Sprite) error {
 	c.DeckPile.Update()
-	for _, player := range c.Players { player.Update() }
-	for _, card := range c.ToReveal { card.Update() }
+
+	for i, player := range c.Players {
+		if c.Current.Focus == PLAYER {
+			if (c.Current.State != ATTACK || c.Current.PlayerTurn != i) {
+				player.Update(c.Current.Focus, cursor)
+			}
+		} else if c.Current.Focus == CARD && c.Current.PlayerFocus == i {
+			player.Update(c.Current.Focus, cursor)
+		} else {
+			player.Update(NONE, nil)
+		}
+	}
+
+	for _, card := range c.ToReveal {
+		card.Update(cursor)
+	}
 
 	c.AlteredState = false
 
@@ -332,7 +348,9 @@ func (c *Camaretto) Update() error {
 					c.Current.Focus = CARD
 					var player *Player = c.Players[c.Current.PlayerFocus]
 					for i, health := range player.Health {
-						health.Trigger = func() { c.Current.CardFocus = i }
+						if health != nil {
+							health.Trigger = func() { c.Current.CardFocus = i }
+						}
 					}
 					c.AlteredState = true
 				} else if c.Current.State == SHIELD {

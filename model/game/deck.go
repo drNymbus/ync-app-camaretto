@@ -99,6 +99,7 @@ func (d *Deck) DiscardCard(card *Card) {
 	}
 
 	if card != nil {
+		card.Trigger = nil
 		d.DiscardPile[d.LenDiscardPile] = card
 		d.LenDiscardPile++
 
@@ -137,11 +138,11 @@ func (d *Deck) FindInDiscardPile(val int) *Card {
 
 func (d *Deck) Update() error {
 	for _, card := range d.DrawPile[:d.LenDrawPile] {
-		card.Update()
+		card.Update(nil)
 	}
 
 	for _, card := range d.DiscardPile[:d.LenDiscardPile] {
-		card.Update()
+		card.Update(nil)
 	}
 
 	return nil

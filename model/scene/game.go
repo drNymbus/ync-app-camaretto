@@ -2,7 +2,7 @@ package scene
 
 import (
 	// "log"
-	"math"
+	// "math"
 
 	"image/color"
 
@@ -92,7 +92,7 @@ func (g *Game) IsMyTurn() bool {
 }
 
 func (g *Game) Update() error {
-	g.Camaretto.Update()
+	g.Camaretto.Update(g.cursor)
 	if g.Camaretto.IsGameOver() { g.gotoEnd() }
 
 	g.info.Update()
@@ -102,94 +102,13 @@ func (g *Game) Update() error {
 
 	if g.online && !g.IsMyTurn() { return nil }
 
-	var ix, iy int = ebiten.CursorPosition()
-	var x, y float64 = float64(ix), float64(iy)
-
-	var cx, cy, cr float64
-	var cxOff, cyOff, crOff float64
-	var cursorSpeed float64 = 25
-
 	if g.Camaretto.Current.State == game.SET {
-		g.attack.Update()
-		g.shield.Update()
-		if g.attack.SSprite.In(x, y) {
-			cx, cy, cr = g.attack.SSprite.GetCenter()
-			cx = cx - g.attack.SSprite.Width/2
-			cr = cr + math.Pi/2
-
-			g.cursor.Move(cx, cy, cursorSpeed)
-			g.cursor.Rotate(cr, cursorSpeed)
-			g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-			g.cursor.RotateOffset(crOff, cursorSpeed)
-		} else if g.shield.SSprite.In(x, y) {
-			cx, cy, cr = g.shield.SSprite.GetCenter()
-			cx = cx - g.shield.SSprite.Width/2
-			cr = cr + math.Pi/2
-
-			g.cursor.Move(cx, cy, cursorSpeed)
-			g.cursor.Rotate(cr, cursorSpeed)
-			g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-			g.cursor.RotateOffset(crOff, cursorSpeed)
-		}
-
+		g.attack.Update(g.cursor)
+		g.shield.Update(g.cursor)
 		if player.IsChargeEmpty() {
-			g.charge.Update()
-			if g.charge.SSprite.In(x, y) {
-				cx, cy, cr = g.charge.SSprite.GetCenter()
-				cx = cx - g.charge.SSprite.Width/2
-				cr = cr + math.Pi/2
-
-				g.cursor.Move(cx, cy, cursorSpeed)
-				g.cursor.Rotate(cr, cursorSpeed)
-				g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-				g.cursor.RotateOffset(crOff, cursorSpeed)
-			}
+			g.charge.Update(g.cursor)
 		} else {
-			g.heal.Update()
-			if g.heal.SSprite.In(x, y) {
-				cx, cy, cr = g.heal.SSprite.GetCenter()
-				cx = cx - g.heal.SSprite.Width/2
-				cr = cr + math.Pi/2
-
-				g.cursor.Move(cx, cy, cursorSpeed)
-				g.cursor.Rotate(cr, cursorSpeed)
-				g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-				g.cursor.RotateOffset(crOff, cursorSpeed)
-			}
-		}
-
-	} else if g.Camaretto.Current.Focus == game.PLAYER {
-		for i, player := range g.Camaretto.Players {
-			if g.Camaretto.Current.State != game.ATTACK || g.Camaretto.Current.PlayerTurn != i {
-				if player.Hover(x, y) {
-					cx, cy, crOff = player.GetPosition()
-					cyOff = -float64(view.CardHeight)
-					cr = math.Pi
-
-					g.cursor.Move(cx, cy, cursorSpeed)
-					g.cursor.Rotate(cr, cursorSpeed)
-					g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-					g.cursor.RotateOffset(crOff, cursorSpeed)
-				}
-			}
-		}
-	} else if g.Camaretto.Current.Focus == game.CARD {
-		var player *game.Player = g.Camaretto.Players[g.Camaretto.Current.PlayerFocus]
-		var i int = -1
-		for j, health := range player.Health {
-			if health.SSprite.In(x, y) { i = j }
-		}
-
-		if i != -1 {
-			cx, cy, crOff = player.GetPosition()
-			cxOff, cyOff, _ = player.Health[i].SSprite.GetOffset()
-			cyOff = cyOff - float64(view.CardHeight)/2
-			cr = math.Pi
-
-			g.cursor.Move(cx, cy, cursorSpeed)
-			g.cursor.Rotate(cr, cursorSpeed)
-			g.cursor.MoveOffset(cxOff, cyOff, cursorSpeed)
-			g.cursor.RotateOffset(crOff, cursorSpeed)
+			g.heal.Update(g.cursor)
 		}
 	}
 

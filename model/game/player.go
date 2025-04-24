@@ -184,7 +184,7 @@ func (p *Player) Hover(x, y float64) bool {
 }
 
 // @desc:
-func (p *Player) Update() error {
+func (p *Player) Update(focus FocusState, cursor *view.Sprite) error {
 	p.nameSprite.Update()
 	p.deadSprite.Update()
 
@@ -195,37 +195,46 @@ func (p *Player) Update() error {
 
 	if p.Shield != nil {
 		cursorIn = cursorIn || p.Shield.SSprite.In(x,y)
-		p.Shield.Update()
+		p.Shield.Update(nil)
 	}
 
 	if p.JokerShield != nil {
 		cursorIn = cursorIn || p.JokerShield.SSprite.In(x, y)
-		p.JokerShield.Update()
+		p.JokerShield.Update(nil)
 	}
 
-	if p.Health[0] != nil {
-		cursorIn = cursorIn || p.Health[0].SSprite.In(x, y)
-		p.Health[0].Update()
-	}
-
-	if p.Health[1] != nil {
-		cursorIn = cursorIn || p.Health[1].SSprite.In(x, y)
-		p.Health[1].Update()
+	for _, health := range p.Health {
+		if health != nil {
+			cursorIn = cursorIn || health.SSprite.In(x,y)
+			if focus == CARD {
+				health.Update(cursor)
+			} else {
+				health.Update(nil)
+			}
+		}
 	}
 
 	if p.JokerHealth != nil {
 		cursorIn = cursorIn || p.JokerHealth.SSprite.In(x, y)
-		p.JokerHealth.Update()
+		p.JokerHealth.Update(nil)
 	}
 
 	if p.Charge != nil {
 		cursorIn = cursorIn || p.Charge.SSprite.In(x, y)
-		p.Charge.Update()
+		p.Charge.Update(nil)
 	}
 
-	if p.Trigger != nil {
-		if cursorIn && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+	if cursorIn {
+		if p.Trigger != nil && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 			p.Trigger()
+		}
+
+		if focus == PLAYER && cursor != nil {
+			var speed float64 = 25
+			cursor.Move(p.x, p.y, speed)
+			cursor.Rotate(math.Pi, speed)
+			cursor.MoveOffset(0, -float64(view.CardHeight), speed)
+			cursor.RotateOffset(p.r, speed)
 		}
 	}
 
