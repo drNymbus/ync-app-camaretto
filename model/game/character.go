@@ -1,4 +1,4 @@
-package component
+package game
 
 import (
 	"image/color"
@@ -16,7 +16,7 @@ type Character struct {
 	isMouthOpen bool
 
 	image *view.PersonaImage
-	SSprite *Sprite
+	SSprite *view.Sprite
 
 	count int
 }
@@ -31,7 +31,7 @@ func NewCharacter(name string) *Character {
 	text.Draw(c.image.NeutralClosed, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, tOp)
 	text.Draw(c.image.NeutralOpen, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, tOp)
 
-	c.SSprite = NewSprite(c.image.NeutralClosed, nil)
+	c.SSprite = view.NewSprite(c.image.NeutralClosed, nil)
 
 	return c
 }

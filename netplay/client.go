@@ -6,7 +6,7 @@ import (
 	"net"
 	"encoding/gob"
 
-	"camaretto/model/component"
+	"camaretto/model/game"
 )
 
 type CamarettoClient struct {
@@ -33,7 +33,7 @@ func (client *CamarettoClient) Scan() []*net.TCPAddr {
 }
 
 // @desc: Connect to server
-func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *component.PlayerInfo) (*component.PlayerInfo, error) {
+func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *game.PlayerInfo) (*game.PlayerInfo, error) {
 	var err error
 
 	var c *net.TCPConn
@@ -53,7 +53,7 @@ func (client *CamarettoClient) Connect(addr *net.TCPAddr, info *component.Player
 		return nil, err
 	}
 
-	info = &component.PlayerInfo{}
+	info = &game.PlayerInfo{}
 	err = client.Decoder.Decode(info)
 	if err != nil {
 		client.handleError(err, "Connect", "Decode player info failed")
@@ -88,6 +88,7 @@ func (client *CamarettoClient) SendMessage(msg *Message) error {
 		return err
 	}
 
+	log.Println("[CamarettoClient.SendMessage] Sent message:", msg)
 	return nil
 }
 
@@ -98,7 +99,7 @@ func (client *CamarettoClient) ReceiveMessage(io chan *Message, e chan error) {
 
 	err = client.Decoder.Decode(msg)
 	if err != nil {
-		client.handleError(err, "ReceiveUpdate", "Decode message failed")
+		client.handleError(err, "ReceiveMessage", "Decode message failed")
 		e <- err
 	} else {
 		io <- msg

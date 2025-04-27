@@ -1,11 +1,11 @@
-package model
+package scene
 
 import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"camaretto/model/component"
+	"camaretto/model/ui"
 	"camaretto/view"
 )
 
@@ -21,14 +21,14 @@ type Menu struct {
 
 	width, height float64
 
-	local, join, host *component.Button
+	local, join, host *ui.Button
 
-	Name *component.TextCapture
+	Name *ui.TextCapture
 
 	Online bool
 	Hosting bool
 
-	goToLobby func()
+	lobby func()
 	startServer func()
 	joinServer func()
 	scanServer func()
@@ -40,22 +40,22 @@ func (menu *Menu) Init(w, h int, lobby, host, join, scan func()) {
 	menu.width, menu.height = float64(w), float64(h)
 
 	var x, y float64 = menu.width/2, menu.height/2
-	menu.local = component.NewButton("Local", color.RGBA{0, 0, 0, 255}, "GREEN", lobby)
+	menu.local = ui.NewButton("Local", color.RGBA{0, 0, 0, 255}, "GREEN", lobby)
 	menu.local.SSprite.SetCenter(x, y - float64(view.ButtonHeight) - 5, 0)
 
-	menu.host = component.NewButton("Host", color.RGBA{0, 0, 0, 255}, "BLUE", menu.hostGame)
+	menu.host = ui.NewButton("Host", color.RGBA{0, 0, 0, 255}, "BLUE", menu.hostGame)
 	menu.host.SSprite.SetCenter(x, y, 0)
 
-	menu.join = component.NewButton("Join", color.RGBA{0, 0, 0, 255}, "RED", menu.joinGame)
+	menu.join = ui.NewButton("Join", color.RGBA{0, 0, 0, 255}, "RED", menu.joinGame)
 	menu.join.SSprite.SetCenter(x, y + float64(view.ButtonHeight) + 5, 0)
 
-	menu.Name = component.NewTextCapture(55, int(menu.width*3/4), int(menu.height/10), 2)
+	menu.Name = ui.NewTextCapture(55, int(menu.width*3/4), int(menu.height/10), 2)
 	menu.Name.SSprite.SetCenter(x, y, 0)
 
 	menu.Online = false
 	menu.Hosting = false
 
-	menu.goToLobby = lobby
+	menu.lobby = lobby
 	menu.startServer = host
 	menu.joinServer = join
 	menu.scanServer = scan
@@ -63,29 +63,43 @@ func (menu *Menu) Init(w, h int, lobby, host, join, scan func()) {
 
 func (menu *Menu) hostGame() {
 	menu.state = JOIN
-	go menu.startServer()
+
+	menu.Online = true
+	menu.Hosting = true
 
 	menu.host.SSprite.Move(menu.width/2, menu.height/2 + float64(view.ButtonHeight)*2, 2)
-	menu.host.Trigger = menu.goToLobby
+	menu.host.Trigger = menu.gotoLobby
 }
 
 func (menu *Menu) joinGame() {
 	menu.state = JOIN
 
+	menu.Online = true
+	menu.Hosting = false
+
 	menu.join.SSprite.Move(menu.width/2, menu.height/2 + float64(view.ButtonHeight)*2, 2)
-	menu.join.Trigger = menu.goToLobby
+	menu.join.Trigger = menu.gotoLobby
 }
 
 func (menu *Menu) scanGames() {
 }
 
+func (menu *Menu) gotoLobby() {
+	menu.lobby()
+
+	if menu.Online {
+		if menu.Hosting { menu.startServer() }
+		menu.joinServer()
+	}
+}
+
 func (menu *Menu) Update() error {
-	menu.local.Update()
-	menu.host.Update()
-	menu.join.Update()
+	menu.local.Update(nil)
+	menu.host.Update(nil)
+	menu.join.Update(nil)
 
 	if menu.state == JOIN {
-		menu.Name.Update()
+		menu.Name.Update(nil)
 	}
 
 	return nil

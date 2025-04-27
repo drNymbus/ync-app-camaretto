@@ -12,10 +12,9 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"camaretto/model"
-	"camaretto/model/component"
-	"camaretto/model/netplay"
-	// "camaretto/event"
+	"camaretto/model/game"
+	"camaretto/model/scene"
+	"camaretto/netplay"
 	"camaretto/view"
 )
 
@@ -42,31 +41,37 @@ type Application struct {
 	state AppState
 	online, hosting bool
 
-	playerInfo *component.PlayerInfo
+	playerInfo *game.PlayerInfo
 
-	menu *model.Menu
-	lobby *model.Lobby
-	game *model.Game
+	menu *scene.Menu
+	lobby *scene.Lobby
+
+	seed int64
+	game *scene.Game
 
 	ioMessage chan *netplay.Message
 	ioError chan error
 
 	server *netplay.CamarettoServer
 	client *netplay.CamarettoClient
+
+	tick int
 }
 
 func (app *Application) Init() {
 	app.state = MENU
 	app.online, app.hosting = false, false
 
-	app.playerInfo = &component.PlayerInfo{}
+	app.playerInfo = &game.PlayerInfo{}
 
-	app.menu = &model.Menu{}
+	app.menu = &scene.Menu{}
 	app.menu.Init(WinWidth, WinHeight, app.startLobby, app.startServer, app.joinServer, app.scanServers)
-	app.lobby = &model.Lobby{}
-	app.game = &model.Game{}
+	app.lobby = &scene.Lobby{}
+	app.game = &scene.Game{}
 
 	app.imgBuffer = ebiten.NewImage(WinWidth, WinHeight)
+
+	app.tick = 0
 }
 
 /************ ****************************************************************************** ************/
@@ -75,8 +80,19 @@ func (app *Application) Init() {
 
 func (app *Application) startLobby() {
 	app.state = LOBBY
-	app.menu = &model.Menu{}
-	app.lobby.Init(WinWidth, WinHeight, app.menu.Online, app.menu.Hosting, app.startGame)
+
+	app.online = app.menu.Online
+	app.hosting = app.menu.Hosting
+	app.playerInfo.Name = app.menu.Name.GetText()
+
+	// app.menu = &scene.Menu{}
+	var startFn func() = nil
+	if app.online && app.hosting {
+		startFn = app.serverStartGame
+	} else if !app.online {
+		startFn = app.startGame
+	}
+	app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting, startFn)
 }
 
 func (app *Application) startGame() {
@@ -87,20 +103,19 @@ func (app *Application) startGame() {
 		playerNames = append(playerNames, app.lobby.Names[i].GetText())
 	}
 
-	app.lobby = &model.Lobby{}
-	var seed int64 = time.Now().UnixNano()
-	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
+	// app.lobby = &scene.Lobby{}
+	if !app.online { app.seed = time.Now().UnixNano() }
+	// app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, nil)
+	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
+}
+
+func (app *Application) serverStartGame() {
+	app.client.SendMessage(&netplay.Message{netplay.START, -1, nil, nil, -1, game.SET})
 }
 
 func (app *Application) endGame() {
 	app.state = END
-
-	app.game = &model.Game{}
-	app.game.Init(seed, playerNames, WinWidth, WinHeight, app.startLobby)
-	// app.game.Init(seed, playerNames, WinWidth, WinHeight, app.endGame)
 }
-
-func (app *Application) endGame() {}
 
 func (app *Application) startServer() {
 	app.server = netplay.NewCamarettoServer()
@@ -113,7 +128,7 @@ func (app *Application) joinServer() {
 	app.client = netplay.NewCamarettoClient()
 
 	var addr *net.TCPAddr
-	addr, err = net.ResolveTCPAddr("tcp", "localhost:5813")
+	addr, err = net.ResolveTCPAddr("tcp", "localhost:58132")
 	if err != nil {
 		log.Println("[Application.joinServer] Unable to resolve host:", err)
 		return
@@ -143,136 +158,6 @@ func (app *Application) scanServers() {
 /************ ***************************************************************************** ************/
 
 func (app *Application) Update() error {
-/*
-	app.events.Update()
-
-	if app.state == GAME {
-		if !app.online || app.game.IsMyTurn(app.playerInfo.Index) {
-			app.game.Hover(app.events.X, app.events.Y)
-		}
-	}
-
-	var me *event.MouseEvent = nil
-	var ke *event.KeyEvent = nil
-	for ;!app.events.IsEmpty(); {
-		me = app.events.ReadMouseEvent()
-		if me != nil {
-			var signal component.PageSignal = component.UPDATE
-			if app.state == MENU {
-				if me.Event == event.PRESSED {
-					signal = app.menu.MousePress(me.X, me.Y)
-				} else if me.Event == event.RELEASED {
-					signal = app.menu.MouseRelease(me.X, me.Y)
-				}
-
-				if signal == component.NEXT {
-					app.online, app.hosting = app.menu.Online, app.menu.Hosting
-					app.lobby.Init(WinWidth, WinHeight, app.online, app.hosting)
-
-					if app.online {
-						app.playerInfo.Name = app.menu.Name.GetText()
-						if app.hosting {
-							app.startServer()
-						} else if app.online {
-							app.joinServer()
-						}
-					}
-
-					app.menu = &model.Menu{}
-					app.state = LOBBY
-				}
-			} else if app.state == LOBBY {
-				if me.Event == event.PRESSED {
-					signal = app.lobby.MousePress(me.X, me.Y)
-				} else if me.Event == event.RELEASED {
-					signal = app.lobby.MouseRelease(me.X, me.Y)
-				}
-
-				if signal == component.NEXT {
-					if app.online {
-						app.client.SendMessage(&netplay.Message{netplay.START, -1, nil, nil, nil})
-					} else {
-						app.startCamaretto(time.Now().UnixNano())
-
-						app.lobby = &model.Lobby{}
-						app.state = GAME
-					}
-				}
-			} else if app.state == GAME {
-				if !app.online || app.game.IsMyTurn(app.playerInfo.Index) {
-					if me.Event == event.PRESSED {
-						app.game.MousePress(me.X, me.Y)
-					} else if me.Event == event.RELEASED {
-						app.game.MouseRelease(me.X, me.Y)
-					}
-				}
-			} else if app.state == END {
-				if me.Event == event.RELEASED {
-					app.state = MENU
-					app.menu.Init(WinWidth, WinHeight)
-				}
-			}
-		}
-
-		ke = app.events.ReadKeyEvent()
-		if ke != nil {
-			if app.state == MENU {
-				app.menu.HandleKeyEvent(ke)
-			} else if app.state == LOBBY {
-				app.lobby.HandleKeyEvent(ke)
-			}
-		}
-	}
-
-	if app.state == LOBBY {
-		if app.online {
-			var message *netplay.Message
-			var err error
-			select {
-				case message = <- app.ioMessage:
-					if message.Typ == netplay.PLAYERS { // New player
-						app.lobby.NbPlayers = len(message.Players)
-						for _, info := range message.Players {
-							app.lobby.Names[info.Index].SetText(info.Name)
-						}
-					} else if message.Typ == netplay.INIT { // Game is starting
-						app.lobby.NbPlayers = len(message.Players)
-						for _, info := range message.Players {
-							app.lobby.Names[info.Index].SetText(info.Name)
-						}
-						app.startCamaretto(message.Seed)
-
-						app.lobby = &model.Lobby{}
-						app.state = GAME
-					} else {
-						log.Println("[Application.Update] Unparsable message (should not have been sent in the first place)")
-					}
-					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
-				case err = <- app.ioError:
-					log.Println("[Application.Update]", err)
-				default: // Escape to continue to run program
-			}
-		}
-	} else if app.state == GAME {
-		if app.online {
-			var message *netplay.Message
-			var err error
-			select {
-				case message = <- app.ioMessage:
-					if message.Typ == netplay.ACTION {
-						app.game.DeserializeCamaretto(message)
-					}
-				case err = <- app.ioError:
-					log.Println("[Application.Update]", err)
-				default: // Escape to continue to run program
-			}
-		}
-
-		var signal component.PageSignal = app.game.Update()
-		if signal == component.NEXT { app.state = END }
-	} else if app.state == END {
-	}
-*/
 	var err error
 
 	if app.state == MENU {
@@ -287,14 +172,97 @@ func (app *Application) Update() error {
 			log.Println("[Main.Update] Error updating lobby:", err)
 			return err
 		}
+
+		if app.online {
+			var message *netplay.Message
+			var err error
+			select {
+				case message = <- app.ioMessage:
+					log.Println("[Application.Update] Message Players")
+					if message.Typ == netplay.PLAYERS { // New player
+						app.lobby.NbPlayers = len(message.Players)
+						for _, info := range message.Players {
+							app.lobby.Names[info.Index].SetText(info.Name)
+						}
+					} else if message.Typ == netplay.INIT { // Game is starting
+						log.Println("[Application.Update] Message INIT")
+						app.lobby.NbPlayers = len(message.Players)
+						for _, info := range message.Players {
+							app.lobby.Names[info.Index].SetText(info.Name)
+						}
+
+						app.seed = message.Seed
+						app.startGame()
+
+					} else {
+						log.Println("[Application.Update] Unparsable message (should not have been sent in the first place)")
+					}
+					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
+				case err = <- app.ioError:
+					log.Println("[Application.Update]", err)
+				default: // Escape to continue to run program
+			}
+		}
 	} else if app.state == GAME {
 		err = app.game.Update()
 		if err != nil {
 			log.Println("[Main.Update] Error update game:", err)
 			return err
 		}
+
+		if app.online {
+			var message *netplay.Message
+			var err error
+			select {
+				case message = <- app.ioMessage:
+					if message.Typ == netplay.ACTION {
+						log.Println("[Application.Update] Received new state", app.game.Camaretto.Current, message.Action)
+						var c *game.Camaretto = app.game.Camaretto
+						c.Current = message.Action
+
+						app.game.Attack.Trigger = nil
+						app.game.Shield.Trigger = nil
+						app.game.Charge.Trigger = nil
+						app.game.Heal.Trigger = nil
+
+						for _, player := range c.Players {
+							player.Trigger = nil
+							for _, health := range player.Health {
+								if health != nil { health.Trigger = nil }
+							}
+						}
+
+
+						if c.Current.State == game.SET && c.Current.PlayerTurn == app.playerInfo.Index {
+							app.game.Attack.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.ATTACK)) }
+							app.game.Shield.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.SHIELD)) }
+							app.game.Charge.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.CHARGE)) }
+							app.game.Heal.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.HEAL)) }
+						} else if c.Current.Focus == game.PLAYER && c.Current.PlayerTurn == app.playerInfo.Index {
+							for i, player := range c.Players {
+								if c.Current.State != game.ATTACK || c.Current.PlayerTurn != i {
+									player.Trigger = func() { app.client.SendMessage(netplay.MessageIndex(i)) }
+								}
+							}
+						} else if c.Current.Focus == game.CARD && c.Current.PlayerFocus == app.playerInfo.Index {
+							var player *game.Player = c.Players[c.Current.PlayerFocus]
+							for i, health := range player.Health {
+								if health != nil { health.Trigger = func() { app.client.SendMessage(netplay.MessageIndex(i)) } }
+							}
+						} else if c.Current.Focus == game.REVEAL && c.Current.PlayerTurn == app.playerInfo.Index {
+							for i, card := range c.ToReveal {
+								card.Trigger = func() { app.client.SendMessage(netplay.MessageIndex(i)) }
+							}
+						}
+					}
+					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
+				case err = <- app.ioError:
+					log.Println("[Application.Update] Error:", err)
+					go app.client.ReceiveMessage(app.ioMessage, app.ioError)
+				default: // Escape to continue to run program
+			}
+		}
 	} else if app.state == END {
-		app.state = LOBBY
 		app.startLobby()
 	}
 
@@ -312,6 +280,8 @@ func (app *Application) Draw(screen *ebiten.Image) {
 	} else if app.state == LOBBY {
 		app.lobby.Draw(app.imgBuffer)
 	} else if app.state == GAME {
+		app.game.Draw(app.imgBuffer)
+	} else if app.state == END {
 		app.game.Draw(app.imgBuffer)
 	}
 

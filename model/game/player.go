@@ -1,4 +1,4 @@
-package component
+package game
 
 import (
 	"math"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
 	"camaretto/view"
 )
@@ -19,9 +20,9 @@ type PlayerInfo struct {
 type Player struct {
 	x, y, r float64
 
-	nameSprite *Sprite
+	nameSprite *view.Sprite
 	Dead bool
-	deadSprite *Sprite
+	deadSprite *view.Sprite
 
 	Persona *Character
 
@@ -30,6 +31,8 @@ type Player struct {
 	Health [2]*Card
 	JokerHealth *Card
 	Charge *Card
+
+	Trigger func()
 }
 
 func NewPlayer(name string, char *Character, x, y, r float64) *Player {
@@ -42,13 +45,13 @@ func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 	op := &text.DrawOptions{}; op.ColorScale.ScaleWithColor(color.RGBA{0,0,0,255})
 	text.Draw(img, name, &text.GoTextFace{Source: view.FaceSource, Size: view.FontSize}, op)
 
-	p.nameSprite = NewSprite(img, nil)
+	p.nameSprite = view.NewSprite(img, nil)
 	p.nameSprite.MoveOffset(0, float64(view.CardHeight) * 2, 0.5)
 	p.nameSprite.RotateOffset(r, 0.5)
 	p.nameSprite.Move(x, y, 1)
 	p.nameSprite.Rotate(-r, 0.5)
 
-	p.deadSprite = NewSprite(view.LoadDeathImage(), nil)
+	p.deadSprite = view.NewSprite(view.LoadDeathImage(), nil)
 	p.deadSprite.Rotate(r, 0.2)
 	p.deadSprite.Move(x, y, 0.5)
 
@@ -62,6 +65,8 @@ func NewPlayer(name string, char *Character, x, y, r float64) *Player {
 	p.JokerHealth = nil
 	p.Charge = nil
 
+	p.Trigger = nil
+
 	return p
 }
 
@@ -72,6 +77,7 @@ func (p *Player) SetShield(c *Card) *Card {
 	var old *Card = p.Shield
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 		
@@ -89,6 +95,7 @@ func (p *Player) SetJokerShield(c *Card) *Card {
 	var old *Card = p.JokerShield
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -107,6 +114,7 @@ func (p *Player) SetHealth(c *Card, i int) *Card {
 	var old *Card = p.Health[i]
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -126,6 +134,7 @@ func (p *Player) SetJokerHealth(c *Card) *Card {
 	var old *Card = p.JokerHealth
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -148,6 +157,7 @@ func (p *Player) SetCharge(c *Card) *Card {
 	var old *Card = p.Charge
 
 	if c != nil {
+		c.Trigger = nil
 		c.SSprite.Move(p.x, p.y, 1)
 		c.SSprite.RotateOffset(p.r, 1)
 
@@ -162,72 +172,71 @@ func (p *Player) SetCharge(c *Card) *Card {
 	return old
 }
 
-func (p *Player) ResetTrigger() {
-	if p.Shield != nil { p.Shield.Trigger = nil }
-	if p.JokerShield != nil { p.JokerShield.Trigger = nil }
-
-	if p.Health[0] != nil { p.Health[0].Trigger = nil }
-	if p.Health[1] != nil { p.Health[1].Trigger = nil }
-	if p.JokerHealth != nil { p.JokerHealth.Trigger = nil }
-
-	if p.Charge != nil { p.Charge.Trigger = nil }
-}
-
-// @desc: Set callback for any card clicked
-func (p *Player) OnPlayer(trigger func()) {
-	if p.Shield != nil { p.Shield.Trigger = trigger }
-	if p.JokerShield != nil { p.JokerShield.Trigger = trigger }
-
-	if p.Health[0] != nil { p.Health[0].Trigger = trigger }
-	if p.Health[1] != nil { p.Health[1].Trigger = trigger }
-	if p.JokerHealth != nil { p.JokerHealth.Trigger = trigger }
-
-	if p.Charge != nil { p.Charge.Trigger = trigger }
-}
-
-// @desc: Set callback for Health cards and nil for all other cards
-func (p *Player) OnHealth(trigger func(int)) {
-	p.ResetTrigger()
-	for i, card := range p.Health {
-		if card != nil {
-			card.Trigger = func() { trigger(i) }
-		}
+func (p *Player) Hover(x, y float64) bool {
+	if p.Shield != nil && p.Shield.SSprite.In(x, y) { return true }
+	if p.JokerShield != nil && p.Shield.SSprite.In(x, y) { return true }
+	if p.JokerHealth != nil && p.JokerHealth.SSprite.In(x, y) { return true }
+	if p.Charge != nil && p.Charge.SSprite.In(x, y) { return true }
+	for _, health := range p.Health {
+		if health != nil && health.SSprite.In(x, y) { return true }
 	}
+	return false
 }
 
-func (p *Player) HoverPlayer(x, y float64) bool {
-	var flag bool = false
-
-	if p.Shield != nil { flag = flag || p.Shield.SSprite.In(x, y) }
-	if p.JokerShield != nil { flag = flag || p.JokerShield.SSprite.In(x, y) }
-
-	if p.Health[0] != nil { flag = flag || p.Health[0].SSprite.In(x, y) }
-	if p.Health[1] != nil { flag = flag || p.Health[1].SSprite.In(x, y) }
-	if p.JokerHealth != nil { flag = flag || p.JokerHealth.SSprite.In(x, y) }
-
-	if p.Charge != nil { flag = flag || p.Charge.SSprite.In(x, y) }
-
-	return flag
-}
-
-func (p *Player) HoverHealth(x, y float64) int {
-	if p.Health[0] != nil && p.Health[0].SSprite.In(x, y) { return 0 }
-	if p.Health[1] != nil && p.Health[1].SSprite.In(x, y) { return 1 }
-	return -1
-}
-
-func (p *Player) Update() error {
+// @desc:
+func (p *Player) Update(focus FocusState, cursor *view.Sprite) error {
 	p.nameSprite.Update()
 	p.deadSprite.Update()
 
-	if p.Shield != nil { p.Shield.Update() }
-	if p.JokerShield != nil { p.JokerShield.Update() }
+	var ix, iy int = ebiten.CursorPosition()
+	var x, y float64 = float64(ix), float64(iy)
 
-	if p.Health[0] != nil { p.Health[0].Update() }
-	if p.Health[1] != nil { p.Health[1].Update() }
-	if p.JokerHealth != nil { p.JokerHealth.Update() }
+	var cursorIn bool = false
 
-	if p.Charge != nil { p.Charge.Update() }
+	if p.Shield != nil {
+		cursorIn = cursorIn || p.Shield.SSprite.In(x,y)
+		p.Shield.Update(nil)
+	}
+
+	if p.JokerShield != nil {
+		cursorIn = cursorIn || p.JokerShield.SSprite.In(x, y)
+		p.JokerShield.Update(nil)
+	}
+
+	for _, health := range p.Health {
+		if health != nil {
+			cursorIn = cursorIn || health.SSprite.In(x,y)
+			if focus == CARD {
+				health.Update(cursor)
+			} else {
+				health.Update(nil)
+			}
+		}
+	}
+
+	if p.JokerHealth != nil {
+		cursorIn = cursorIn || p.JokerHealth.SSprite.In(x, y)
+		p.JokerHealth.Update(nil)
+	}
+
+	if p.Charge != nil {
+		cursorIn = cursorIn || p.Charge.SSprite.In(x, y)
+		p.Charge.Update(nil)
+	}
+
+	if cursorIn {
+		if p.Trigger != nil && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+			p.Trigger()
+		}
+
+		if focus == PLAYER && cursor != nil {
+			var speed float64 = 25
+			cursor.Move(p.x, p.y, speed)
+			cursor.Rotate(math.Pi, speed)
+			cursor.MoveOffset(0, -float64(view.CardHeight), speed)
+			cursor.RotateOffset(p.r, speed)
+		}
+	}
 
 	return nil
 }

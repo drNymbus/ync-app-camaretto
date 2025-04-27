@@ -1,7 +1,8 @@
-package component
+package ui
 
 import (
 	"log"
+	"math"
 
 	"image/color"
 
@@ -23,7 +24,7 @@ type Button struct {
 	pressedImg *ebiten.Image
 	releasedImg *ebiten.Image
 
-	SSprite *Sprite
+	SSprite *view.Sprite
 }
 
 func NewButton(msg string, textClr color.RGBA, buttonColor string, onClick func()) *Button {
@@ -41,7 +42,7 @@ func NewButton(msg string, textClr color.RGBA, buttonColor string, onClick func(
 	b.sourceReleasedImg = bi.Released
 
 	b.render()
-	b.SSprite = NewSprite(b.releasedImg, nil)
+	b.SSprite = view.NewSprite(b.releasedImg, nil)
 
 	return b
 }
@@ -96,7 +97,7 @@ func (b *Button) SetTextColor(c color.RGBA) {
 	}
 }
 
-func (b *Button) Update() error {
+func (b *Button) Update(cursor *view.Sprite) error {
 	var err error
 	var x, y int = ebiten.CursorPosition()
 
@@ -107,8 +108,17 @@ func (b *Button) Update() error {
 	if flagIn {
 		if flagPress {
 			b.pressed()
-		} else if flagRelease {
+		} else if flagRelease && b.Trigger != nil {
 			b.Trigger()
+		}
+
+		if cursor != nil {
+			var speed float64 = 25
+			var sx, sy, _ float64 = b.SSprite.GetCenter()
+			cursor.Move(sx, sy, speed)
+			cursor.Rotate(math.Pi/2, speed)
+			cursor.MoveOffset(-b.SSprite.Width/2, 0, speed)
+			cursor.RotateOffset(0, speed)
 		}
 	}
 
