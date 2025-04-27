@@ -105,12 +105,12 @@ func (app *Application) startGame() {
 
 	// app.lobby = &scene.Lobby{}
 	if !app.online { app.seed = time.Now().UnixNano() }
-	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, nil)
-	// app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
+	// app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, nil)
+	app.game.Init(app.seed, playerNames, WinWidth, WinHeight, app.online, app.playerInfo, app.endGame)
 }
 
 func (app *Application) serverStartGame() {
-	app.client.SendMessage(&netplay.Message{netplay.START, -1, nil, nil, nil})
+	app.client.SendMessage(&netplay.Message{netplay.START, -1, nil, nil, -1, game.SET})
 }
 
 func (app *Application) endGame() {
@@ -211,44 +211,48 @@ func (app *Application) Update() error {
 		}
 
 		if app.online {
-			if app.game.IsMyTurn() && app.game.Camaretto.AlteredState {
-				log.Println("[Application.Update] Sending message")
-				var msg *netplay.Message = &netplay.Message{}
-				msg.Typ = netplay.ACTION
-				msg.Action = &game.Action{}
-				msg.Action.State = app.game.Camaretto.Current.State
-				msg.Action.Focus = app.game.Camaretto.Current.Focus
-				msg.Action.PlayerTurn = app.game.Camaretto.Current.PlayerTurn
-				msg.Action.PlayerFocus = app.game.Camaretto.Current.PlayerFocus
-				msg.Action.CardFocus = app.game.Camaretto.Current.CardFocus
-				msg.Action.Reveal = []bool{}
-				for _, val := range app.game.Camaretto.Current.Reveal {
-					msg.Action.Reveal = append(msg.Action.Reveal, val)
-				}
-				app.client.SendMessage(msg)
-			}
-
 			var message *netplay.Message
 			var err error
 			select {
 				case message = <- app.ioMessage:
 					if message.Typ == netplay.ACTION {
 						log.Println("[Application.Update] Received new state", app.game.Camaretto.Current, message.Action)
-						var cama *game.Camaretto = app.game.Camaretto
-						cama.Current = message.Action
-						
-						if cama.Current.Focus == game.CARD && cama.Current.PlayerFocus == app.playerInfo.Index {
-							for i, health := range cama.Players[cama.Current.PlayerFocus].Health {
-								health.Trigger = func() { cama.Current.CardFocus = i }
+						var c *game.Camaretto = app.game.Camaretto
+						c.Current = message.Action
+
+						app.game.Attack.Trigger = nil
+						app.game.Shield.Trigger = nil
+						app.game.Charge.Trigger = nil
+						app.game.Heal.Trigger = nil
+
+						for _, player := range c.Players {
+							player.Trigger = nil
+							for _, health := range player.Health {
+								if health != nil { health.Trigger = nil }
 							}
 						}
-						if cama.Current.Focus == game.REVEAL && len(cama.ToReveal) < 1 {
-							cama.Reveal(true)
-						}
 
-						for i, val := range message.Action.Reveal {
-							cama.Current.Reveal[i] = val
-							if val { cama.ToReveal[i].Reveal() }
+
+						if c.Current.State == game.SET && c.Current.PlayerTurn == app.playerInfo.Index {
+							app.game.Attack.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.ATTACK)) }
+							app.game.Shield.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.SHIELD)) }
+							app.game.Charge.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.CHARGE)) }
+							app.game.Heal.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.HEAL)) }
+						} else if c.Current.Focus == game.PLAYER && c.Current.PlayerTurn == app.playerInfo.Index {
+							for i, player := range c.Players {
+								if c.Current.State != game.ATTACK || c.Current.PlayerTurn != i {
+									player.Trigger = func() { app.client.SendMessage(netplay.MessageIndex(i)) }
+								}
+							}
+						} else if c.Current.Focus == game.CARD && c.Current.PlayerFocus == app.playerInfo.Index {
+							var player *game.Player = c.Players[c.Current.PlayerFocus]
+							for i, health := range player.Health {
+								if health != nil { health.Trigger = func() { app.client.SendMessage(netplay.MessageIndex(i)) } }
+							}
+						} else if c.Current.Focus == game.REVEAL && c.Current.PlayerTurn == app.playerInfo.Index {
+							for i, card := range c.ToReveal {
+								card.Trigger = func() { app.client.SendMessage(netplay.MessageIndex(i)) }
+							}
 						}
 					}
 					go app.client.ReceiveMessage(app.ioMessage, app.ioError)

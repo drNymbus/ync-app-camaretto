@@ -108,7 +108,7 @@ func (b *Button) Update(cursor *view.Sprite) error {
 	if flagIn {
 		if flagPress {
 			b.pressed()
-		} else if flagRelease {
+		} else if flagRelease && b.Trigger != nil {
 			b.Trigger()
 		}
 

@@ -21,10 +21,10 @@ type Game struct {
 
 	Camaretto *game.Camaretto
 
-	attack *ui.Button
-	shield *ui.Button
-	charge *ui.Button
-	heal *ui.Button
+	Attack *ui.Button
+	Shield *ui.Button
+	Charge *ui.Button
+	Heal *ui.Button
 
 	cursor *view.Sprite
 
@@ -43,7 +43,7 @@ func (g *Game) Init(seed int64, names []string, w, h int, online bool, player *g
 	g.playerInfo = player
 
 	g.Camaretto = &game.Camaretto{}
-	g.Camaretto.Init(seed, names, g.width, g.height * 8/10)
+	g.Camaretto.Init(seed, names, g.online, g.width, g.height * 8/10)
 
 	for _, player := range g.Camaretto.Players {
 		var bodyX float64 = player.Persona.SSprite.Width/2
@@ -58,21 +58,41 @@ func (g *Game) Init(seed int64, names []string, w, h int, online bool, player *g
 	var buttonXPos float64 = 0
 	var buttonYPos float64 = g.height * 9/10
 
-	g.attack = ui.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", func(){ g.Camaretto.Current.State = game.ATTACK })
+	if online {
+		g.Attack = ui.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", nil)
+	} else {
+		g.Attack = ui.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", func(){ g.Camaretto.SetState(game.ATTACK) })
+	}
+	// g.Attack = ui.NewButton("ATTACK", color.RGBA{0, 0, 0, 255}, "RED", func(){ g.Camaretto.Current.State = game.ATTACK })
 	buttonXPos = (g.width * 1/4) + (float64(view.ButtonWidth)/2)
-	g.attack.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+	g.Attack.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.shield = ui.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", func(){ g.Camaretto.Current.State = game.SHIELD })
+	if online {
+		g.Shield = ui.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", nil)
+	} else {
+		g.Shield = ui.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", func(){ g.Camaretto.SetState(game.SHIELD) })
+	}
+	// g.Shield = ui.NewButton("SHIELD", color.RGBA{0, 0, 0, 255}, "BLUE", func(){ g.Camaretto.Current.State = game.SHIELD })
 	buttonXPos = (g.width * 2/4) + (float64(view.ButtonWidth)/2)
-	g.shield.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+	g.Shield.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	buttonXPos = (g.width * 3/4) + (float64(view.ButtonWidth)/2)
 
-	g.charge = ui.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", func(){ g.Camaretto.Current.State = game.CHARGE })
-	g.charge.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+	if online {
+		g.Charge = ui.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", nil)
+	} else {
+		g.Charge = ui.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", func(){ g.Camaretto.SetState(game.CHARGE) })
+	}
+	// g.Charge = ui.NewButton("CHARGE", color.RGBA{0, 0, 0, 255}, "YELLOW", func(){ g.Camaretto.Current.State = game.CHARGE })
+	g.Charge.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
-	g.heal = ui.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", func(){ g.Camaretto.Current.State = game.HEAL })
-	g.heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
+	if online {
+		g.Heal = ui.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", nil)
+	} else {
+		g.Heal = ui.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", func(){ g.Camaretto.SetState(game.HEAL) })
+	}
+	// g.Heal = ui.NewButton("HEAL", color.RGBA{0, 0, 0, 255}, "GREEN", func(){ g.Camaretto.Current.State = game.HEAL })
+	g.Heal.SSprite.SetCenter(buttonXPos, buttonYPos, 0)
 
 	g.cursor = view.NewSprite(view.LoadCursorImage(), nil)
 	g.cursor.SetCenter(-g.cursor.Width, -g.cursor.Height, 0)
@@ -100,15 +120,15 @@ func (g *Game) Update() error {
 	var player *game.Player = g.Camaretto.Players[g.Camaretto.Current.PlayerTurn]
 	player.Persona.Update()
 
-	if g.online && !g.IsMyTurn() { return nil }
+	// if g.online && !g.IsMyTurn() { return nil }
 
 	if g.Camaretto.Current.State == game.SET {
-		g.attack.Update(g.cursor)
-		g.shield.Update(g.cursor)
+		g.Attack.Update(g.cursor)
+		g.Shield.Update(g.cursor)
 		if player.IsChargeEmpty() {
-			g.charge.Update(g.cursor)
+			g.Charge.Update(g.cursor)
 		} else {
-			g.heal.Update(g.cursor)
+			g.Heal.Update(g.cursor)
 		}
 	}
 
@@ -124,12 +144,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.info.Draw(screen)
 
 	if g.Camaretto.Current.State == game.SET {
-		g.attack.Draw(screen)
-		g.shield.Draw(screen)
+		g.Attack.Draw(screen)
+		g.Shield.Draw(screen)
 		if player.IsChargeEmpty() {
-			g.charge.Draw(screen)
+			g.Charge.Draw(screen)
 		} else {
-			g.heal.Draw(screen)
+			g.Heal.Draw(screen)
 		}
 	}
 

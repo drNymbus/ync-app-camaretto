@@ -122,7 +122,6 @@ func (lobby *Lobby) Update() error {
 	for i := 0; i < lobby.NbPlayers; i++ {
 		lobby.Names[i].Update(nil)
 	}
-	// lobby.Names[lobby.focus].Update()
 
 	return nil
 }

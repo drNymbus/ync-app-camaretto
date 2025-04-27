@@ -164,11 +164,14 @@ func (server *CamarettoServer) acceptConnections(pipe chan *Message, stop chan b
 						for _, client := range server.clients {
 							players = append(players, client.Info)
 						}
-						pipe <- &Message{PLAYERS, -1, players, nil, nil}
+						pipe <- &Message{PLAYERS, -1, players, nil, -1, game.SET}
 					}
 				}
 		}
 	}
+
+	// Timeout is not necessary anymore
+	server.listener.SetDeadline(time.Time{})
 }
 
 // @desc: Handle new connections to server and update lobby state with all current connections
@@ -206,8 +209,8 @@ func (server *CamarettoServer) lobbyRoutine() {
 				players = append(players, client.Info)
 			}
 
-			server.broadcastMessage(&Message{INIT, seed, players, nil, nil}, -1)
-			server.camaretto.Init(seed, names, 0, 0)
+			server.broadcastMessage(&Message{INIT, seed, players, nil, -1, game.SET}, -1)
+			server.camaretto.Init(seed, names, false, 0, 0)
 
 			return // Exit lobbyRoutine
 		} else {
@@ -230,11 +233,19 @@ func (server *CamarettoServer) getPlayerConnection(index int) *ClientConnection 
 func (server *CamarettoServer) gameRoutine() {
 	var err error
 	for ;!server.camaretto.IsGameOver(); {
+		var msg *Message = &Message{}
+		msg.Typ = ACTION
+		msg.Action = server.camaretto.Current
+
+		log.Println("[CamarettoServer.gameRoutine] 1.", server.camaretto.Current)
+		server.broadcastMessage(msg, -1)
+
 		var player int = -1
 
+		// A player has to choose a card to defend on
 		if server.camaretto.Current.Focus == game.CARD {
 			player = server.camaretto.Current.PlayerFocus
-		} else {
+		} else { // Player's turn
 			player = server.camaretto.Current.PlayerTurn
 		}
 
@@ -243,19 +254,49 @@ func (server *CamarettoServer) gameRoutine() {
 			server.handleError(nil, "gameRoutine", "Client connection lost")
 		}
 
-		var msg *Message = &Message{}
+		msg = &Message{}
 		err = clientTurn.Decoder.Decode(msg)
 		if err != nil {
 			server.handleError(err, "gameRoutine", "Unable to decode client message")
+			continue
+		} else {
+			log.Println("[CamarettoServer.gameRoutine] Message received:", msg)
 		}
 
-		log.Println("[CamarettoServer.gameRoutine] Received new state from", clientTurn.Info, ":", msg.Action)
+		if server.camaretto.Current.State == game.SET {
+			server.camaretto.SetState(msg.State)
+		} else {
+			var index int = msg.Index
 
-		server.broadcastMessage(msg, clientTurn.Info.Index)
+			var validIndex bool = true
+			if server.camaretto.Current.Focus == game.PLAYER {
+				if index < 0 || index > len(server.camaretto.Players)-1 {
+					validIndex = false
+				} else { server.camaretto.Current.PlayerFocus = index }
+			} else if server.camaretto.Current.Focus == game.CARD {
+				if index < 0 || index > 1 {
+					validIndex = false
+				} else { server.camaretto.Current.CardFocus = index }
+			} else if server.camaretto.Current.Focus == game.REVEAL {
+				if index < 0 || index > len(server.camaretto.Current.Reveal)-1 {
+					validIndex = false
+				} else { server.camaretto.Current.Reveal[index] = true }
+			}
 
-		var cama *game.Camaretto = server.camaretto
-		cama.Current = msg.Action
-		if cama.Current.Focus == game.REVEAL && len(cama.ToReveal) < 1 { cama.Reveal(true) }
+			if !validIndex { server.handleError(nil, "gameRoutine", "Invalid index received from player") }
+		}
+
+		log.Println("[CamarettoServer.gameRoutine] 2.", server.camaretto.Current)
+		msg = &Message{ACTION, -1, nil, server.camaretto.Current, -1, game.SET};
+		server.broadcastMessage(msg, -1)
+
 		server.camaretto.Update(nil)
+
+		if server.camaretto.Current.Focus == game.COMPLETE {
+			log.Println("[CamarettoServer.gameRoutine] 3.", server.camaretto.Current)
+			msg = &Message{ACTION, -1, nil, server.camaretto.Current, -1, game.SET};
+			server.broadcastMessage(msg, -1)
+			server.camaretto.Update(nil)
+		}
 	}
 }

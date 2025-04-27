@@ -88,6 +88,7 @@ func (client *CamarettoClient) SendMessage(msg *Message) error {
 		return err
 	}
 
+	log.Println("[CamarettoClient.SendMessage] Sent message:", msg)
 	return nil
 }
 
