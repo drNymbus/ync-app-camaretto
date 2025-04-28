@@ -232,7 +232,6 @@ func (app *Application) Update() error {
 							}
 						}
 
-
 						if c.Current.State == game.SET && c.Current.PlayerTurn == app.playerInfo.Index {
 							app.game.Attack.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.ATTACK)) }
 							app.game.Shield.Trigger = func() { app.client.SendMessage(netplay.MessageNewState(game.SHIELD)) }

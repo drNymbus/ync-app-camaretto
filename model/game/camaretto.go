@@ -113,7 +113,7 @@ func (c *Camaretto) SetState(g GameState) {
 	}
 }
 
-func (c *Camaretto) AddCardToReveal(card *Card) {
+func (c *Camaretto) addCardToReveal(card *Card) {
 	c.Current.Reveal = append(c.Current.Reveal, false)
 	c.ToReveal = append(c.ToReveal, card)
 
@@ -153,7 +153,6 @@ func (c *Camaretto) SetFocus(f FocusState) {
 			}
 		}
 	} else if c.Current.Focus == REVEAL {
-		log.Println("Not server?", c.online, "REVEALING")
 		// Disable card trigger
 		var player *Player = c.Players[c.Current.PlayerFocus]
 		for _, health := range player.Health {
@@ -163,20 +162,20 @@ func (c *Camaretto) SetFocus(f FocusState) {
 		var card *Card
 		if c.Current.State == ATTACK {
 			card = c.DeckPile.DrawCard()
-			c.AddCardToReveal(card)
+			c.addCardToReveal(card)
 
 			player = c.Players[c.Current.PlayerTurn]
 			if player.Charge != nil {
 				card = player.SetCharge(nil)
-				c.AddCardToReveal(card)
+				c.addCardToReveal(card)
 			}
 		} else if c.Current.State == SHIELD {
 			card = c.DeckPile.DrawCard()
-			c.AddCardToReveal(card)
+			c.addCardToReveal(card)
 		} else if c.Current.State == HEAL {
 			player = c.Players[c.Current.PlayerTurn]
 			card = player.SetCharge(nil)
-			c.AddCardToReveal(card)
+			c.addCardToReveal(card)
 		}
 
 		if !c.online {
@@ -189,7 +188,6 @@ func (c *Camaretto) SetFocus(f FocusState) {
 
 // @desc: Finish turn reset game state and pass onto the next player's turn
 func (c *Camaretto) endTurn() {
-	log.Println("Not server?", c.online, "ENDING TURN")
 	for _, p := range c.Players {
 		p.Trigger = nil
 		for _, card := range p.Health {
